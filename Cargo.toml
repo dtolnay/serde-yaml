@@ -1,0 +1,14 @@
+[package]
+name = "serde_yaml"
+version = "0.1.0"
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+license = "MIT"
+description = "YAML support for Serde"
+repository = "https://github.com/dtolnay/serde-yaml"
+readme = "README.md"
+keywords = ["yaml", "serde"]
+
+[dependencies]
+yaml-rust = "*"
+serde = "*"
+serde_macros = "*"
