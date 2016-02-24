@@ -1,6 +1,8 @@
 Serde YAML Serialization Library
 ================================
 
+[![Build Status](https://api.travis-ci.org/dtolnay/serde-yaml.svg?branch=master)](https://travis-ci.org/dtolnay/serde-yaml)
+
 This crate is a Rust library for using the [Serde](https://github.com/serde-rs/serde)
 serialization framework with data in [YAML](http://yaml.org) file format. This
 library does not reimplement a YAML parser; it uses [yaml-rust](https://github.com/chyh1990/yaml-rust)
