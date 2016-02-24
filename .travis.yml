@@ -4,3 +4,6 @@ sudo: false
 
 rust:
   - nightly
+
+notifications:
+    email: false
