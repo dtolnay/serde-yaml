@@ -5,27 +5,8 @@ sudo: false
 rust:
   - nightly
 
-before_install:
-  - openssl aes-256-cbc -K $encrypted_62c0b5029e24_key -iv $encrypted_62c0b5029e24_iv -in doc/upload_key.enc -out ~/.ssh/id_rsa -d
-
-before_script:
-  - |
-      pip install 'travis-cargo<0.2' --user &&
-      export PATH=$HOME/.local/bin:$PATH
-
-script:
-  - |
-      travis-cargo build &&
-      travis-cargo test &&
-      travis-cargo --only nightly doc
-
-after_success:
-  - travis-cargo --only nightly doc-upload
-
-env:
-  global:
-    # override the default `--features unstable` used for the nightly branch
-    - TRAVIS_CARGO_NIGHTLY_FEATURE=""
+script:        scripts/build.sh
+after_success: scripts/publish.sh
 
 notifications:
     email: false
