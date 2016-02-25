@@ -23,6 +23,9 @@ serde_yaml = "*"
 Using Serde YAML
 ================
 
+[API documentation is available in rustdoc form](https://dtolnay.github.io/serde-yaml/)
+but the general idea is:
+
 ```rust
 extern crate serde;
 extern crate serde_yaml;
