@@ -33,7 +33,7 @@ struct SeqVisitor<'a> {
 }
 
 impl<'a> SeqVisitor<'a> {
-    fn new(seq: &'a yaml::Array) -> Self {
+    fn new(seq: &'a [Yaml]) -> Self {
         SeqVisitor {
             iter: seq.iter(),
         }
