@@ -10,6 +10,10 @@ readme = "README.md"
 keywords = ["yaml", "serde"]
 
 [dependencies]
-yaml-rust = "*"
+clippy = { version = "*", optional = true }
 serde = "*"
 serde_macros = "*"
+yaml-rust = "*"
+
+[features]
+default = ["clippy"]
