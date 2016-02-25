@@ -163,9 +163,8 @@ impl<'a> de::Deserializer for Deserializer<'a> {
         where V: de::Visitor,
     {
         match *self.doc {
-            Yaml::Real(ref s) => visitor.visit_str(s),
             Yaml::Integer(i) => visitor.visit_i64(i),
-            Yaml::String(ref s) => visitor.visit_str(s),
+            Yaml::Real(ref s) | Yaml::String(ref s) => visitor.visit_str(s),
             Yaml::Boolean(b) => visitor.visit_bool(b),
             Yaml::Array(ref seq) => visitor.visit_seq(SeqVisitor::new(seq)),
             Yaml::Hash(ref hash) => visitor.visit_map(MapVisitor::new(hash)),
