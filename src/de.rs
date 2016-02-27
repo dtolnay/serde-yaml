@@ -144,7 +144,7 @@ impl <'a> de::VariantVisitor for VariantVisitor<'a> {
                       visitor: V) -> Result<V::Value>
         where V: de::Visitor,
     {
-        de::Deserializer::visit(&mut Deserializer::new(self.content), visitor)
+        de::Deserializer::deserialize(&mut Deserializer::new(self.content), visitor)
     }
 
     fn visit_struct<V>(&mut self,
@@ -152,14 +152,14 @@ impl <'a> de::VariantVisitor for VariantVisitor<'a> {
                        visitor: V) -> Result<V::Value>
         where V: de::Visitor,
     {
-        de::Deserializer::visit(&mut Deserializer::new(self.content), visitor)
+        de::Deserializer::deserialize(&mut Deserializer::new(self.content), visitor)
     }
 }
 
 impl<'a> de::Deserializer for Deserializer<'a> {
     type Error = Error;
 
-    fn visit<V>(&mut self, mut visitor: V) -> Result<V::Value>
+    fn deserialize<V>(&mut self, mut visitor: V) -> Result<V::Value>
         where V: de::Visitor,
     {
         match *self.doc {
@@ -181,7 +181,7 @@ impl<'a> de::Deserializer for Deserializer<'a> {
     }
 
     /// Parses `null` as None and any other values as `Some(...)`.
-    fn visit_option<V>(&mut self, mut visitor: V) -> Result<V::Value>
+    fn deserialize_option<V>(&mut self, mut visitor: V) -> Result<V::Value>
         where V: de::Visitor,
     {
         match *self.doc {
@@ -191,7 +191,7 @@ impl<'a> de::Deserializer for Deserializer<'a> {
     }
 
     /// Parses a newtype struct as the underlying value.
-    fn visit_newtype_struct<V>(&mut self,
+    fn deserialize_newtype_struct<V>(&mut self,
                                _name: &str,
                                mut visitor: V) -> Result<V::Value>
         where V: de::Visitor,
@@ -201,7 +201,7 @@ impl<'a> de::Deserializer for Deserializer<'a> {
 
     /// Parses an enum as a single key:value pair where the key identifies the
     /// variant and the value gives the content.
-    fn visit_enum<V>(&mut self,
+    fn deserialize_enum<V>(&mut self,
                      name: &str,
                      _variants: &'static [&'static str],
                      mut visitor: V) -> Result<V::Value>
@@ -218,10 +218,6 @@ impl<'a> de::Deserializer for Deserializer<'a> {
         } else {
             Err(Error::VariantNotAMap(String::from(name)))
         }
-    }
-
-    fn format() -> &'static str {
-        "yaml"
     }
 }
 

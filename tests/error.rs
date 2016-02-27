@@ -10,14 +10,14 @@ fn test_error<T>(yaml: &str, expected: &str)
     where T: serde::Deserialize + Debug
 {
     let result = serde_yaml::from_str::<T>(yaml);
-    assert_eq!(expected, format!("{:?}", result.unwrap_err()));
+    assert_eq!(expected, format!("{}", result.unwrap_err()));
 }
 
 #[test]
 fn test_incorrect_type() {
     let yaml = "---\n\
                 str";
-    let expected = "syntax error: incorrect type";
+    let expected = "Invalid type. Expected `Str`";
     test_error::<i16>(yaml, expected);
 }
 
@@ -29,18 +29,6 @@ fn test_empty() {
 }
 
 #[test]
-fn test_unknown_field() {
-    #[derive(Deserialize, Debug)]
-    struct Basic {
-        v: bool,
-    }
-    let yaml = "---\n\
-                x: true";
-    let expected = "unknown field \"x\"";
-    test_error::<Basic>(yaml, expected);
-}
-
-#[test]
 fn test_missing_field() {
     #[derive(Deserialize, Debug)]
     struct Basic {
@@ -49,7 +37,7 @@ fn test_missing_field() {
     }
     let yaml = "---\n\
                 v: true";
-    let expected = "missing field \"w\"";
+    let expected = "Missing field `w`";
     test_error::<Basic>(yaml, expected);
 }
 
@@ -75,7 +63,7 @@ fn test_two_documents() {
                 0\n\
                 ---\n\
                 1";
-    let expected = "expected a single YAML document but found 2";
+    let expected = "Expected a single YAML document but found 2";
     test_error::<usize>(yaml, expected);
 }
 
@@ -88,7 +76,7 @@ fn test_variant_map_wrong_size() {
     let yaml = "---\n\
                 \"V\": 16\n\
                 \"other\": 32";
-    let expected = "expected a YAML map of size 1 while parsing variant Variant but was size 2";
+    let expected = "Expected a YAML map of size 1 while parsing variant Variant but was size 2";
     test_error::<Variant>(yaml, expected);
 }
 
@@ -100,6 +88,6 @@ fn test_variant_not_a_map() {
     }
     let yaml = "---\n\
                 - \"V\"";
-    let expected = "expected a YAML map while parsing variant Variant";
+    let expected = "Expected a YAML map while parsing variant Variant";
     test_error::<Variant>(yaml, expected);
 }

@@ -1,22 +1,22 @@
+use std::error;
 use std::fmt;
 use std::result;
 use std::string::FromUtf8Error;
 
 use yaml_rust::{emitter, scanner};
 
-use serde::de;
+use serde::{ser, de};
 
 /// This type represents all possible errors that can occur when serializing or
 /// deserializing a value using YAML.
+#[derive(Debug)]
 pub enum Error {
-    Syntax(String),
+    Custom(String),
     EndOfStream,
-    UnknownField(String),
-    MissingField(&'static str),
 
-    EmitError(emitter::EmitError),
-    ScanError(scanner::ScanError),
-    FromUtf8Error(FromUtf8Error),
+    Emit(emitter::EmitError),
+    Scan(scanner::ScanError),
+    FromUtf8(FromUtf8Error),
 
     AliasUnsupported,
     TooManyDocuments(usize),
@@ -24,65 +24,89 @@ pub enum Error {
     VariantNotAMap(String),
 }
 
-impl fmt::Debug for Error {
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::Custom(_) => "syntax error",
+            Error::EndOfStream => "EOF while parsing a value",
+            Error::Emit(_) => "emit error",
+            Error::Scan(_) => "scan error",
+            Error::FromUtf8(ref err) => err.description(),
+            Error::AliasUnsupported => "YAML aliases are not supported",
+            Error::TooManyDocuments(_) =>
+                "expected a single YAML document but found multiple",
+            Error::VariantMapWrongSize(..) =>
+                "expected a YAML map of size 1 while parsing variant",
+            Error::VariantNotAMap(_) =>
+                "expected a YAML map while parsing variant",
+        }
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        match *self {
+            Error::Scan(ref err) => Some(err),
+            Error::FromUtf8(ref err) => Some(err),
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::Syntax(ref msg) =>
-                write!(f, "syntax error: {}", msg),
+            Error::Custom(ref msg) =>
+                write!(f, "{}", msg),
             Error::EndOfStream =>
                 write!(f, "EOF while parsing a value"),
-            Error::UnknownField(ref field) =>
-                write!(f, "unknown field \"{}\"", field),
-            Error::MissingField(ref field) =>
-                write!(f, "missing field \"{}\"", field),
-            Error::EmitError(ref err) => err.fmt(f),
-            Error::ScanError(ref err) => err.fmt(f),
-            Error::FromUtf8Error(ref err) => err.fmt(f),
+            Error::Emit(ref err) =>
+                write!(f, "{:?}", err),
+            Error::Scan(ref err) =>
+                write!(f, "{:?}", err),
+            Error::FromUtf8(ref err) =>
+                write!(f, "{:?}", err),
             Error::AliasUnsupported =>
                 write!(f, "YAML aliases are not supported"),
             Error::TooManyDocuments(n) =>
-                write!(f, "expected a single YAML document but found {}", n),
+                write!(f, "Expected a single YAML document but found {}", n),
             Error::VariantMapWrongSize(ref variant, size) =>
-                write!(f, "expected a YAML map of size 1 while parsing variant {} but was size {}", variant, size),
+                write!(f, "Expected a YAML map of size 1 while parsing variant {} but was size {}", variant, size),
             Error::VariantNotAMap(ref variant) =>
-                write!(f, "expected a YAML map while parsing variant {}", variant),
+                write!(f, "Expected a YAML map while parsing variant {}", variant),
         }
     }
 }
 
 impl From<emitter::EmitError> for Error {
-    fn from(error: emitter::EmitError) -> Error {
-        Error::EmitError(error)
+    fn from(err: emitter::EmitError) -> Error {
+        Error::Emit(err)
     }
 }
 
 impl From<scanner::ScanError> for Error {
-    fn from(error: scanner::ScanError) -> Error {
-        Error::ScanError(error)
+    fn from(err: scanner::ScanError) -> Error {
+        Error::Scan(err)
     }
 }
 
 impl From<FromUtf8Error> for Error {
-    fn from(error: FromUtf8Error) -> Error {
-        Error::FromUtf8Error(error)
+    fn from(err: FromUtf8Error) -> Error {
+        Error::FromUtf8(err)
+    }
+}
+
+impl ser::Error for Error {
+    fn custom<T: Into<String>>(msg: T) -> Self {
+        Error::Custom(msg.into())
     }
 }
 
 impl de::Error for Error {
-    fn syntax(msg: &str) -> Error {
-        Error::Syntax(String::from(msg))
+    fn custom<T: Into<String>>(msg: T) -> Self {
+        Error::Custom(msg.into())
     }
 
-    fn end_of_stream() -> Error {
+    fn end_of_stream() -> Self {
         Error::EndOfStream
-    }
-
-    fn unknown_field(field: &str) -> Error {
-        Error::UnknownField(String::from(field))
-    }
-
-    fn missing_field(field: &'static str) -> Error {
-        Error::MissingField(field)
     }
 }
 

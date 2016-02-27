@@ -11,9 +11,9 @@ keywords = ["yaml", "serde"]
 
 [dependencies]
 clippy = { version = "^0.*", optional = true }
-serde = "^0.6.0"
-serde_macros = "^0.6.0"
-yaml-rust = "^0.3.0"
+serde = "^0.7"
+serde_macros = "^0.7"
+yaml-rust = "^0.3"
 
 [features]
 default = ["clippy"]

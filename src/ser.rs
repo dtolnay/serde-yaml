@@ -29,46 +29,46 @@ impl<'a> Serializer<'a> {
 impl<'a> ser::Serializer for Serializer<'a> {
     type Error = Error;
 
-    fn visit_bool(&mut self, v: bool) -> Result<()> {
+    fn serialize_bool(&mut self, v: bool) -> Result<()> {
         *self.doc = Yaml::Boolean(v);
         Ok(())
     }
 
-    fn visit_i64(&mut self, v: i64) -> Result<()> {
+    fn serialize_i64(&mut self, v: i64) -> Result<()> {
         *self.doc = Yaml::Integer(v);
         Ok(())
     }
 
-    fn visit_u64(&mut self, v: u64) -> Result<()> {
-        self.visit_i64(v as i64)
+    fn serialize_u64(&mut self, v: u64) -> Result<()> {
+        self.serialize_i64(v as i64)
     }
 
-    fn visit_f64(&mut self, v: f64) -> Result<()> {
+    fn serialize_f64(&mut self, v: f64) -> Result<()> {
         *self.doc = Yaml::Real(v.to_string());
         Ok(())
     }
 
-    fn visit_str(&mut self, value: &str) -> Result<()> {
+    fn serialize_str(&mut self, value: &str) -> Result<()> {
         *self.doc = Yaml::String(String::from(value));
         Ok(())
     }
 
-    fn visit_unit(&mut self) -> Result<()> {
+    fn serialize_unit(&mut self) -> Result<()> {
         *self.doc = Yaml::Null;
         Ok(())
     }
 
-    fn visit_none(&mut self) -> Result<()> {
-        self.visit_unit()
+    fn serialize_none(&mut self) -> Result<()> {
+        self.serialize_unit()
     }
 
-    fn visit_some<V>(&mut self, value: V) -> Result<()>
+    fn serialize_some<V>(&mut self, value: V) -> Result<()>
         where V: ser::Serialize,
     {
         value.serialize(self)
     }
 
-    fn visit_seq<V>(&mut self, mut visitor: V) -> Result<()>
+    fn serialize_seq<V>(&mut self, mut visitor: V) -> Result<()>
         where V: ser::SeqVisitor,
     {
         let vec = match visitor.len() {
@@ -81,19 +81,19 @@ impl<'a> ser::Serializer for Serializer<'a> {
         Ok(())
     }
 
-    fn visit_seq_elt<T>(&mut self, elem: T) -> Result<()>
+    fn serialize_seq_elt<T>(&mut self, elem: T) -> Result<()>
         where T: ser::Serialize,
     {
         match *self.doc {
             Yaml::Array(ref mut vec) => {
                 vec.push(try!(to_yaml(elem)));
             },
-            _ => panic!("bad call to visit_seq_elt"),
+            _ => panic!("bad call to serialize_seq_elt"),
         }
         Ok(())
     }
 
-    fn visit_map<V>(&mut self, mut visitor: V) -> Result<()>
+    fn serialize_map<V>(&mut self, mut visitor: V) -> Result<()>
         where V: ser::MapVisitor,
     {
         *self.doc = Yaml::Hash(yaml::Hash::new());
@@ -102,7 +102,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
         Ok(())
     }
 
-    fn visit_map_elt<K, V>(&mut self, key: K, value: V) -> Result<()>
+    fn serialize_map_elt<K, V>(&mut self, key: K, value: V) -> Result<()>
         where K: ser::Serialize,
               V: ser::Serialize,
     {
@@ -110,12 +110,12 @@ impl<'a> ser::Serializer for Serializer<'a> {
             Yaml::Hash(ref mut map) => {
                 map.insert(try!(to_yaml(key)), try!(to_yaml(value)));
             },
-            _ => panic!("bad call to visit_map_elt"),
+            _ => panic!("bad call to serialize_map_elt"),
         }
         Ok(())
     }
 
-    fn visit_unit_variant(&mut self,
+    fn serialize_unit_variant(&mut self,
                           _name: &str,
                           _variant_index: usize,
                           variant: &str) -> Result<()> {
@@ -125,8 +125,8 @@ impl<'a> ser::Serializer for Serializer<'a> {
         Ok(())
     }
 
-    /// Override `visit_newtype_struct` to serialize newtypes without an object wrapper.
-    fn visit_newtype_struct<T>(&mut self,
+    /// Override `serialize_newtype_struct` to serialize newtypes without an object wrapper.
+    fn serialize_newtype_struct<T>(&mut self,
                                _name: &'static str,
                                value: T) -> Result<()>
         where T: ser::Serialize,
@@ -134,7 +134,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
         value.serialize(self)
     }
 
-    fn visit_newtype_variant<T>(&mut self,
+    fn serialize_newtype_variant<T>(&mut self,
                                 _name: &str,
                                 _variant_index: usize,
                                 variant: &str,
@@ -147,7 +147,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
         Ok(())
     }
 
-    fn visit_tuple_variant<V>(&mut self,
+    fn serialize_tuple_variant<V>(&mut self,
                               _name: &str,
                               _variant_index: usize,
                               variant: &str,
@@ -155,14 +155,14 @@ impl<'a> ser::Serializer for Serializer<'a> {
         where V: ser::SeqVisitor,
     {
         let mut values = Yaml::Null;
-        try!(Serializer::new(&mut values).visit_seq(visitor));
+        try!(Serializer::new(&mut values).serialize_seq(visitor));
         *self.doc = singleton_hash(
             try!(to_yaml(variant)),
             values);
         Ok(())
     }
 
-    fn visit_struct_variant<V>(&mut self,
+    fn serialize_struct_variant<V>(&mut self,
                                _name: &str,
                                _variant_index: usize,
                                variant: &str,
@@ -170,15 +170,11 @@ impl<'a> ser::Serializer for Serializer<'a> {
         where V: ser::MapVisitor,
     {
         let mut values = Yaml::Null;
-        try!(Serializer::new(&mut values).visit_map(visitor));
+        try!(Serializer::new(&mut values).serialize_map(visitor));
         *self.doc = singleton_hash(
             try!(to_yaml(variant)),
             values);
         Ok(())
-    }
-
-    fn format() -> &'static str {
-        "yaml"
     }
 }
 
