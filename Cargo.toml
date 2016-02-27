@@ -2,7 +2,7 @@
 name = "serde_yaml"
 version = "0.2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
-license = "MIT"
+license = "MIT/Apache-2.0"
 description = "YAML support for Serde"
 repository = "https://github.com/dtolnay/serde-yaml"
 documentation = "https://dtolnay.github.io/serde-yaml/"
