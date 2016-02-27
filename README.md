@@ -50,9 +50,9 @@ It can also be used with Serde's automatic serialization library,
 
 ```toml
 [dependencies]
-serde = "*"
-serde_macros = "*"
-serde_yaml = "*"
+serde = "^0.7"
+serde_macros = "^0.7"
+serde_yaml = "^0.2"
 ```
 
 Then use:
