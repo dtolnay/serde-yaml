@@ -11,13 +11,13 @@ which is a pure Rust YAML 1.2 implementation.
 Installation
 ============
 
-Version 0.1.x of this crate works with 0.6.x of Serde. Both can be found on
+Version 0.2.x of this crate works with 0.7.x of Serde. Both can be found on
 [crates.io](https://crates.io/crates/serde_yaml) with a `Cargo.toml` like:
 
 ```toml
 [dependencies]
-serde = "^0.6"
-serde_yaml = "^0.1"
+serde = "^0.7"
+serde_yaml = "^0.2"
 ```
 
 Using Serde YAML
