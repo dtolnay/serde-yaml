@@ -5,9 +5,9 @@
 
 set -ex
 
-cargo build --verbose
+cargo build --features clippy --verbose
 
-cargo test --verbose
+cargo test --features clippy --verbose
 
 if [ "$TRAVIS_RUST_VERSION" = nightly ]; then
     cargo doc --verbose
