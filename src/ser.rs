@@ -92,11 +92,10 @@ impl<'a> ser::Serializer for Serializer<'a> {
     fn serialize_seq_elt<T>(&mut self, elem: T) -> Result<()>
         where T: ser::Serialize,
     {
-        match *self.doc {
-            Yaml::Array(ref mut vec) => {
-                vec.push(try!(to_yaml(elem)));
-            },
-            _ => panic!("bad call to serialize_seq_elt"),
+        if let Yaml::Array(ref mut vec) = *self.doc {
+            vec.push(try!(to_yaml(elem)));
+        } else {
+            panic!("bad call to serialize_seq_elt");
         }
         Ok(())
     }
@@ -114,11 +113,10 @@ impl<'a> ser::Serializer for Serializer<'a> {
         where K: ser::Serialize,
               V: ser::Serialize,
     {
-        match *self.doc {
-            Yaml::Hash(ref mut map) => {
-                map.insert(try!(to_yaml(key)), try!(to_yaml(value)));
-            },
-            _ => panic!("bad call to serialize_map_elt"),
+        if let Yaml::Hash(ref mut map) = *self.doc {
+            map.insert(try!(to_yaml(key)), try!(to_yaml(value)));
+        } else {
+            panic!("bad call to serialize_map_elt");
         }
         Ok(())
     }

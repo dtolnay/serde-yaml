@@ -101,9 +101,10 @@ impl<'a> de::MapVisitor for MapVisitor<'a> {
     fn visit_value<V>(&mut self) -> Result<V>
         where V: Deserialize,
     {
-        match self.v {
-            Some(v) => Deserialize::deserialize(&mut Deserializer::new(v)),
-            None => panic!("must call visit_key before visit_value"),
+        if let Some(v) = self.v {
+            Deserialize::deserialize(&mut Deserializer::new(v))
+        } else {
+            panic!("must call visit_key before visit_value")
         }
     }
 
