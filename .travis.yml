@@ -3,6 +3,8 @@ language: rust
 sudo: false
 
 rust:
+  - stable
+  - beta
   - nightly
 
 script:        scripts/build.sh

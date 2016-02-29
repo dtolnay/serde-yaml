@@ -5,10 +5,12 @@
 
 set -ex
 
-cargo build --features clippy --verbose
-
-cargo test --features clippy --verbose
-
 if [ "$TRAVIS_RUST_VERSION" = nightly ]; then
+    cargo build --features clippy --verbose
+
+    cargo test --features clippy --verbose
+
     cargo doc --verbose
+else
+    cargo build --verbose
 fi
