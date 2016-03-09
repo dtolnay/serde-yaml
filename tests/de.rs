@@ -6,6 +6,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.extern crate serde;
 
+#![feature(custom_derive, plugin)]
+#![plugin(serde_macros)]
+
 extern crate serde;
 extern crate serde_yaml;
 
@@ -32,5 +35,20 @@ fn test_alias() {
         expected.insert(String::from("first"), 1);
         expected.insert(String::from("second"), 1);
     }
+    test_de(yaml, expected);
+}
+
+#[test]
+fn test_option() {
+    #[derive(Deserialize, PartialEq, Debug)]
+    struct Data {
+        a: Option<f64>,
+        b: Option<String>,
+        c: Option<bool>,
+    }
+    let yaml = "---\n\
+                b:\n\
+                c: true";
+    let expected = Data { a: None, b: None, c: Some(true) };
     test_de(yaml, expected);
 }

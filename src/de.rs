@@ -111,6 +111,33 @@ impl<'a> de::MapVisitor for MapVisitor<'a> {
     fn end(&mut self) -> Result<()> {
         Ok(())
     }
+
+    fn missing_field<V>(&mut self, field: &'static str) -> Result<V>
+        where V: de::Deserialize,
+    {
+        struct MissingFieldDeserializer(&'static str);
+
+        impl de::Deserializer for MissingFieldDeserializer {
+            type Error = Error;
+
+            fn deserialize<V>(&mut self, _visitor: V) -> Result<V::Value>
+                where V: de::Visitor,
+            {
+                let &mut MissingFieldDeserializer(field) = self;
+                Err(de::Error::missing_field(field))
+            }
+
+            fn deserialize_option<V>(&mut self,
+                                     mut visitor: V) -> Result<V::Value>
+                where V: de::Visitor,
+            {
+                visitor.visit_none()
+            }
+        }
+
+        let mut de = MissingFieldDeserializer(field);
+        Ok(try!(de::Deserialize::deserialize(&mut de)))
+    }
 }
 
 struct VariantVisitor<'a> {
