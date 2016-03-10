@@ -31,7 +31,7 @@ generate_doc() {
 }
 
 if [ "$TRAVIS_RUST_VERSION" = nightly ]; then
-    build_without_clippy # TODO build with clippy once it supports nightly
+    build_with_clippy
     test_with_macros
     test_with_syntex
     generate_doc
