@@ -1,16 +1,41 @@
 #!/bin/sh
 
-# License: CC0 1.0 Universal
-# https://creativecommons.org/publicdomain/zero/1.0/legalcode
+# Licensed under Creative Commons CC0 1.0 Universal
+# <LICENSE-CC or https://creativecommons.org/publicdomain/zero/1.0/legalcode>
 
 set -ex
 
+build_without_clippy() {
+    (cd yaml;
+        cargo build --verbose)
+}
+
+build_with_clippy() {
+    (cd yaml;
+        cargo build --features clippy --verbose)
+}
+
+test_with_macros() {
+    (cd yaml_tests;
+        cargo test --verbose)
+}
+
+test_with_syntex() {
+    (cd yaml_tests;
+        cargo test --features with-syntex --no-default-features --verbose)
+}
+
+generate_doc() {
+    (cd yaml;
+        cargo doc --verbose)
+}
+
 if [ "$TRAVIS_RUST_VERSION" = nightly ]; then
-    cargo build --features clippy --verbose
-
-    cargo test --features clippy --verbose
-
-    cargo doc --verbose
+    build_without_clippy # TODO build with clippy once it supports nightly
+    test_with_macros
+    test_with_syntex
+    generate_doc
 else
-    cargo build --verbose
+    build_without_clippy
+    test_with_syntex
 fi

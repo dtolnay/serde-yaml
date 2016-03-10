@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# License: CC0 1.0 Universal
-# https://creativecommons.org/publicdomain/zero/1.0/legalcode
+# Licensed under Creative Commons CC0 1.0 Universal
+# <LICENSE-CC or https://creativecommons.org/publicdomain/zero/1.0/legalcode>
 
 set -ex
 
@@ -22,7 +22,7 @@ chmod 600 ~/.ssh/id_rsa
 COMMIT=$(git rev-parse --short HEAD)
 OWNER=${TRAVIS_REPO_SLUG%%/*}
 
-mv target/doc/* docs
+mv yaml/target/doc/* docs
 cd docs
 git init
 git remote add origin "git@github.com:$TRAVIS_REPO_SLUG"

@@ -1,0 +1,22 @@
+[package]
+name = "serde_yaml_tests"
+version = "0.2.2"
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+build = "build.rs"
+
+[features]
+default = ["serde_macros"]
+with-syntex = ["syntex", "serde_codegen"]
+
+[build-dependencies]
+syntex = { version = "*", optional = true }
+serde_codegen = { version = "*", optional = true }
+
+[dependencies]
+serde = "*"
+serde_yaml = { version = "*", path = "../yaml" }
+serde_macros = { version = "*", optional = true }
+
+[[test]]
+name = "test"
+path = "tests/test.rs"

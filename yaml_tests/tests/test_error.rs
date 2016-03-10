@@ -4,10 +4,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
-// except according to those terms.extern crate serde;
-
-#![feature(custom_derive, plugin)]
-#![plugin(serde_macros)]
+// except according to those terms.
 
 extern crate serde;
 extern crate serde_yaml;

@@ -6,13 +6,10 @@ license = "MIT/Apache-2.0"
 description = "YAML support for Serde"
 repository = "https://github.com/dtolnay/serde-yaml"
 documentation = "https://dtolnay.github.io/serde-yaml/"
-readme = "README.md"
+readme = "../README.md"
 keywords = ["yaml", "serde"]
 
 [dependencies]
 clippy = { version = "^0.*", optional = true }
 serde = "^0.7"
 yaml-rust = "^0.3"
-
-[dev-dependencies]
-serde_macros = "^0.7"
