@@ -16,6 +16,9 @@ extern crate yaml_rust;
 pub use self::de::{
     Deserializer,
     from_str,
+    from_iter,
+    from_reader,
+    from_slice,
 };
 pub use self::ser::{
     Serializer,

@@ -8,8 +8,10 @@
 
 use std::error;
 use std::fmt;
+use std::io;
 use std::result;
-use std::string::FromUtf8Error;
+use std::str;
+use std::string;
 
 use yaml_rust::{emitter, scanner};
 
@@ -24,7 +26,9 @@ pub enum Error {
 
     Emit(emitter::EmitError),
     Scan(scanner::ScanError),
-    FromUtf8(FromUtf8Error),
+    Io(io::Error),
+    Utf8(str::Utf8Error),
+    FromUtf8(string::FromUtf8Error),
 
     AliasUnsupported,
     TooManyDocuments(usize),
@@ -39,6 +43,8 @@ impl error::Error for Error {
             Error::EndOfStream => "EOF while parsing a value",
             Error::Emit(_) => "emit error",
             Error::Scan(_) => "scan error",
+            Error::Io(ref err) => err.description(),
+            Error::Utf8(ref err) => err.description(),
             Error::FromUtf8(ref err) => err.description(),
             Error::AliasUnsupported => "YAML aliases are not supported",
             Error::TooManyDocuments(_) =>
@@ -53,6 +59,7 @@ impl error::Error for Error {
     fn cause(&self) -> Option<&error::Error> {
         match *self {
             Error::Scan(ref err) => Some(err),
+            Error::Io(ref err) => Some(err),
             Error::FromUtf8(ref err) => Some(err),
             _ => None,
         }
@@ -69,6 +76,10 @@ impl fmt::Display for Error {
             Error::Emit(ref err) =>
                 write!(f, "{:?}", err),
             Error::Scan(ref err) =>
+                write!(f, "{:?}", err),
+            Error::Io(ref err) =>
+                write!(f, "{:?}", err),
+            Error::Utf8(ref err) =>
                 write!(f, "{:?}", err),
             Error::FromUtf8(ref err) =>
                 write!(f, "{:?}", err),
@@ -96,8 +107,20 @@ impl From<scanner::ScanError> for Error {
     }
 }
 
-impl From<FromUtf8Error> for Error {
-    fn from(err: FromUtf8Error) -> Error {
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        Error::Io(err)
+    }
+}
+
+impl From<str::Utf8Error> for Error {
+    fn from(err: str::Utf8Error) -> Error {
+        Error::Utf8(err)
+    }
+}
+
+impl From<string::FromUtf8Error> for Error {
+    fn from(err: string::FromUtf8Error) -> Error {
         Error::FromUtf8(err)
     }
 }

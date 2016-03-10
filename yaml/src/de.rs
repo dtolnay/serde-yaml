@@ -11,7 +11,9 @@
 //! This module provides YAML deserialization with the type `Deserializer`.
 
 use std::collections::btree_map;
+use std::io;
 use std::slice;
+use std::str;
 
 use yaml_rust::{Yaml, YamlLoader};
 use yaml_rust::yaml;
@@ -270,4 +272,25 @@ pub fn from_str<T>(s: &str) -> Result<T>
         },
         n => Err(Error::TooManyDocuments(n)),
     }
+}
+
+pub fn from_iter<I, T>(iter: I) -> Result<T>
+    where I: Iterator<Item=io::Result<u8>>,
+          T: Deserialize,
+{
+    let bytes: Vec<u8> = try!(iter.collect());
+    from_str(try!(str::from_utf8(&bytes)))
+}
+
+pub fn from_reader<R, T>(rdr: R) -> Result<T>
+    where R: io::Read,
+          T: Deserialize,
+{
+    from_iter(rdr.bytes())
+}
+
+pub fn from_slice<T>(v: &[u8]) -> Result<T>
+    where T: Deserialize
+{
+    from_iter(v.iter().map(|byte| Ok(*byte)))
 }
