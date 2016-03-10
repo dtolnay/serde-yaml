@@ -16,11 +16,15 @@ build_with_clippy() {
 }
 
 test_with_macros() {
+    (cd yaml;
+        cargo test --verbose)
     (cd yaml_tests;
         cargo test --verbose)
 }
 
 test_with_syntex() {
+    (cd yaml;
+        cargo test --verbose)
     (cd yaml_tests;
         cargo test --features with-syntex --no-default-features --verbose)
 }

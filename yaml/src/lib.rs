@@ -22,6 +22,11 @@ pub use self::ser::{
     to_writer,
     to_string,
 };
+pub use self::value::{
+    Value,
+    to_value,
+    from_value,
+};
 pub use self::error::{
     Error,
     Result,
@@ -29,4 +34,5 @@ pub use self::error::{
 
 pub mod de;
 pub mod ser;
+pub mod value;
 pub mod error;
