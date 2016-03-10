@@ -20,6 +20,7 @@ pub use self::de::{
 pub use self::ser::{
     Serializer,
     to_writer,
+    to_vec,
     to_string,
 };
 pub use self::value::{

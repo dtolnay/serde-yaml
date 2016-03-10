@@ -194,12 +194,18 @@ pub fn to_writer<W, T>(writer: &mut W, value: &T) -> Result<()>
     Ok(())
 }
 
-pub fn to_string<T>(value: &T) -> Result<String>
-    where T: ser::Serialize
+pub fn to_vec<T>(value: &T) -> Result<Vec<u8>>
+    where T: ser::Serialize,
 {
     let mut vec = Vec::with_capacity(128);
     try!(to_writer(&mut vec, value));
-    Ok(try!(String::from_utf8(vec)))
+    Ok(vec)
+}
+
+pub fn to_string<T>(value: &T) -> Result<String>
+    where T: ser::Serialize
+{
+    Ok(try!(String::from_utf8(try!(to_vec(value)))))
 }
 
 /// The yaml-rust library uses `fmt.Write` intead of `io.Write` so this is a
