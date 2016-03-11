@@ -30,10 +30,10 @@ test_with_syntex() {
 }
 
 generate_doc() {
-    # use fork of yaml-rust which has some rustdoc fixes
-    fork=https://github.com/dtolnay/yaml-rust
+    # build docs from master of yaml-rust because it has some rustdoc fixes
+    master=https://github.com/chyh1990/yaml-rust
     (cd yaml;
-        sed -i 's|^yaml-rust = ".*"$|yaml-rust = { git = "'$fork'" }|' Cargo.toml
+        sed -i 's|^yaml-rust = ".*"$|yaml-rust = { git = "'$master'" }|' Cargo.toml
         cargo doc --verbose)
 }
 
