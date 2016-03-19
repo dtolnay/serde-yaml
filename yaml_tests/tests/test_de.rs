@@ -21,12 +21,13 @@ fn test_de<T>(yaml: &str, expected: T)
 
 #[test]
 fn test_alias() {
-    let yaml = "---\n\
-                first:\n  \
-                  &alias\n  \
-                  1\n\
-                second:\n  \
-                  *alias";
+    let yaml = indoc!("
+        ---
+        first:
+          &alias
+          1
+        second:
+          *alias");
     let mut expected = BTreeMap::new();
     {
         expected.insert(String::from("first"), 1);
@@ -43,9 +44,10 @@ fn test_option() {
         b: Option<String>,
         c: Option<bool>,
     }
-    let yaml = "---\n\
-                b:\n\
-                c: true";
+    let yaml = indoc!("
+        ---
+        b:
+        c: true");
     let expected = Data { a: None, b: None, c: Some(true) };
     test_de(yaml, expected);
 }

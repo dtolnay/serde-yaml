@@ -10,6 +10,7 @@
 mod with_syntex {
     extern crate syntex;
     extern crate serde_codegen;
+    extern crate indoc;
 
     use std::env;
     use std::path::Path;
@@ -23,6 +24,7 @@ mod with_syntex {
         let mut registry = syntex::Registry::new();
 
         serde_codegen::register(&mut registry);
+        indoc::register(&mut registry);
         registry.expand("", &src, &dst).unwrap();
     }
 }

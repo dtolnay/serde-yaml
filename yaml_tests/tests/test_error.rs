@@ -20,8 +20,9 @@ fn test_error<T>(yaml: &str, expected: &str)
 
 #[test]
 fn test_incorrect_type() {
-    let yaml = "---\n\
-                str";
+    let yaml = indoc!("
+        ---
+        str");
     let expected = "Invalid type. Expected `Str`";
     test_error::<i16>(yaml, expected);
 }
@@ -40,16 +41,18 @@ fn test_missing_field() {
         v: bool,
         w: bool,
     }
-    let yaml = "---\n\
-                v: true";
+    let yaml = indoc!("
+        ---
+        v: true");
     let expected = "Missing field `w`";
     test_error::<Basic>(yaml, expected);
 }
 
 #[test]
 fn test_unknown_anchor() {
-    let yaml = "---\n\
-                *some";
+    let yaml = indoc!("
+        ---
+        *some");
     let expected =
         "ScanError { \
           mark: Marker { \
@@ -64,10 +67,11 @@ fn test_unknown_anchor() {
 
 #[test]
 fn test_two_documents() {
-    let yaml = "---\n\
-                0\n\
-                ---\n\
-                1";
+    let yaml = indoc!("
+        ---
+        0
+        ---
+        1");
     let expected = "Expected a single YAML document but found 2";
     test_error::<usize>(yaml, expected);
 }
@@ -78,9 +82,10 @@ fn test_variant_map_wrong_size() {
     enum Variant {
         V(usize),
     }
-    let yaml = "---\n\
-                \"V\": 16\n\
-                \"other\": 32";
+    let yaml = indoc!(r#"
+        ---
+        "V": 16
+        "other": 32"#);
     let expected = "Expected a YAML map of size 1 while parsing variant Variant but was size 2";
     test_error::<Variant>(yaml, expected);
 }
@@ -91,8 +96,9 @@ fn test_variant_not_a_map() {
     enum Variant {
         V(usize),
     }
-    let yaml = "---\n\
-                - \"V\"";
+    let yaml = indoc!(r#"
+        ---
+        - "V""#);
     let expected = "Expected a YAML map while parsing variant Variant";
     test_error::<Variant>(yaml, expected);
 }

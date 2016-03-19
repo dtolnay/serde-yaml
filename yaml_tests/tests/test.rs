@@ -7,7 +7,7 @@
 // except according to those terms.
 
 #![cfg_attr(not(feature = "with-syntex"), feature(custom_derive, plugin))]
-#![cfg_attr(not(feature = "with-syntex"), plugin(serde_macros))]
+#![cfg_attr(not(feature = "with-syntex"), plugin(serde_macros, indoc))]
 
 extern crate serde;
 extern crate serde_yaml;

@@ -6,16 +6,18 @@ build = "build.rs"
 
 [features]
 default = ["serde_macros"]
-with-syntex = ["syntex", "serde_codegen"]
+with-syntex = ["syntex", "serde_codegen", "indoc/with-syntex"]
 
 [build-dependencies]
 syntex = { version = "*", optional = true }
 serde_codegen = { version = "*", optional = true }
+indoc = "*"
 
 [dependencies]
 serde = "*"
 serde_yaml = { version = "*", path = "../yaml" }
 serde_macros = { version = "*", optional = true }
+indoc = "*"
 
 [[test]]
 name = "test"

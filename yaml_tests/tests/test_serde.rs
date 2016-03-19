@@ -25,26 +25,29 @@ fn test_serde<T>(thing: T, yaml: &str)
 #[test]
 fn test_int() {
     let thing = 256;
-    let yaml = "---\n\
-                256";
+    let yaml = indoc!("
+        ---
+        256");
     test_serde(thing, yaml);
 }
 
 #[test]
 fn test_float() {
     let thing = 25.6;
-    let yaml = "---\n\
-                25.6";
+    let yaml = indoc!("
+        ---
+        25.6");
     test_serde(thing, yaml);
 }
 
 #[test]
 fn test_vec() {
     let thing = vec![1, 2, 3];
-    let yaml = "---\n\
-                - 1\n\
-                - 2\n\
-                - 3";
+    let yaml = indoc!("
+        ---
+        - 1
+        - 2
+        - 3");
     test_serde(thing, yaml);
 }
 
@@ -53,9 +56,10 @@ fn test_map() {
     let mut thing = BTreeMap::new();
     thing.insert(String::from("x"), 1);
     thing.insert(String::from("y"), 2);
-    let yaml = "---\n\
-                \"x\": 1\n\
-                \"y\": 2";
+    let yaml = indoc!(r#"
+        ---
+        "x": 1
+        "y": 2"#);
     test_serde(thing, yaml);
 }
 
@@ -68,10 +72,11 @@ fn test_basic_struct() {
         z: bool,
     }
     let thing = Basic{x: -4, y: String::from("hi"), z: true};
-    let yaml = "---\n\
-                \"x\": -4\n\
-                \"y\": \"hi\"\n\
-                \"z\": true";
+    let yaml = indoc!(r#"
+        ---
+        "x": -4
+        "y": "hi"
+        "z": true"#);
     test_serde(thing, yaml);
 }
 
@@ -86,28 +91,31 @@ fn test_nested_struct() {
         v: u16,
     }
     let thing = Outer{inner: Inner{v: 512}};
-    let yaml = "---\n\
-                \"inner\": \n  \
-                  \"v\": 512";
+    let yaml = indoc!(r#"
+        ---
+        "inner": 
+          "v": 512"#);
     test_serde(thing, yaml);
 }
 
 #[test]
 fn test_option() {
     let thing = vec![Some(1), None, Some(3)];
-    let yaml = "---\n\
-                - 1\n\
-                - ~\n\
-                - 3";
+    let yaml = indoc!("
+        ---
+        - 1
+        - ~
+        - 3");
     test_serde(thing, yaml);
 }
 
 #[test]
 fn test_unit() {
     let thing = vec![(), ()];
-    let yaml = "---\n\
-                - ~\n\
-                - ~";
+    let yaml = indoc!("
+        ---
+        - ~
+        - ~");
     test_serde(thing, yaml);
 }
 
@@ -119,8 +127,9 @@ fn test_unit_variant() {
         Second,
     }
     let thing = Variant::First;
-    let yaml = "---\n\
-                \"First\": []";
+    let yaml = indoc!(r#"
+        ---
+        "First": []"#);
     test_serde(thing, yaml);
 }
 
@@ -133,8 +142,9 @@ fn test_newtype_struct() {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct NewType(OriginalType);
     let thing = NewType(OriginalType{v: 1});
-    let yaml = "---\n\
-                \"v\": 1";
+    let yaml = indoc!(r#"
+        ---
+        "v": 1"#);
     test_serde(thing, yaml);
 }
 
@@ -145,8 +155,9 @@ fn test_newtype_variant() {
         Size(usize),
     }
     let thing = Variant::Size(127);
-    let yaml = "---\n\
-                \"Size\": 127";
+    let yaml = indoc!(r#"
+        ---
+        "Size": 127"#);
     test_serde(thing, yaml);
 }
 
@@ -157,11 +168,12 @@ fn test_tuple_variant() {
         Rgb(u8, u8, u8),
     }
     let thing = Variant::Rgb(32, 64, 96);
-    let yaml = "---\n\
-                \"Rgb\": \n  \
-                  - 32\n  \
-                  - 64\n  \
-                  - 96";
+    let yaml = indoc!(r#"
+        ---
+        "Rgb": 
+          - 32
+          - 64
+          - 96"#);
     test_serde(thing, yaml);
 }
 
@@ -172,10 +184,11 @@ fn test_struct_variant() {
         Color{r: u8, g: u8, b: u8},
     }
     let thing = Variant::Color{r: 32, g: 64, b: 96};
-    let yaml = "---\n\
-                \"Color\": \n  \
-                  \"b\": 96\n  \
-                  \"g\": 64\n  \
-                  \"r\": 32";
+    let yaml = indoc!(r#"
+        ---
+        "Color": 
+          "b": 96
+          "g": 64
+          "r": 32"#);
     test_serde(thing, yaml);
 }
