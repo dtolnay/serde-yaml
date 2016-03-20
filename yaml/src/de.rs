@@ -10,8 +10,8 @@
 //!
 //! This module provides YAML deserialization with the type `Deserializer`.
 
-use std::collections::btree_map;
 use std::io;
+use std::iter;
 use std::slice;
 use std::str;
 
@@ -71,7 +71,7 @@ impl<'a> de::SeqVisitor for SeqVisitor<'a> {
 
 struct MapVisitor<'a> {
     /// Iterator over the YAML hash being visited.
-    iter: btree_map::Iter<'a, Yaml, Yaml>,
+    iter: <&'a yaml::Hash as iter::IntoIterator>::IntoIter,
     /// Value associated with the most recently visited key.
     v: Option<&'a Yaml>,
 }
@@ -79,7 +79,7 @@ struct MapVisitor<'a> {
 impl<'a> MapVisitor<'a> {
     fn new(hash: &'a yaml::Hash) -> Self {
         MapVisitor {
-            iter: hash.iter(),
+            iter: hash.into_iter(),
             v: None,
         }
     }
