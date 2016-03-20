@@ -9,7 +9,10 @@ documentation = "https://dtolnay.github.io/serde-yaml/"
 readme = "../README.md"
 keywords = ["yaml", "serde"]
 
+[features]
+preserve_order = ["yaml-rust/preserve_order"]
+
 [dependencies]
 clippy = { version = "^0.*", optional = true }
 serde = "^0.7"
-yaml-rust = "^0.3"
+yaml-rust = "^0.3.2"
