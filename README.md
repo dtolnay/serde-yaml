@@ -22,6 +22,8 @@ serde = "^0.7"
 serde_yaml = "^0.2"
 ```
 
+Release notes are available under [GitHub releases](https://github.com/dtolnay/serde-yaml/releases).
+
 Using Serde YAML
 ================
 
