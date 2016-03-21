@@ -10,8 +10,7 @@ serialization framework with data in [YAML](http://yaml.org) file format. This
 library does not reimplement a YAML parser; it uses [yaml-rust](https://github.com/chyh1990/yaml-rust)
 which is a pure Rust YAML 1.2 implementation.
 
-Installation
-============
+## Installation
 
 Version 0.2.x of this crate works with 0.7.x of Serde. Both can be found on
 [crates.io](https://crates.io/crates/serde_yaml) with a `Cargo.toml` like:
@@ -24,8 +23,7 @@ serde_yaml = "^0.2"
 
 Release notes are available under [GitHub releases](https://github.com/dtolnay/serde-yaml/releases).
 
-Using Serde YAML
-================
+## Using Serde YAML
 
 [API documentation is available in rustdoc form](https://dtolnay.github.io/serde-yaml/)
 but the general idea is:
