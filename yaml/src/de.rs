@@ -125,8 +125,7 @@ impl<'a> de::MapVisitor for MapVisitor<'a> {
             fn deserialize<V>(&mut self, _visitor: V) -> Result<V::Value>
                 where V: de::Visitor,
             {
-                let &mut MissingFieldDeserializer(field) = self;
-                Err(de::Error::missing_field(field))
+                Err(de::Error::missing_field(self.0))
             }
 
             fn deserialize_option<V>(&mut self,
