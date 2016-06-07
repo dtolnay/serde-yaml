@@ -76,13 +76,13 @@ impl fmt::Display for Error {
             Error::Emit(ref err) =>
                 write!(f, "{:?}", err),
             Error::Scan(ref err) =>
-                write!(f, "{:?}", err),
+                err.fmt(f),
             Error::Io(ref err) =>
-                write!(f, "{:?}", err),
+                err.fmt(f),
             Error::Utf8(ref err) =>
-                write!(f, "{:?}", err),
+                err.fmt(f),
             Error::FromUtf8(ref err) =>
-                write!(f, "{:?}", err),
+                err.fmt(f),
             Error::AliasUnsupported =>
                 write!(f, "YAML aliases are not supported"),
             Error::TooManyDocuments(n) =>
