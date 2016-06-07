@@ -54,14 +54,7 @@ fn test_unknown_anchor() {
         ---
         *some");
     let expected =
-        "ScanError { \
-          mark: Marker { \
-            index: 4, \
-            line: 2, \
-            col: 0 \
-          }, \
-          info: \"while parsing node, found unknown anchor\" \
-        }";
+        "while parsing node, found unknown anchor at line 2 column 1";
     test_error::<String>(yaml, expected);
 }
 
