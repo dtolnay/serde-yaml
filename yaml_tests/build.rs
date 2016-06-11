@@ -8,7 +8,6 @@
 
 #[cfg(feature = "with-syntex")]
 mod with_syntex {
-    extern crate syntex;
     extern crate serde_codegen;
     extern crate indoc;
 
@@ -21,11 +20,8 @@ mod with_syntex {
         let src = Path::new("tests/test.rs.in");
         let dst = Path::new(&out_dir).join("test.rs");
 
-        let mut registry = syntex::Registry::new();
-
-        serde_codegen::register(&mut registry);
-        indoc::register(&mut registry);
-        registry.expand("", &src, &dst).unwrap();
+        serde_codegen::expand(&src, &dst).unwrap();
+        indoc::expand(&dst, &dst).unwrap();
     }
 }
 
