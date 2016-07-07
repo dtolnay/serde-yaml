@@ -237,23 +237,28 @@ impl<'a> de::Deserializer for Deserializer<'a> {
     }
 
     /// Parses an enum as a single key:value pair where the key identifies the
-    /// variant and the value gives the content.
+    /// variant and the value gives the content. A String will also parse correctly
+    /// to a unit enum value.
     fn deserialize_enum<V>(&mut self,
                      name: &str,
                      _variants: &'static [&'static str],
                      mut visitor: V) -> Result<V::Value>
         where V: de::EnumVisitor,
     {
-        if let Yaml::Hash(ref hash) = *self.doc {
-            let mut iter = hash.iter();
-            if let (Some(entry), None) = (iter.next(), iter.next()) {
-                let (variant, content) = entry;
-                visitor.visit(VariantVisitor::new(variant, content))
-            } else {
-                Err(Error::VariantMapWrongSize(String::from(name), hash.len()))
-            }
-        } else {
-            Err(Error::VariantNotAMap(String::from(name)))
+        match *self.doc {
+            Yaml::Hash(ref hash) => {
+                let mut iter = hash.iter();
+                if let (Some(entry), None) = (iter.next(), iter.next()) {
+                    let (variant, content) = entry;
+                    visitor.visit(VariantVisitor::new(variant, content))
+                } else {
+                    Err(Error::VariantMapWrongSize(String::from(name), hash.len()))
+                }
+            },
+            ref ystr @ Yaml::String(_) => {
+                visitor.visit(VariantVisitor::new(ystr, &Yaml::Null))
+            },
+            _ => Err(Error::VariantNotAMapOrString(String::from(name)))
         }
     }
 }

@@ -129,7 +129,7 @@ fn test_unit_variant() {
     let thing = Variant::First;
     let yaml = indoc!(r#"
         ---
-        "First": []"#);
+        "First""#);
     test_serde(thing, yaml);
 }
 

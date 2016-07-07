@@ -92,6 +92,6 @@ fn test_variant_not_a_map() {
     let yaml = indoc!(r#"
         ---
         - "V""#);
-    let expected = "Expected a YAML map while parsing variant Variant";
+    let expected = "Expected a YAML map or string while parsing variant Variant";
     test_error::<Variant>(yaml, expected);
 }

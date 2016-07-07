@@ -33,7 +33,7 @@ pub enum Error {
     AliasUnsupported,
     TooManyDocuments(usize),
     VariantMapWrongSize(String, usize),
-    VariantNotAMap(String),
+    VariantNotAMapOrString(String)
 }
 
 impl error::Error for Error {
@@ -51,8 +51,8 @@ impl error::Error for Error {
                 "expected a single YAML document but found multiple",
             Error::VariantMapWrongSize(..) =>
                 "expected a YAML map of size 1 while parsing variant",
-            Error::VariantNotAMap(_) =>
-                "expected a YAML map while parsing variant",
+            Error::VariantNotAMapOrString(_) =>
+                "expected a YAML map or string while parsing variant",
         }
     }
 
@@ -89,8 +89,8 @@ impl fmt::Display for Error {
                 write!(f, "Expected a single YAML document but found {}", n),
             Error::VariantMapWrongSize(ref variant, size) =>
                 write!(f, "Expected a YAML map of size 1 while parsing variant {} but was size {}", variant, size),
-            Error::VariantNotAMap(ref variant) =>
-                write!(f, "Expected a YAML map while parsing variant {}", variant),
+            Error::VariantNotAMapOrString(ref variant) =>
+                write!(f, "Expected a YAML map or string while parsing variant {}", variant),
         }
     }
 }

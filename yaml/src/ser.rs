@@ -125,9 +125,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
                           _name: &str,
                           _variant_index: usize,
                           variant: &str) -> Result<()> {
-        *self.doc = singleton_hash(
-            try!(to_yaml(variant)),
-            Yaml::Array(yaml::Array::new()));
+        *self.doc = Yaml::String(String::from(variant));
         Ok(())
     }
 
