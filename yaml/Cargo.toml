@@ -1,6 +1,6 @@
 [package]
 name = "serde_yaml"
-version = "0.2.5"
+version = "0.3.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
 license = "MIT/Apache-2.0"
 description = "YAML support for Serde"
@@ -15,4 +15,4 @@ preserve_order = ["yaml-rust/preserve_order"]
 [dependencies]
 clippy = { version = "^0.*", optional = true }
 serde = "^0.7"
-yaml-rust = "^0.3.2"
+yaml-rust = "^0.3.3"
