@@ -76,16 +76,16 @@ impl<'a> ser::Serializer for Serializer<'a> {
         value.serialize(self)
     }
 
-    fn serialize_seq<V>(&mut self, mut visitor: V) -> Result<()>
-        where V: ser::SeqVisitor,
-    {
-        let vec = match visitor.len() {
+    fn serialize_seq(&mut self, len: Option<usize>) -> Result<()> {
+        let vec = match len {
             None => yaml::Array::new(),
             Some(len) => yaml::Array::with_capacity(len),
         };
         *self.doc = Yaml::Array(vec);
-        while try!(visitor.visit(self)).is_some() {
-        }
+        Ok(())
+    }
+
+    fn serialize_seq_end(&mut self, _len: Option<usize>) -> Result<()> {
         Ok(())
     }
 
@@ -100,12 +100,13 @@ impl<'a> ser::Serializer for Serializer<'a> {
         Ok(())
     }
 
-    fn serialize_map<V>(&mut self, mut visitor: V) -> Result<()>
-        where V: ser::MapVisitor,
+    fn serialize_map(&mut self, _len: Option<usize>) -> Result<()>
     {
         *self.doc = Yaml::Hash(yaml::Hash::new());
-        while try!(visitor.visit(self)).is_some() {
-        }
+        Ok(())
+    }
+
+    fn serialize_map_end(&mut self, _len: Option<usize>) -> Result<()> {
         Ok(())
     }
 
@@ -156,33 +157,25 @@ impl<'a> ser::Serializer for Serializer<'a> {
         Ok(())
     }
 
-    fn serialize_tuple_variant<V>(
+    fn serialize_tuple_variant_end(
         &mut self,
         _name: &str,
         _variant_index: usize,
         variant: &str,
-        visitor: V
-    ) -> Result<()>
-        where V: ser::SeqVisitor,
-    {
-        let mut values = Yaml::Null;
-        try!(Serializer::new(&mut values).serialize_seq(visitor));
-        *self.doc = singleton_hash(try!(to_yaml(variant)), values);
+        _len: usize,
+    ) -> Result<()> {
+        *self.doc = singleton_hash(try!(to_yaml(variant)), ::std::mem::replace(&mut self.doc, Yaml::Null));
         Ok(())
     }
 
-    fn serialize_struct_variant<V>(
+    fn serialize_struct_variant_end(
         &mut self,
         _name: &str,
         _variant_index: usize,
         variant: &str,
-        visitor: V
-    ) -> Result<()>
-        where V: ser::MapVisitor,
-    {
-        let mut values = Yaml::Null;
-        try!(Serializer::new(&mut values).serialize_map(visitor));
-        *self.doc = singleton_hash(try!(to_yaml(variant)), values);
+        _len: usize,
+    ) -> Result<()> {
+        *self.doc = singleton_hash(try!(to_yaml(variant)), ::std::mem::replace(&mut self.doc, Yaml::Null));
         Ok(())
     }
 }
