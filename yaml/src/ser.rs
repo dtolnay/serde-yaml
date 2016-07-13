@@ -84,8 +84,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
             Some(len) => yaml::Array::with_capacity(len),
         };
         *self.doc = Yaml::Array(vec);
-        let mut elt_ser = Serializer::new(self.doc);
-        while try!(visitor.visit(&mut elt_ser)).is_some() {
+        while try!(visitor.visit(self)).is_some() {
         }
         Ok(())
     }
@@ -105,8 +104,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
         where V: ser::MapVisitor,
     {
         *self.doc = Yaml::Hash(yaml::Hash::new());
-        let mut elt_ser = Serializer::new(self.doc);
-        while try!(visitor.visit(&mut elt_ser)).is_some() {
+        while try!(visitor.visit(self)).is_some() {
         }
         Ok(())
     }

@@ -85,6 +85,25 @@ fn test_basic_struct() {
 }
 
 #[test]
+fn test_nested_vec() {
+    let thing = vec![
+        vec![1, 2, 3],
+        vec![4, 5, 6],
+    ];
+    let yaml = indoc!("
+        ---
+        - 
+          - 1
+          - 2
+          - 3
+        - 
+          - 4
+          - 5
+          - 6");
+    test_serde(thing, yaml);
+}
+
+#[test]
 fn test_nested_struct() {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct Outer {
