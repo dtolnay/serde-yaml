@@ -15,7 +15,7 @@ use std::string;
 
 use yaml_rust::{emitter, scanner};
 
-use serde::{ser, de};
+use serde::{de, ser};
 
 /// This type represents all possible errors that can occur when serializing or
 /// deserializing a value using YAML.
@@ -33,7 +33,7 @@ pub enum Error {
     AliasUnsupported,
     TooManyDocuments(usize),
     VariantMapWrongSize(String, usize),
-    VariantNotAMapOrString(String)
+    VariantNotAMapOrString(String),
 }
 
 impl error::Error for Error {
@@ -47,12 +47,15 @@ impl error::Error for Error {
             Error::Utf8(ref err) => err.description(),
             Error::FromUtf8(ref err) => err.description(),
             Error::AliasUnsupported => "YAML aliases are not supported",
-            Error::TooManyDocuments(_) =>
-                "expected a single YAML document but found multiple",
-            Error::VariantMapWrongSize(..) =>
-                "expected a YAML map of size 1 while parsing variant",
-            Error::VariantNotAMapOrString(_) =>
-                "expected a YAML map or string while parsing variant",
+            Error::TooManyDocuments(_) => {
+                "expected a single YAML document but found multiple"
+            }
+            Error::VariantMapWrongSize(..) => {
+                "expected a YAML map of size 1 while parsing variant"
+            }
+            Error::VariantNotAMapOrString(_) => {
+                "expected a YAML map or string while parsing variant"
+            }
         }
     }
 
@@ -69,28 +72,31 @@ impl error::Error for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::Custom(ref msg) =>
-                write!(f, "{}", msg),
-            Error::EndOfStream =>
-                write!(f, "EOF while parsing a value"),
-            Error::Emit(ref err) =>
-                write!(f, "{:?}", err),
-            Error::Scan(ref err) =>
-                err.fmt(f),
-            Error::Io(ref err) =>
-                err.fmt(f),
-            Error::Utf8(ref err) =>
-                err.fmt(f),
-            Error::FromUtf8(ref err) =>
-                err.fmt(f),
-            Error::AliasUnsupported =>
-                write!(f, "YAML aliases are not supported"),
-            Error::TooManyDocuments(n) =>
-                write!(f, "Expected a single YAML document but found {}", n),
-            Error::VariantMapWrongSize(ref variant, size) =>
-                write!(f, "Expected a YAML map of size 1 while parsing variant {} but was size {}", variant, size),
-            Error::VariantNotAMapOrString(ref variant) =>
-                write!(f, "Expected a YAML map or string while parsing variant {}", variant),
+            Error::Custom(ref msg) => write!(f, "{}", msg),
+            Error::EndOfStream => write!(f, "EOF while parsing a value"),
+            Error::Emit(ref err) => write!(f, "{:?}", err),
+            Error::Scan(ref err) => err.fmt(f),
+            Error::Io(ref err) => err.fmt(f),
+            Error::Utf8(ref err) => err.fmt(f),
+            Error::FromUtf8(ref err) => err.fmt(f),
+            Error::AliasUnsupported => {
+                write!(f, "YAML aliases are not supported")
+            }
+            Error::TooManyDocuments(n) => {
+                write!(f, "Expected a single YAML document but found {}", n)
+            }
+            Error::VariantMapWrongSize(ref variant, size) => {
+                write!(f,
+                       "Expected a YAML map of size 1 while parsing variant \
+                        {} but was size {}",
+                       variant,
+                       size)
+            }
+            Error::VariantNotAMapOrString(ref variant) => {
+                write!(f,
+                       "Expected a YAML map or string while parsing variant {}",
+                       variant)
+            }
         }
     }
 }

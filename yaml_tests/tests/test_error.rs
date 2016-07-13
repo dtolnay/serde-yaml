@@ -12,7 +12,7 @@ extern crate serde_yaml;
 use std::fmt::Debug;
 
 fn test_error<T>(yaml: &str, expected: &str)
-    where T: serde::Deserialize + Debug
+    where T: serde::Deserialize + Debug,
 {
     let result = serde_yaml::from_str::<T>(yaml);
     assert_eq!(expected, format!("{}", result.unwrap_err()));
@@ -53,8 +53,8 @@ fn test_unknown_anchor() {
     let yaml = indoc!("
         ---
         *some");
-    let expected =
-        "while parsing node, found unknown anchor at line 2 column 1";
+    let expected = "while parsing node, found unknown anchor at line 2 column \
+                    1";
     test_error::<String>(yaml, expected);
 }
 
@@ -79,7 +79,8 @@ fn test_variant_map_wrong_size() {
         ---
         "V": 16
         "other": 32"#);
-    let expected = "Expected a YAML map of size 1 while parsing variant Variant but was size 2";
+    let expected = "Expected a YAML map of size 1 while parsing variant \
+                    Variant but was size 2";
     test_error::<Variant>(yaml, expected);
 }
 
@@ -92,6 +93,7 @@ fn test_variant_not_a_map() {
     let yaml = indoc!(r#"
         ---
         - "V""#);
-    let expected = "Expected a YAML map or string while parsing variant Variant";
+    let expected = "Expected a YAML map or string while parsing variant \
+                    Variant";
     test_error::<Variant>(yaml, expected);
 }

@@ -13,7 +13,7 @@ use std::fmt::Debug;
 use std::collections::BTreeMap;
 
 fn test_de<T>(yaml: &str, expected: T)
-    where T: serde::Deserialize + PartialEq + Debug
+    where T: serde::Deserialize + PartialEq + Debug,
 {
     let deserialized: T = serde_yaml::from_str(yaml).unwrap();
     assert_eq!(expected, deserialized);
@@ -48,6 +48,10 @@ fn test_option() {
         ---
         b:
         c: true");
-    let expected = Data { a: None, b: None, c: Some(true) };
+    let expected = Data {
+        a: None,
+        b: None,
+        c: Some(true),
+    };
     test_de(yaml, expected);
 }

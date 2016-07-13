@@ -13,28 +13,10 @@
 extern crate serde;
 extern crate yaml_rust;
 
-pub use self::de::{
-    Deserializer,
-    from_str,
-    from_iter,
-    from_reader,
-    from_slice,
-};
-pub use self::ser::{
-    Serializer,
-    to_writer,
-    to_vec,
-    to_string,
-};
-pub use self::value::{
-    Value,
-    to_value,
-    from_value,
-};
-pub use self::error::{
-    Error,
-    Result,
-};
+pub use self::de::{Deserializer, from_iter, from_reader, from_slice, from_str};
+pub use self::ser::{Serializer, to_string, to_vec, to_writer};
+pub use self::value::{Value, from_value, to_value};
+pub use self::error::{Error, Result};
 
 pub mod de;
 pub mod ser;

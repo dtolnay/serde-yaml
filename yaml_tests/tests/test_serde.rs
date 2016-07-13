@@ -13,7 +13,7 @@ use std::fmt::Debug;
 use std::collections::BTreeMap;
 
 fn test_serde<T>(thing: T, yaml: &str)
-    where T: serde::Serialize + serde::Deserialize + PartialEq + Debug
+    where T: serde::Serialize + serde::Deserialize + PartialEq + Debug,
 {
     let serialized = serde_yaml::to_string(&thing).unwrap();
     assert_eq!(yaml, serialized);
@@ -71,7 +71,11 @@ fn test_basic_struct() {
         y: String,
         z: bool,
     }
-    let thing = Basic{x: -4, y: String::from("hi"), z: true};
+    let thing = Basic {
+        x: -4,
+        y: String::from("hi"),
+        z: true,
+    };
     let yaml = indoc!(r#"
         ---
         "x": -4
@@ -90,7 +94,11 @@ fn test_nested_struct() {
     struct Inner {
         v: u16,
     }
-    let thing = Outer{inner: Inner{v: 512}};
+    let thing = Outer {
+        inner: Inner {
+            v: 512,
+        },
+    };
     let yaml = indoc!(r#"
         ---
         "inner": 
@@ -141,7 +149,9 @@ fn test_newtype_struct() {
     }
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct NewType(OriginalType);
-    let thing = NewType(OriginalType{v: 1});
+    let thing = NewType(OriginalType {
+        v: 1,
+    });
     let yaml = indoc!(r#"
         ---
         "v": 1"#);
@@ -181,9 +191,17 @@ fn test_tuple_variant() {
 fn test_struct_variant() {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     enum Variant {
-        Color{r: u8, g: u8, b: u8},
+        Color {
+            r: u8,
+            g: u8,
+            b: u8,
+        },
     }
-    let thing = Variant::Color{r: 32, g: 64, b: 96};
+    let thing = Variant::Color {
+        r: 32,
+        g: 64,
+        b: 96,
+    };
     let yaml = indoc!(r#"
         ---
         "Color": 

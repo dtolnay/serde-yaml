@@ -10,7 +10,7 @@ pub use yaml_rust::Yaml as Value;
 
 use serde::ser::Serialize;
 use serde::de::Deserialize;
-use super::{Serializer, Deserializer, Result};
+use super::{Deserializer, Result, Serializer};
 
 /// Shortcut function to encode a `T` into a YAML `Value`.
 ///
@@ -20,7 +20,7 @@ use super::{Serializer, Deserializer, Result};
 /// assert_eq!(val, Value::String("foo".to_owned()))
 /// ```
 pub fn to_value<T: ?Sized>(value: &T) -> Value
-    where T: Serialize
+    where T: Serialize,
 {
     let mut yaml = Value::Null;
     {
@@ -38,7 +38,7 @@ pub fn to_value<T: ?Sized>(value: &T) -> Value
 /// assert_eq!("foo", from_value::<String>(val).unwrap());
 /// ```
 pub fn from_value<T>(value: Value) -> Result<T>
-    where T: Deserialize
+    where T: Deserialize,
 {
     let mut de = Deserializer::new(&value);
     Deserialize::deserialize(&mut de)

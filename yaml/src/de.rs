@@ -60,7 +60,7 @@ impl<'a> de::SeqVisitor for SeqVisitor<'a> {
             None => Ok(None),
             Some(ref t) => {
                 Deserialize::deserialize(&mut Deserializer::new(t)).map(Some)
-            },
+            }
         }
     }
 
@@ -87,7 +87,7 @@ impl<'a> MapVisitor<'a> {
 
 impl<'a> de::MapVisitor for MapVisitor<'a> {
     type Error = Error;
-    
+
     fn visit_key<K>(&mut self) -> Result<Option<K>>
         where K: Deserialize,
     {
@@ -96,7 +96,7 @@ impl<'a> de::MapVisitor for MapVisitor<'a> {
             Some((ref k, ref v)) => {
                 self.v = Some(v);
                 Deserialize::deserialize(&mut Deserializer::new(k)).map(Some)
-            },
+            }
         }
     }
 
@@ -128,8 +128,10 @@ impl<'a> de::MapVisitor for MapVisitor<'a> {
                 Err(de::Error::missing_field(self.0))
             }
 
-            fn deserialize_option<V>(&mut self,
-                                     mut visitor: V) -> Result<V::Value>
+            fn deserialize_option<V>(
+                &mut self,
+                mut visitor: V
+            ) -> Result<V::Value>
                 where V: de::Visitor,
             {
                 visitor.visit_none()
@@ -157,11 +159,11 @@ impl<'a> VariantVisitor<'a> {
     }
 }
 
-impl <'a> de::VariantVisitor for VariantVisitor<'a> {
+impl<'a> de::VariantVisitor for VariantVisitor<'a> {
     type Error = Error;
 
     fn visit_variant<V>(&mut self) -> Result<V>
-        where V: Deserialize
+        where V: Deserialize,
     {
         Deserialize::deserialize(&mut Deserializer::new(self.variant))
     }
@@ -176,20 +178,22 @@ impl <'a> de::VariantVisitor for VariantVisitor<'a> {
         Deserialize::deserialize(&mut Deserializer::new(self.content))
     }
 
-    fn visit_tuple<V>(&mut self,
-                      _len: usize,
-                      visitor: V) -> Result<V::Value>
+    fn visit_tuple<V>(&mut self, _len: usize, visitor: V) -> Result<V::Value>
         where V: de::Visitor,
     {
-        de::Deserializer::deserialize(&mut Deserializer::new(self.content), visitor)
+        de::Deserializer::deserialize(&mut Deserializer::new(self.content),
+                                      visitor)
     }
 
-    fn visit_struct<V>(&mut self,
-                       _fields: &'static [&'static str],
-                       visitor: V) -> Result<V::Value>
+    fn visit_struct<V>(
+        &mut self,
+        _fields: &'static [&'static str],
+        visitor: V
+    ) -> Result<V::Value>
         where V: de::Visitor,
     {
-        de::Deserializer::deserialize(&mut Deserializer::new(self.content), visitor)
+        de::Deserializer::deserialize(&mut Deserializer::new(self.content),
+                                      visitor)
     }
 }
 
@@ -201,7 +205,8 @@ impl<'a> de::Deserializer for Deserializer<'a> {
     {
         match *self.doc {
             Yaml::Integer(i) => visitor.visit_i64(i),
-            Yaml::Real(ref s) | Yaml::String(ref s) => visitor.visit_str(s),
+            Yaml::Real(ref s) |
+            Yaml::String(ref s) => visitor.visit_str(s),
             Yaml::Boolean(b) => visitor.visit_bool(b),
             Yaml::Array(ref seq) => visitor.visit_seq(SeqVisitor::new(seq)),
             Yaml::Hash(ref hash) => visitor.visit_map(MapVisitor::new(hash)),
@@ -213,7 +218,7 @@ impl<'a> de::Deserializer for Deserializer<'a> {
                 // conversion is invalid. Both of these are unexpected in our
                 // usage.
                 panic!("bad value")
-            },
+            }
         }
     }
 
@@ -228,9 +233,11 @@ impl<'a> de::Deserializer for Deserializer<'a> {
     }
 
     /// Parses a newtype struct as the underlying value.
-    fn deserialize_newtype_struct<V>(&mut self,
-                               _name: &str,
-                               mut visitor: V) -> Result<V::Value>
+    fn deserialize_newtype_struct<V>(
+        &mut self,
+        _name: &str,
+        mut visitor: V
+    ) -> Result<V::Value>
         where V: de::Visitor,
     {
         visitor.visit_newtype_struct(self)
@@ -239,10 +246,12 @@ impl<'a> de::Deserializer for Deserializer<'a> {
     /// Parses an enum as a single key:value pair where the key identifies the
     /// variant and the value gives the content. A String will also parse correctly
     /// to a unit enum value.
-    fn deserialize_enum<V>(&mut self,
-                     name: &str,
-                     _variants: &'static [&'static str],
-                     mut visitor: V) -> Result<V::Value>
+    fn deserialize_enum<V>(
+        &mut self,
+        name: &str,
+        _variants: &'static [&'static str],
+        mut visitor: V
+    ) -> Result<V::Value>
         where V: de::EnumVisitor,
     {
         match *self.doc {
@@ -252,20 +261,21 @@ impl<'a> de::Deserializer for Deserializer<'a> {
                     let (variant, content) = entry;
                     visitor.visit(VariantVisitor::new(variant, content))
                 } else {
-                    Err(Error::VariantMapWrongSize(String::from(name), hash.len()))
+                    Err(Error::VariantMapWrongSize(String::from(name),
+                                                   hash.len()))
                 }
-            },
+            }
             ref ystr @ Yaml::String(_) => {
                 visitor.visit(VariantVisitor::new(ystr, &Yaml::Null))
-            },
-            _ => Err(Error::VariantNotAMapOrString(String::from(name)))
+            }
+            _ => Err(Error::VariantNotAMapOrString(String::from(name))),
         }
     }
 }
 
 /// Decodes a YAML value from a `&str`.
 pub fn from_str<T>(s: &str) -> Result<T>
-    where T: Deserialize
+    where T: Deserialize,
 {
     let docs = try!(YamlLoader::load_from_str(s));
     match docs.len() {
@@ -273,13 +283,13 @@ pub fn from_str<T>(s: &str) -> Result<T>
         1 => {
             let doc = &docs[0];
             Deserialize::deserialize(&mut Deserializer::new(doc))
-        },
+        }
         n => Err(Error::TooManyDocuments(n)),
     }
 }
 
 pub fn from_iter<I, T>(iter: I) -> Result<T>
-    where I: Iterator<Item=io::Result<u8>>,
+    where I: Iterator<Item = io::Result<u8>>,
           T: Deserialize,
 {
     let bytes: Vec<u8> = try!(iter.collect());
@@ -294,7 +304,7 @@ pub fn from_reader<R, T>(rdr: R) -> Result<T>
 }
 
 pub fn from_slice<T>(v: &[u8]) -> Result<T>
-    where T: Deserialize
+    where T: Deserialize,
 {
     from_iter(v.iter().map(|byte| Ok(*byte)))
 }
