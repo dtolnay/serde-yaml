@@ -21,20 +21,23 @@ use serde::ser;
 use super::error::{Error, Result};
 
 /// A structure for serializing a Rust value into a YAML value.
-pub struct Serializer<'a> {
+pub struct Serializer {
     /// The YAML value to hold the result.
-    doc: &'a mut Yaml,
+    doc: Yaml,
 }
 
-impl<'a> Serializer<'a> {
-    pub fn new(doc: &'a mut Yaml) -> Self {
+impl Serializer {
+    pub fn new() -> Self {
         Serializer {
-            doc: doc,
+            doc: Yaml::Null,
         }
+    }
+    pub fn take(self) -> Yaml {
+        self.doc
     }
 }
 
-impl<'a> ser::Serializer for Serializer<'a> {
+impl ser::Serializer for Serializer {
     type Error = Error;
     type SeqState = ();
     type TupleState = ();
@@ -45,7 +48,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
     type StructVariantState = &'static str;
 
     fn serialize_bool(&mut self, v: bool) -> Result<()> {
-        *self.doc = Yaml::Boolean(v);
+        self.doc = Yaml::Boolean(v);
         Ok(())
     }
 
@@ -82,7 +85,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
     }
 
     fn serialize_i64(&mut self, v: i64) -> Result<()> {
-        *self.doc = Yaml::Integer(v);
+        self.doc = Yaml::Integer(v);
         Ok(())
     }
 
@@ -91,32 +94,32 @@ impl<'a> ser::Serializer for Serializer<'a> {
     }
 
     fn serialize_f64(&mut self, v: f64) -> Result<()> {
-        *self.doc = Yaml::Real(v.to_string());
+        self.doc = Yaml::Real(v.to_string());
         Ok(())
     }
 
     fn serialize_f32(&mut self, v: f32) -> Result<()> {
-        *self.doc = Yaml::Real(v.to_string());
+        self.doc = Yaml::Real(v.to_string());
         Ok(())
     }
 
     fn serialize_char(&mut self, value: char) -> Result<()> {
-        *self.doc = Yaml::String(value.to_string());
+        self.doc = Yaml::String(value.to_string());
         Ok(())
     }
 
     fn serialize_str(&mut self, value: &str) -> Result<()> {
-        *self.doc = Yaml::String(String::from(value));
+        self.doc = Yaml::String(String::from(value));
         Ok(())
     }
 
     fn serialize_unit(&mut self) -> Result<()> {
-        *self.doc = Yaml::Null;
+        self.doc = Yaml::Null;
         Ok(())
     }
 
     fn serialize_unit_struct(&mut self, _name: &'static str) -> Result<()> {
-        *self.doc = Yaml::Null;
+        self.doc = Yaml::Null;
         Ok(())
     }
 
@@ -139,7 +142,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
             None => yaml::Array::new(),
             Some(len) => yaml::Array::with_capacity(len),
         };
-        *self.doc = Yaml::Array(vec);
+        self.doc = Yaml::Array(vec);
         Ok(())
     }
 
@@ -150,7 +153,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
     fn serialize_seq_elt<T>(&mut self, _: &mut(), elem: T) -> Result<()>
         where T: ser::Serialize,
     {
-        if let Yaml::Array(ref mut vec) = *self.doc {
+        if let Yaml::Array(ref mut vec) = self.doc {
             vec.push(try!(to_yaml(elem)));
         } else {
             panic!("bad call to serialize_seq_elt");
@@ -174,7 +177,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
 
     fn serialize_map(&mut self, _len: Option<usize>) -> Result<()>
     {
-        *self.doc = Yaml::Hash(yaml::Hash::new());
+        self.doc = Yaml::Hash(yaml::Hash::new());
         Ok(())
     }
 
@@ -186,7 +189,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
         where K: ser::Serialize,
               V: ser::Serialize,
     {
-        if let Yaml::Hash(ref mut map) = *self.doc {
+        if let Yaml::Hash(ref mut map) = self.doc {
             map.insert(try!(to_yaml(key)), try!(to_yaml(value)));
         } else {
             panic!("bad call to serialize_map_elt");
@@ -230,7 +233,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
         _variant_index: usize,
         variant: &str
     ) -> Result<()> {
-        *self.doc = Yaml::String(String::from(variant));
+        self.doc = Yaml::String(String::from(variant));
         Ok(())
     }
 
@@ -254,7 +257,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
     ) -> Result<()>
         where T: ser::Serialize,
     {
-        *self.doc = singleton_hash(try!(to_yaml(variant)),
+        self.doc = singleton_hash(try!(to_yaml(variant)),
                                    try!(to_yaml(value)));
         Ok(())
     }
@@ -278,7 +281,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
         &mut self,
         variant: &'static str,
     ) -> Result<()> {
-        *self.doc = singleton_hash(try!(to_yaml(variant)), ::std::mem::replace(&mut self.doc, Yaml::Null));
+        self.doc = singleton_hash(try!(to_yaml(variant)), ::std::mem::replace(&mut self.doc, Yaml::Null));
         Ok(())
     }
 
@@ -301,7 +304,7 @@ impl<'a> ser::Serializer for Serializer<'a> {
         &mut self,
         variant: &'static str,
     ) -> Result<()> {
-        *self.doc = singleton_hash(try!(to_yaml(variant)), ::std::mem::replace(&mut self.doc, Yaml::Null));
+        self.doc = singleton_hash(try!(to_yaml(variant)), ::std::mem::replace(&mut self.doc, Yaml::Null));
         Ok(())
     }
 
@@ -365,9 +368,9 @@ impl<'a, W> fmt::Write for FmtToIoWriter<'a, W>
 fn to_yaml<T>(elem: T) -> Result<Yaml>
     where T: ser::Serialize,
 {
-    let mut result = Yaml::Null;
-    try!(elem.serialize(&mut Serializer::new(&mut result)));
-    Ok(result)
+    let mut ser = Serializer::new();
+    try!(elem.serialize(&mut ser));
+    Ok(ser.take())
 }
 
 fn singleton_hash(k: Yaml, v: Yaml) -> Yaml {

@@ -22,12 +22,9 @@ use super::{Deserializer, Result, Serializer};
 pub fn to_value<T: ?Sized>(value: &T) -> Value
     where T: Serialize,
 {
-    let mut yaml = Value::Null;
-    {
-        let mut ser = Serializer::new(&mut yaml);
-        value.serialize(&mut ser).unwrap();
-    }
-    yaml
+    let mut ser = Serializer::new();
+    value.serialize(&mut ser).unwrap();
+    ser.take()
 }
 
 /// Shortcut function to decode a YAML `Value` into a `T`.
