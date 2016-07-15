@@ -36,10 +36,49 @@ impl<'a> Serializer<'a> {
 
 impl<'a> ser::Serializer for Serializer<'a> {
     type Error = Error;
+    type SeqState = ();
+    type TupleState = ();
+    type TupleStructState = ();
+    type TupleVariantState = &'static str;
+    type MapState = ();
+    type StructState = ();
+    type StructVariantState = &'static str;
 
     fn serialize_bool(&mut self, v: bool) -> Result<()> {
         *self.doc = Yaml::Boolean(v);
         Ok(())
+    }
+
+    fn serialize_isize(&mut self, v: isize) -> Result<()> {
+        self.serialize_u64(v as u64)
+    }
+
+    fn serialize_usize(&mut self, v: usize) -> Result<()> {
+        self.serialize_u64(v as u64)
+    }
+
+    fn serialize_i8(&mut self, v: i8) -> Result<()> {
+        self.serialize_u64(v as u64)
+    }
+
+    fn serialize_u8(&mut self, v: u8) -> Result<()> {
+        self.serialize_u64(v as u64)
+    }
+
+    fn serialize_i16(&mut self, v: i16) -> Result<()> {
+        self.serialize_u64(v as u64)
+    }
+
+    fn serialize_u16(&mut self, v: u16) -> Result<()> {
+        self.serialize_u64(v as u64)
+    }
+
+    fn serialize_i32(&mut self, v: i32) -> Result<()> {
+        self.serialize_u64(v as u64)
+    }
+
+    fn serialize_u32(&mut self, v: u32) -> Result<()> {
+        self.serialize_u64(v as u64)
     }
 
     fn serialize_i64(&mut self, v: i64) -> Result<()> {
@@ -56,12 +95,27 @@ impl<'a> ser::Serializer for Serializer<'a> {
         Ok(())
     }
 
+    fn serialize_f32(&mut self, v: f32) -> Result<()> {
+        *self.doc = Yaml::Real(v.to_string());
+        Ok(())
+    }
+
+    fn serialize_char(&mut self, value: char) -> Result<()> {
+        *self.doc = Yaml::String(value.to_string());
+        Ok(())
+    }
+
     fn serialize_str(&mut self, value: &str) -> Result<()> {
         *self.doc = Yaml::String(String::from(value));
         Ok(())
     }
 
     fn serialize_unit(&mut self) -> Result<()> {
+        *self.doc = Yaml::Null;
+        Ok(())
+    }
+
+    fn serialize_unit_struct(&mut self, _name: &'static str) -> Result<()> {
         *self.doc = Yaml::Null;
         Ok(())
     }
@@ -76,6 +130,10 @@ impl<'a> ser::Serializer for Serializer<'a> {
         value.serialize(self)
     }
 
+    fn serialize_seq_fixed_size(&mut self, len: usize) -> Result<()> {
+        self.serialize_seq(Some(len))
+    }
+
     fn serialize_seq(&mut self, len: Option<usize>) -> Result<()> {
         let vec = match len {
             None => yaml::Array::new(),
@@ -85,11 +143,11 @@ impl<'a> ser::Serializer for Serializer<'a> {
         Ok(())
     }
 
-    fn serialize_seq_end(&mut self, _len: Option<usize>) -> Result<()> {
+    fn serialize_seq_end(&mut self, _: ()) -> Result<()> {
         Ok(())
     }
 
-    fn serialize_seq_elt<T>(&mut self, elem: T) -> Result<()>
+    fn serialize_seq_elt<T>(&mut self, _: &mut(), elem: T) -> Result<()>
         where T: ser::Serialize,
     {
         if let Yaml::Array(ref mut vec) = *self.doc {
@@ -100,17 +158,31 @@ impl<'a> ser::Serializer for Serializer<'a> {
         Ok(())
     }
 
+    fn serialize_tuple(&mut self, len: usize) -> Result<()> {
+        self.serialize_seq(Some(len))
+    }
+
+    fn serialize_tuple_end(&mut self, _: ()) -> Result<()> {
+        Ok(())
+    }
+
+    fn serialize_tuple_elt<T>(&mut self, state: &mut(), elem: T) -> Result<()>
+        where T: ser::Serialize,
+    {
+        self.serialize_seq_elt(state, elem)
+    }
+
     fn serialize_map(&mut self, _len: Option<usize>) -> Result<()>
     {
         *self.doc = Yaml::Hash(yaml::Hash::new());
         Ok(())
     }
 
-    fn serialize_map_end(&mut self, _len: Option<usize>) -> Result<()> {
+    fn serialize_map_end(&mut self, _: ()) -> Result<()> {
         Ok(())
     }
 
-    fn serialize_map_elt<K, V>(&mut self, key: K, value: V) -> Result<()>
+    fn serialize_map_elt<K, V>(&mut self, _: &mut (), key: K, value: V) -> Result<()>
         where K: ser::Serialize,
               V: ser::Serialize,
     {
@@ -120,6 +192,36 @@ impl<'a> ser::Serializer for Serializer<'a> {
             panic!("bad call to serialize_map_elt");
         }
         Ok(())
+    }
+
+    fn serialize_struct(&mut self, _name: &'static str, len: usize) -> Result<()>
+    {
+        self.serialize_map(Some(len))
+    }
+
+    fn serialize_struct_end(&mut self, _: ()) -> Result<()> {
+        Ok(())
+    }
+
+    fn serialize_struct_elt<V>(&mut self, state: &mut (), key: &'static str, value: V) -> Result<()>
+        where V: ser::Serialize,
+    {
+        self.serialize_map_elt(state, key, value)
+    }
+
+    fn serialize_tuple_struct(&mut self, _name: &'static str, len: usize) -> Result<()>
+    {
+        self.serialize_tuple(len)
+    }
+
+    fn serialize_tuple_struct_end(&mut self, _: ()) -> Result<()> {
+        Ok(())
+    }
+
+    fn serialize_tuple_struct_elt<V>(&mut self, state: &mut (), value: V) -> Result<()>
+        where V: ser::Serialize,
+    {
+        self.serialize_tuple_elt(state, value)
     }
 
     fn serialize_unit_variant(
@@ -157,26 +259,58 @@ impl<'a> ser::Serializer for Serializer<'a> {
         Ok(())
     }
 
+    fn serialize_tuple_variant(
+        &mut self,
+        _enum: &'static str,
+        _idx: usize,
+        variant: &'static str,
+        len: usize,
+    ) -> Result<&'static str> {
+        try!(self.serialize_tuple(len));
+        Ok(variant)
+    }
+
+    fn serialize_tuple_variant_elt<V: ser::Serialize>(&mut self, _: &mut &'static str, v: V) -> Result<()> {
+        self.serialize_tuple_elt(&mut (), v)
+    }
+
     fn serialize_tuple_variant_end(
         &mut self,
-        _name: &str,
-        _variant_index: usize,
-        variant: &str,
-        _len: usize,
+        variant: &'static str,
     ) -> Result<()> {
         *self.doc = singleton_hash(try!(to_yaml(variant)), ::std::mem::replace(&mut self.doc, Yaml::Null));
         Ok(())
     }
 
+    fn serialize_struct_variant(
+        &mut self,
+        _enum: &'static str,
+        _idx: usize,
+        variant: &'static str,
+        len: usize,
+    ) -> Result<&'static str> {
+        try!(self.serialize_struct(variant, len));
+        Ok(variant)
+    }
+
+    fn serialize_struct_variant_elt<V: ser::Serialize>(&mut self, _: &mut &'static str, field: &'static str, v: V) -> Result<()> {
+        self.serialize_struct_elt(&mut (), field, v)
+    }
+
     fn serialize_struct_variant_end(
         &mut self,
-        _name: &str,
-        _variant_index: usize,
-        variant: &str,
-        _len: usize,
+        variant: &'static str,
     ) -> Result<()> {
         *self.doc = singleton_hash(try!(to_yaml(variant)), ::std::mem::replace(&mut self.doc, Yaml::Null));
         Ok(())
+    }
+
+    fn serialize_bytes(&mut self, value: &[u8]) -> Result<()> {
+        let mut state = try!(self.serialize_seq(Some(value.len())));
+        for c in value {
+            try!(self.serialize_seq_elt(&mut state, c));
+        }
+        self.serialize_seq_end(state)
     }
 }
 
