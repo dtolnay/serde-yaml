@@ -18,6 +18,9 @@ pub use self::ser::{Serializer, to_string, to_vec, to_writer};
 pub use self::value::{Value, from_value, to_value};
 pub use self::error::{Error, Result};
 
+#[macro_use]
+mod forward;
+
 pub mod de;
 pub mod ser;
 pub mod value;
