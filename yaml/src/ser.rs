@@ -181,7 +181,11 @@ impl ser::Serializer for Serializer {
         })
     }
 
-    fn serialize_seq_elt<T>(&mut self, state: &mut yaml::Array, elem: T) -> Result<()>
+    fn serialize_seq_elt<T>(
+        &mut self,
+        state: &mut yaml::Array,
+        elem: T
+    ) -> Result<()>
         where T: ser::Serialize,
     {
         state.push(try!(to_yaml(elem)));
@@ -201,7 +205,11 @@ impl ser::Serializer for Serializer {
         self.serialize_seq(Some(len))
     }
 
-    fn serialize_tuple_elt<T>(&mut self, state: &mut yaml::Array, elem: T) -> Result<()>
+    fn serialize_tuple_elt<T>(
+        &mut self,
+        state: &mut yaml::Array,
+        elem: T
+    ) -> Result<()>
         where T: ser::Serialize,
     {
         self.serialize_seq_elt(state, elem)
