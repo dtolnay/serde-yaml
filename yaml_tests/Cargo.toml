@@ -1,6 +1,6 @@
 [package]
 name = "serde_yaml_tests"
-version = "0.3.0"
+version = "0.4.0-rc1"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
 build = "build.rs"
 
@@ -15,7 +15,7 @@ indoc = "*"
 
 [dependencies]
 serde = "0.8.0-rc3"
-serde_yaml = { version = "*", path = "../yaml" }
+serde_yaml = { path = "../yaml" }
 serde_macros = { version = "0.8.0-rc3", optional = true }
 indoc = "*"
 
