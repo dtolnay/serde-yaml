@@ -160,8 +160,7 @@ impl ser::Serializer for Serializer {
     ) -> Result<()>
         where T: ser::Serialize,
     {
-        self.doc = singleton_hash(try!(to_yaml(variant)),
-                                  try!(to_yaml(value)));
+        self.doc = singleton_hash(try!(to_yaml(variant)), try!(to_yaml(value)));
         Ok(())
     }
 
@@ -184,7 +183,7 @@ impl ser::Serializer for Serializer {
         Ok(())
     }
 
-    fn serialize_seq_elt<T>(&mut self, _state: &mut(), elem: T) -> Result<()>
+    fn serialize_seq_elt<T>(&mut self, _state: &mut (), elem: T) -> Result<()>
         where T: ser::Serialize,
     {
         if let Yaml::Array(ref mut vec) = self.doc {
@@ -207,7 +206,7 @@ impl ser::Serializer for Serializer {
         self.serialize_seq(Some(len))
     }
 
-    fn serialize_tuple_elt<T>(&mut self, state: &mut(), elem: T) -> Result<()>
+    fn serialize_tuple_elt<T>(&mut self, state: &mut (), elem: T) -> Result<()>
         where T: ser::Serialize,
     {
         self.serialize_seq_elt(state, elem)
@@ -217,12 +216,19 @@ impl ser::Serializer for Serializer {
         Ok(())
     }
 
-    fn serialize_tuple_struct(&mut self, _name: &'static str, len: usize) -> Result<()>
-    {
+    fn serialize_tuple_struct(
+        &mut self,
+        _name: &'static str,
+        len: usize
+    ) -> Result<()> {
         self.serialize_tuple(len)
     }
 
-    fn serialize_tuple_struct_elt<V>(&mut self, state: &mut (), value: V) -> Result<()>
+    fn serialize_tuple_struct_elt<V>(
+        &mut self,
+        state: &mut (),
+        value: V
+    ) -> Result<()>
         where V: ser::Serialize,
     {
         self.serialize_tuple_elt(state, value)
@@ -237,31 +243,40 @@ impl ser::Serializer for Serializer {
         _enum: &'static str,
         _idx: usize,
         variant: &'static str,
-        len: usize,
+        len: usize
     ) -> Result<&'static str> {
         try!(self.serialize_tuple(len));
         Ok(variant)
     }
 
-    fn serialize_tuple_variant_elt<V: ser::Serialize>(&mut self, _state: &mut &'static str, v: V) -> Result<()> {
+    fn serialize_tuple_variant_elt<V: ser::Serialize>(
+        &mut self,
+        _state: &mut &'static str,
+        v: V
+    ) -> Result<()> {
         self.serialize_tuple_elt(&mut (), v)
     }
 
     fn serialize_tuple_variant_end(
         &mut self,
-        variant: &'static str,
+        variant: &'static str
     ) -> Result<()> {
-        self.doc = singleton_hash(try!(to_yaml(variant)), mem::replace(&mut self.doc, Yaml::Null));
+        self.doc = singleton_hash(try!(to_yaml(variant)),
+                                  mem::replace(&mut self.doc, Yaml::Null));
         Ok(())
     }
 
-    fn serialize_map(&mut self, _len: Option<usize>) -> Result<()>
-    {
+    fn serialize_map(&mut self, _len: Option<usize>) -> Result<()> {
         self.doc = Yaml::Hash(yaml::Hash::new());
         Ok(())
     }
 
-    fn serialize_map_elt<K, V>(&mut self, _state: &mut (), key: K, value: V) -> Result<()>
+    fn serialize_map_elt<K, V>(
+        &mut self,
+        _state: &mut (),
+        key: K,
+        value: V
+    ) -> Result<()>
         where K: ser::Serialize,
               V: ser::Serialize,
     {
@@ -277,12 +292,20 @@ impl ser::Serializer for Serializer {
         Ok(())
     }
 
-    fn serialize_struct(&mut self, _name: &'static str, len: usize) -> Result<()>
-    {
+    fn serialize_struct(
+        &mut self,
+        _name: &'static str,
+        len: usize
+    ) -> Result<()> {
         self.serialize_map(Some(len))
     }
 
-    fn serialize_struct_elt<V>(&mut self, state: &mut (), key: &'static str, value: V) -> Result<()>
+    fn serialize_struct_elt<V>(
+        &mut self,
+        state: &mut (),
+        key: &'static str,
+        value: V
+    ) -> Result<()>
         where V: ser::Serialize,
     {
         self.serialize_map_elt(state, key, value)
@@ -297,21 +320,27 @@ impl ser::Serializer for Serializer {
         _enum: &'static str,
         _idx: usize,
         variant: &'static str,
-        len: usize,
+        len: usize
     ) -> Result<&'static str> {
         try!(self.serialize_struct(variant, len));
         Ok(variant)
     }
 
-    fn serialize_struct_variant_elt<V: ser::Serialize>(&mut self, _state: &mut &'static str, field: &'static str, v: V) -> Result<()> {
+    fn serialize_struct_variant_elt<V: ser::Serialize>(
+        &mut self,
+        _state: &mut &'static str,
+        field: &'static str,
+        v: V
+    ) -> Result<()> {
         self.serialize_struct_elt(&mut (), field, v)
     }
 
     fn serialize_struct_variant_end(
         &mut self,
-        variant: &'static str,
+        variant: &'static str
     ) -> Result<()> {
-        self.doc = singleton_hash(try!(to_yaml(variant)), mem::replace(&mut self.doc, Yaml::Null));
+        self.doc = singleton_hash(try!(to_yaml(variant)),
+                                  mem::replace(&mut self.doc, Yaml::Null));
         Ok(())
     }
 }
