@@ -10,8 +10,7 @@
 //!
 //! This module provides YAML serialization with the type `Serializer`.
 
-use std::fmt;
-use std::io;
+use std::{fmt, io, mem};
 
 use yaml_rust::{Yaml, YamlEmitter};
 use yaml_rust::yaml;
@@ -252,7 +251,7 @@ impl ser::Serializer for Serializer {
         &mut self,
         variant: &'static str,
     ) -> Result<()> {
-        self.doc = singleton_hash(try!(to_yaml(variant)), ::std::mem::replace(&mut self.doc, Yaml::Null));
+        self.doc = singleton_hash(try!(to_yaml(variant)), mem::replace(&mut self.doc, Yaml::Null));
         Ok(())
     }
 
@@ -312,7 +311,7 @@ impl ser::Serializer for Serializer {
         &mut self,
         variant: &'static str,
     ) -> Result<()> {
-        self.doc = singleton_hash(try!(to_yaml(variant)), ::std::mem::replace(&mut self.doc, Yaml::Null));
+        self.doc = singleton_hash(try!(to_yaml(variant)), mem::replace(&mut self.doc, Yaml::Null));
         Ok(())
     }
 }
