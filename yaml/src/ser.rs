@@ -244,11 +244,13 @@ impl ser::Serializer for Serializer {
         Ok((variant, state))
     }
 
-    fn serialize_tuple_variant_elt<V: ser::Serialize>(
+    fn serialize_tuple_variant_elt<V>(
         &mut self,
         state: &mut (&'static str, yaml::Array),
         v: V
-    ) -> Result<()> {
+    ) -> Result<()>
+        where V: ser::Serialize,
+    {
         self.serialize_seq_elt(&mut state.1, v)
     }
 
@@ -318,12 +320,14 @@ impl ser::Serializer for Serializer {
         Ok((variant, state))
     }
 
-    fn serialize_struct_variant_elt<V: ser::Serialize>(
+    fn serialize_struct_variant_elt<V>(
         &mut self,
         state: &mut (&'static str, yaml::Hash),
         field: &'static str,
         v: V
-    ) -> Result<()> {
+    ) -> Result<()>
+        where V: ser::Serialize,
+    {
         self.serialize_map_elt(&mut state.1, field, v)
     }
 
