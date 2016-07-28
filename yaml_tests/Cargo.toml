@@ -22,3 +22,6 @@ indoc = "*"
 [[test]]
 name = "test"
 path = "tests/test.rs"
+
+[replace]
+"serde:0.8.0-rc3" = { git = "https://github.com/serde-rs/serde" }

@@ -43,9 +43,9 @@ impl ser::Serializer for Serializer {
     type TupleState = yaml::Array;
     type TupleStructState = yaml::Array;
     type TupleVariantState = (&'static str, yaml::Array);
-    type MapState = yaml::Hash;
-    type StructState = yaml::Hash;
-    type StructVariantState = (&'static str, yaml::Hash);
+    type MapState = (Option<yaml::Yaml>, yaml::Hash);
+    type StructState = (Option<yaml::Yaml>, yaml::Hash);
+    type StructVariantState = (&'static str, (Option<yaml::Yaml>, yaml::Hash));
 
     fn serialize_bool(&mut self, v: bool) -> Result<()> {
         self.doc = Yaml::Boolean(v);
@@ -272,25 +272,40 @@ impl ser::Serializer for Serializer {
         Ok(())
     }
 
-    fn serialize_map(&mut self, _len: Option<usize>) -> Result<yaml::Hash> {
-        Ok(yaml::Hash::new())
+    fn serialize_map(&mut self, _len: Option<usize>) -> Result<(Option<yaml::Yaml>, yaml::Hash)> {
+        Ok((None, yaml::Hash::new()))
     }
 
-    fn serialize_map_elt<K, V>(
+    fn serialize_map_key<T>(
         &mut self,
-        state: &mut yaml::Hash,
-        key: K,
-        value: V
+        state: &mut (Option<yaml::Yaml>, yaml::Hash),
+        key: T
     ) -> Result<()>
-        where K: ser::Serialize,
-              V: ser::Serialize,
+        where T: ser::Serialize
     {
-        state.insert(try!(to_yaml(key)), try!(to_yaml(value)));
+        state.0 = Some(try!(to_yaml(key)));
         Ok(())
     }
 
-    fn serialize_map_end(&mut self, state: yaml::Hash) -> Result<()> {
-        self.doc = Yaml::Hash(state);
+    fn serialize_map_value<T>(
+        &mut self,
+        state: &mut (Option<yaml::Yaml>, yaml::Hash),
+        value: T
+    ) -> Result<()>
+        where T: ser::Serialize
+    {
+        match state.0.take() {
+            Some(key) => state.1.insert(key, try!(to_yaml(value))),
+            None => {
+                return Err(Error::Custom("serialize_map_value called without matching \
+                                          serialize_map_key call".to_owned()));
+            }
+        };
+        Ok(())
+    }
+
+    fn serialize_map_end(&mut self, state: (Option<yaml::Yaml>, yaml::Hash)) -> Result<()> {
+        self.doc = Yaml::Hash(state.1);
         Ok(())
     }
 
@@ -298,22 +313,23 @@ impl ser::Serializer for Serializer {
         &mut self,
         _name: &'static str,
         len: usize
-    ) -> Result<yaml::Hash> {
+    ) -> Result<(Option<yaml::Yaml>, yaml::Hash)> {
         self.serialize_map(Some(len))
     }
 
     fn serialize_struct_elt<V>(
         &mut self,
-        state: &mut yaml::Hash,
+        state: &mut (Option<yaml::Yaml>, yaml::Hash),
         key: &'static str,
         value: V
     ) -> Result<()>
         where V: ser::Serialize,
     {
-        self.serialize_map_elt(state, key, value)
+        try!(self.serialize_map_key(state, key));
+        self.serialize_map_value(state, value)
     }
 
-    fn serialize_struct_end(&mut self, state: yaml::Hash) -> Result<()> {
+    fn serialize_struct_end(&mut self, state: (Option<yaml::Yaml>, yaml::Hash)) -> Result<()> {
         self.serialize_map_end(state)
     }
 
@@ -323,25 +339,26 @@ impl ser::Serializer for Serializer {
         _idx: usize,
         variant: &'static str,
         len: usize
-    ) -> Result<(&'static str, yaml::Hash)> {
+    ) -> Result<(&'static str, (Option<yaml::Yaml>, yaml::Hash))> {
         let state = try!(self.serialize_map(Some(len)));
         Ok((variant, state))
     }
 
     fn serialize_struct_variant_elt<V>(
         &mut self,
-        state: &mut (&'static str, yaml::Hash),
+        state: &mut (&'static str, (Option<yaml::Yaml>, yaml::Hash)),
         field: &'static str,
         v: V
     ) -> Result<()>
         where V: ser::Serialize,
     {
-        self.serialize_map_elt(&mut state.1, field, v)
+        try!(self.serialize_map_key(&mut state.1, field));
+        self.serialize_map_value(&mut state.1, v)
     }
 
     fn serialize_struct_variant_end(
         &mut self,
-        state: (&'static str, yaml::Hash)
+        state: (&'static str, (Option<yaml::Yaml>, yaml::Hash))
     ) -> Result<()> {
         try!(self.serialize_map_end(state.1));
         self.doc = singleton_hash(try!(to_yaml(state.0)),

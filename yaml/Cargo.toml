@@ -16,3 +16,6 @@ preserve_order = ["yaml-rust/preserve_order"]
 clippy = { version = "^0.*", optional = true }
 serde = "0.8.0-rc3"
 yaml-rust = "^0.3.3"
+
+[replace]
+"serde:0.8.0-rc3" = { git = "https://github.com/serde-rs/serde" }
