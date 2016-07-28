@@ -1,6 +1,6 @@
 [package]
 name = "serde_yaml_tests"
-version = "0.4.0-rc1"
+version = "0.4.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
 build = "build.rs"
 
@@ -10,18 +10,15 @@ with-syntex = ["syntex", "serde_codegen", "indoc/with-syntex"]
 
 [build-dependencies]
 syntex = { version = "*", optional = true }
-serde_codegen = { version = "0.8.0-rc3", optional = true }
+serde_codegen = { version = "0.8.0", optional = true }
 indoc = "*"
 
 [dependencies]
-serde = "0.8.0-rc3"
+serde = "0.8.0"
 serde_yaml = { path = "../yaml" }
-serde_macros = { version = "0.8.0-rc3", optional = true }
+serde_macros = { version = "0.8.0", optional = true }
 indoc = "*"
 
 [[test]]
 name = "test"
 path = "tests/test.rs"
-
-[replace]
-"serde:0.8.0-rc3" = { git = "https://github.com/serde-rs/serde" }
