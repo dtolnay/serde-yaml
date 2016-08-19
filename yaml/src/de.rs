@@ -58,7 +58,7 @@ impl<'a> de::SeqVisitor for SeqVisitor<'a> {
     {
         match self.iter.next() {
             None => Ok(None),
-            Some(ref t) => {
+            Some(t) => {
                 Deserialize::deserialize(&mut Deserializer::new(t)).map(Some)
             }
         }
@@ -93,7 +93,7 @@ impl<'a> de::MapVisitor for MapVisitor<'a> {
     {
         match self.iter.next() {
             None => Ok(None),
-            Some((ref k, ref v)) => {
+            Some((k, v)) => {
                 self.v = Some(v);
                 Deserialize::deserialize(&mut Deserializer::new(k)).map(Some)
             }

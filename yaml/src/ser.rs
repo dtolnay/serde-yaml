@@ -37,6 +37,12 @@ impl Serializer {
     }
 }
 
+impl Default for Serializer {
+    fn default() -> Self {
+        Serializer::new()
+    }
+}
+
 impl ser::Serializer for Serializer {
     type Error = Error;
     type SeqState = yaml::Array;
