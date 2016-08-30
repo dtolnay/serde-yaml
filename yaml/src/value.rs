@@ -153,7 +153,12 @@ impl Value {
 impl From<Yaml> for Value {
     fn from(yaml: Yaml) -> Self {
         match yaml {
-            Yaml::Real(f) => Value::F64(f.parse().unwrap()),
+            Yaml::Real(f) => {
+                match f.parse() {
+                    Ok(f) => Value::F64(f),
+                    Err(_) => Value::String(f),
+                }
+            }
             Yaml::Integer(i) => Value::I64(i),
             Yaml::String(s) => Value::String(s),
             Yaml::Boolean(b) => Value::Bool(b),
