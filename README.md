@@ -1,9 +1,9 @@
-Serde YAML Serialization Library
-================================
+Serde YAML Serialization
+========================
 
 [![Build Status](https://api.travis-ci.org/dtolnay/serde-yaml.svg?branch=master)](https://travis-ci.org/dtolnay/serde-yaml)
 [![Latest Version](https://img.shields.io/crates/v/serde_yaml.svg)](https://crates.io/crates/serde_yaml)
-[![Rust Documentation](https://img.shields.io/crates/v/serde_yaml.svg?label=rustdoc)](https://dtolnay.github.io/serde-yaml/serde_yaml/)
+[![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://dtolnay.github.io/serde-yaml/serde_yaml/)
 
 This crate is a Rust library for using the [Serde](https://github.com/serde-rs/serde)
 serialization framework with data in [YAML](http://yaml.org) file format. This
@@ -12,13 +12,13 @@ which is a pure Rust YAML 1.2 implementation.
 
 ## Installation
 
-Version 0.2.x of this crate works with 0.7.x of Serde. Both can be found on
+Version 0.5.x of this crate works with 0.8.x of Serde. Both can be found on
 [crates.io](https://crates.io/crates/serde_yaml) with a `Cargo.toml` like:
 
 ```toml
 [dependencies]
-serde = "^0.7"
-serde_yaml = "^0.2"
+serde = "0.8"
+serde_yaml = "0.5"
 ```
 
 Release notes are available under [GitHub releases](https://github.com/dtolnay/serde-yaml/releases).
@@ -35,33 +35,36 @@ extern crate serde_yaml;
 use std::collections::BTreeMap;
 
 fn main() {
+    // You have some type.
     let mut map = BTreeMap::new();
     map.insert("x".to_string(), 1.0);
     map.insert("y".to_string(), 2.0);
 
+    // Serialize it to a YAML string.
     let s = serde_yaml::to_string(&map).unwrap();
     assert_eq!(s, "---\n\"x\": 1\n\"y\": 2");
 
+    // Deserialize it back to a Rust type.
     let deserialized_map: BTreeMap<String, f64> = serde_yaml::from_str(&s).unwrap();
     assert_eq!(map, deserialized_map);
 }
 ```
 
-It can also be used with Serde's automatic serialization library,
-`serde_macros`. First add this to `Cargo.toml`:
+It can also be used with Serde's serialization code generator, `serde_derive`.
+`serde_macros`.
 
 ```toml
 [dependencies]
-serde = "^0.7"
-serde_macros = "^0.7"
-serde_yaml = "^0.2"
+serde = "0.8"
+serde_derive = "0.8"
+serde_yaml = "0.5"
 ```
 
-Then use:
-
 ```rust
-#![feature(plugin)]
-#![plugin(serde_macros)]
+#![feature(proc_macro)]
+
+#[macro_use]
+extern crate serde_derive;
 
 extern crate serde;
 extern crate serde_yaml;
