@@ -6,8 +6,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![cfg_attr(not(feature = "with-syntex"), feature(custom_derive, plugin))]
-#![cfg_attr(not(feature = "with-syntex"), plugin(serde_macros, indoc))]
+#![cfg_attr(not(feature = "with-syntex"), feature(custom_derive, plugin, proc_macro))]
+#![cfg_attr(not(feature = "with-syntex"), plugin(indoc))]
+
+#![cfg(not(feature = "with-syntex"))]
+#[macro_use]
+extern crate serde_derive;
 
 extern crate serde;
 extern crate serde_yaml;

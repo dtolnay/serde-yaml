@@ -378,10 +378,13 @@ pub fn to_writer<W, T>(writer: &mut W, value: &T) -> Result<()>
           T: ser::Serialize,
 {
     let doc = try!(to_yaml(value));
-    let mut writer_adapter = FmtToIoWriter {
-        writer: writer,
-    };
-    try!(YamlEmitter::new(&mut writer_adapter).dump(&doc));
+    {
+        let mut writer_adapter = FmtToIoWriter {
+            writer: writer,
+        };
+        try!(YamlEmitter::new(&mut writer_adapter).dump(&doc));
+    }
+    try!(writer.flush());
     Ok(())
 }
 
@@ -412,9 +415,6 @@ impl<'a, W> fmt::Write for FmtToIoWriter<'a, W>
 {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         if self.writer.write(s.as_bytes()).is_err() {
-            return Err(fmt::Error);
-        }
-        if self.writer.flush().is_err() {
             return Err(fmt::Error);
         }
         Ok(())
