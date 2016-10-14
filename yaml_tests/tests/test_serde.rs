@@ -224,8 +224,8 @@ fn test_struct_variant() {
     let yaml = indoc!(r#"
         ---
         "Color": 
-          "b": 96
+          "r": 32
           "g": 64
-          "r": 32"#);
+          "b": 96"#);
     test_serde(thing, yaml);
 }
