@@ -1,6 +1,6 @@
 [package]
 name = "serde_yaml_tests"
-version = "0.4.1"
+version = "0.5.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
 build = "build.rs"
 
