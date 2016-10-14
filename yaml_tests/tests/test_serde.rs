@@ -229,3 +229,36 @@ fn test_struct_variant() {
           "b": 96"#);
     test_serde(thing, yaml);
 }
+
+#[test]
+fn test_value() {
+    use serde_yaml::{Mapping, Value};
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    pub struct GenericInstructions {
+        #[serde(rename="type")]
+        pub typ: String,
+        pub config: Value,
+    }
+    let thing = GenericInstructions {
+        typ: "primary".to_string(),
+        config: Value::Sequence(vec![
+            Value::Null,
+            Value::Bool(true),
+            Value::I64(65535),
+            Value::F64(0.54321),
+            Value::String("s".into()),
+            Value::Mapping(Mapping::new()),
+        ]),
+    };
+    let yaml = indoc!(r#"
+        ---
+        "type": "primary"
+        "config": 
+          - ~
+          - true
+          - 65535
+          - 0.54321
+          - "s"
+          - {}"#);
+    test_serde(thing, yaml);
+}
