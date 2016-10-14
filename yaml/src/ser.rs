@@ -378,13 +378,10 @@ pub fn to_writer<W, T>(writer: &mut W, value: &T) -> Result<()>
           T: ser::Serialize,
 {
     let doc = try!(to_yaml(value));
-    {
-        let mut writer_adapter = FmtToIoWriter {
-            writer: writer,
-        };
-        try!(YamlEmitter::new(&mut writer_adapter).dump(&doc));
-    }
-    try!(writer.flush());
+    let mut writer_adapter = FmtToIoWriter {
+        writer: writer,
+    };
+    try!(YamlEmitter::new(&mut writer_adapter).dump(&doc));
     Ok(())
 }
 
