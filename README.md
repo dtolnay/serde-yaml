@@ -1,5 +1,5 @@
-Serde YAML Serialization
-========================
+Serde YAML
+==========
 
 [![Build Status](https://api.travis-ci.org/dtolnay/serde-yaml.svg?branch=master)](https://travis-ci.org/dtolnay/serde-yaml)
 [![Latest Version](https://img.shields.io/crates/v/serde_yaml.svg)](https://crates.io/crates/serde_yaml)
@@ -10,9 +10,9 @@ serialization framework with data in [YAML](http://yaml.org) file format. This
 library does not reimplement a YAML parser; it uses [yaml-rust](https://github.com/chyh1990/yaml-rust)
 which is a pure Rust YAML 1.2 implementation.
 
-## Installation
+## Dependency
 
-Version 0.5.x of this crate works with 0.8.x of Serde. Both can be found on
+Version 0.5.\* of `serde_yaml` works with 0.8.\* of Serde. Both can be found on
 [crates.io](https://crates.io/crates/serde_yaml) with a `Cargo.toml` like:
 
 ```toml
@@ -50,8 +50,8 @@ fn main() {
 }
 ```
 
-It can also be used with Serde's serialization code generator, `serde_derive`.
-`serde_macros`.
+It can also be used with Serde's serialization code generator `serde_derive` to
+handle structs and enums defined in your own program.
 
 ```toml
 [dependencies]
