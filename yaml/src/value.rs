@@ -108,7 +108,7 @@ impl Value {
 
     pub fn as_str(&self) -> Option<&str> {
         match *self {
-            Value::String(ref s) => Some(&s),
+            Value::String(ref s) => Some(s),
             _ => None,
         }
     }
@@ -337,17 +337,17 @@ impl Eq for Value {}
 
 impl Hash for Value {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        match self {
-            &Value::Null => 0.hash(state),
-            &Value::Bool(b) => (1, b).hash(state),
-            &Value::I64(i) => (2, i).hash(state),
-            &Value::F64(_) => {
+        match *self {
+            Value::Null => 0.hash(state),
+            Value::Bool(b) => (1, b).hash(state),
+            Value::I64(i) => (2, i).hash(state),
+            Value::F64(_) => {
                 // you should feel bad for using f64 as a map key
                 3.hash(state);
             }
-            &Value::String(ref s) => (4, s).hash(state),
-            &Value::Sequence(ref seq) => (5, seq).hash(state),
-            &Value::Mapping(ref map) => (6, map).hash(state),
+            Value::String(ref s) => (4, s).hash(state),
+            Value::Sequence(ref seq) => (5, seq).hash(state),
+            Value::Mapping(ref map) => (6, map).hash(state),
         }
     }
 }
