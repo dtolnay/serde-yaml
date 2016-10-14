@@ -23,7 +23,7 @@ pub use self::error::{Error, Result};
 #[macro_use]
 mod forward;
 
-pub mod de;
-pub mod ser;
-pub mod value;
-pub mod error;
+mod de;
+mod ser;
+mod value;
+mod error;
