@@ -58,8 +58,8 @@ fn test_map() {
     thing.insert(String::from("y"), 2);
     let yaml = indoc!(r#"
         ---
-        "x": 1
-        "y": 2"#);
+        x: 1
+        y: 2"#);
     test_serde(thing, yaml);
 }
 
@@ -73,14 +73,14 @@ fn test_basic_struct() {
     }
     let thing = Basic {
         x: -4,
-        y: String::from("hi"),
+        y: String::from("hi\tquoted"),
         z: true,
     };
     let yaml = indoc!(r#"
         ---
-        "x": -4
-        "y": "hi"
-        "z": true"#);
+        x: -4
+        y: "hi\tquoted"
+        z: true"#);
     test_serde(thing, yaml);
 }
 
@@ -120,8 +120,8 @@ fn test_nested_struct() {
     };
     let yaml = indoc!(r#"
         ---
-        "inner": 
-          "v": 512"#);
+        inner: 
+          v: 512"#);
     test_serde(thing, yaml);
 }
 
@@ -156,7 +156,7 @@ fn test_unit_variant() {
     let thing = Variant::First;
     let yaml = indoc!(r#"
         ---
-        "First""#);
+        First"#);
     test_serde(thing, yaml);
 }
 
@@ -173,7 +173,7 @@ fn test_newtype_struct() {
     });
     let yaml = indoc!(r#"
         ---
-        "v": 1"#);
+        v: 1"#);
     test_serde(thing, yaml);
 }
 
@@ -186,7 +186,7 @@ fn test_newtype_variant() {
     let thing = Variant::Size(127);
     let yaml = indoc!(r#"
         ---
-        "Size": 127"#);
+        Size: 127"#);
     test_serde(thing, yaml);
 }
 
@@ -199,7 +199,7 @@ fn test_tuple_variant() {
     let thing = Variant::Rgb(32, 64, 96);
     let yaml = indoc!(r#"
         ---
-        "Rgb": 
+        Rgb: 
           - 32
           - 64
           - 96"#);
@@ -223,10 +223,10 @@ fn test_struct_variant() {
     };
     let yaml = indoc!(r#"
         ---
-        "Color": 
-          "r": 32
-          "g": 64
-          "b": 96"#);
+        Color: 
+          r: 32
+          g: 64
+          b: 96"#);
     test_serde(thing, yaml);
 }
 
@@ -252,13 +252,13 @@ fn test_value() {
     };
     let yaml = indoc!(r#"
         ---
-        "type": "primary"
-        "config": 
+        type: primary
+        config: 
           - ~
           - true
           - 65535
           - 0.54321
-          - "s"
+          - s
           - {}"#);
     test_serde(thing, yaml);
 }
