@@ -65,7 +65,6 @@ serde_yaml = "0.5"
 #[macro_use]
 extern crate serde_derive;
 
-extern crate serde;
 extern crate serde_yaml;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -78,7 +77,7 @@ fn main() {
     let point = Point { x: 1.0, y: 2.0 };
 
     let s = serde_yaml::to_string(&point).unwrap();
-    assert_eq!(s, "---\n\"x\": 1\n\"y\": 2");
+    assert_eq!(s, "---\nx: 1\ny: 2");
 
     let deserialized_point: Point = serde_yaml::from_str(&s).unwrap();
     assert_eq!(point, deserialized_point);
