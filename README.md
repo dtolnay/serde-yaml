@@ -29,7 +29,6 @@ Release notes are available under [GitHub releases](https://github.com/dtolnay/s
 but the general idea is:
 
 ```rust
-extern crate serde;
 extern crate serde_yaml;
 
 use std::collections::BTreeMap;
