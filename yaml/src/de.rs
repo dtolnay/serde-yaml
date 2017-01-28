@@ -435,7 +435,7 @@ pub fn from_str<T>(s: &str) -> Result<T>
         if deserializer.pos == loader.events.len() {
             Ok(t)
         } else {
-            Err(Error::TooManyDocuments(2)) // FIXME
+            Err(Error::MoreThanOneDocument)
         }
     }
 }

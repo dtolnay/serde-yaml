@@ -31,7 +31,7 @@ pub enum Error {
     FromUtf8(string::FromUtf8Error),
 
     AliasNotFound,
-    TooManyDocuments(usize),
+    MoreThanOneDocument,
     VariantMapWrongSize(String, usize),
     VariantNotAMapOrString(String),
 }
@@ -47,8 +47,8 @@ impl error::Error for Error {
             Error::Utf8(ref err) => err.description(),
             Error::FromUtf8(ref err) => err.description(),
             Error::AliasNotFound => "alias not found",
-            Error::TooManyDocuments(_) => {
-                "expected a single YAML document but found multiple"
+            Error::MoreThanOneDocument => {
+                "deserializing from YAML containing more than one document is not supported"
             }
             Error::VariantMapWrongSize(..) => {
                 "expected a YAML map of size 1 while parsing variant"
@@ -82,19 +82,19 @@ impl fmt::Display for Error {
             Error::AliasNotFound => {
                 write!(f, "alias not found")
             }
-            Error::TooManyDocuments(n) => {
-                write!(f, "Expected a single YAML document but found {}", n)
+            Error::MoreThanOneDocument => {
+                write!(f, "deserializing from YAML containing more than one document is not supported")
             }
             Error::VariantMapWrongSize(ref variant, size) => {
                 write!(f,
-                       "Expected a YAML map of size 1 while parsing variant \
+                       "expected a YAML map of size 1 while parsing variant \
                         {} but was size {}",
                        variant,
                        size)
             }
             Error::VariantNotAMapOrString(ref variant) => {
                 write!(f,
-                       "Expected a YAML map or string while parsing variant {}",
+                       "expected a YAML map or string while parsing variant {}",
                        variant)
             }
         }
