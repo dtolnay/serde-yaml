@@ -57,8 +57,6 @@ serde_yaml = "0.5"
 ```
 
 ```rust
-#![feature(proc_macro)]
-
 #[macro_use]
 extern crate serde_derive;
 
