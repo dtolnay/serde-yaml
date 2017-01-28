@@ -6,8 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-extern crate serde;
-extern crate serde_yaml;
+use serde;
+use serde_yaml;
 
 use std::fmt::Debug;
 use std::collections::BTreeMap;
