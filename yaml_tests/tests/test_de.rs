@@ -139,3 +139,18 @@ fn test_enum_alias() {
     };
     test_de(yaml, expected);
 }
+
+#[test]
+fn test_number_as_string() {
+    #[derive(Deserialize, PartialEq, Debug)]
+    struct Num {
+        value: String,
+    }
+    let yaml = indoc!("
+        ---
+        value: 123456789012345678901234567890");
+    let expected = Num {
+        value: "123456789012345678901234567890".to_owned(),
+    };
+    test_de(yaml, expected);
+}

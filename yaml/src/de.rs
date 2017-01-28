@@ -409,6 +409,24 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
         self.visit(visitor).map_err(|err| err.fix_marker(marker))
     }
 
+    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
+        where V: de::Visitor
+    {
+        let (next, marker) = self.peek()?;
+        if let Event::Scalar(ref v, _, _) = *next {
+            self.pos += 1;
+            visitor.visit_str(v).map_err(|err: Error| err.fix_marker(marker))
+        } else {
+            self.deserialize(visitor)
+        }
+    }
+
+    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
+        where V: de::Visitor
+    {
+        self.deserialize_str(visitor)
+    }
+
     /// Parses `null` as None and any other values as `Some(...)`.
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
         where V: de::Visitor
@@ -494,9 +512,9 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     }
 
     forward_to_deserialize!{
-        bool u8 u16 u32 u64 i8 i16 i32 i64 f32 f64 char str string unit seq
-        seq_fixed_size bytes byte_buf map unit_struct tuple_struct struct
-        struct_field tuple ignored_any
+        bool u8 u16 u32 u64 i8 i16 i32 i64 f32 f64 char unit seq seq_fixed_size
+        bytes byte_buf map unit_struct tuple_struct struct struct_field tuple
+        ignored_any
     }
 }
 
