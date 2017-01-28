@@ -125,7 +125,7 @@ impl ser::Serializer for Serializer {
     ) -> Result<Yaml>
         where T: ser::Serialize
     {
-        Ok(singleton_hash(try!(to_yaml(variant)), try!(to_yaml(value))))
+        Ok(singleton_hash(to_yaml(variant)?, to_yaml(value)?))
     }
 
     fn serialize_none(self) -> Result<Yaml> {
@@ -230,7 +230,7 @@ impl ser::SerializeSeq for SerializeArray {
     fn serialize_element<T: ?Sized>(&mut self, elem: &T) -> Result<()>
         where T: ser::Serialize
     {
-        self.array.push(try!(to_yaml(elem)));
+        self.array.push(to_yaml(elem)?);
         Ok(())
     }
 
@@ -276,12 +276,12 @@ impl ser::SerializeTupleVariant for SerializeTupleVariant {
     fn serialize_field<V: ?Sized>(&mut self, v: &V) -> Result<()>
         where V: ser::Serialize
     {
-        self.array.push(try!(to_yaml(v)));
+        self.array.push(to_yaml(v)?);
         Ok(())
     }
 
     fn end(self) -> Result<Yaml> {
-        Ok(singleton_hash(try!(to_yaml(self.name)), Yaml::Array(self.array)))
+        Ok(singleton_hash(to_yaml(self.name)?, Yaml::Array(self.array)))
     }
 }
 
@@ -292,7 +292,7 @@ impl ser::SerializeMap for SerializeMap {
     fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<()>
         where T: ser::Serialize
     {
-        self.next_key = Some(try!(to_yaml(key)));
+        self.next_key = Some(to_yaml(key)?);
         Ok(())
     }
 
@@ -300,7 +300,7 @@ impl ser::SerializeMap for SerializeMap {
         where T: ser::Serialize
     {
         match self.next_key.take() {
-            Some(key) => self.hash.insert(key, try!(to_yaml(value))),
+            Some(key) => self.hash.insert(key, to_yaml(value)?),
             None => panic!("serialize_value called before serialize_key"),
         };
         Ok(())
@@ -318,7 +318,7 @@ impl ser::SerializeStruct for SerializeStruct {
     fn serialize_field<V: ?Sized>(&mut self, key: &'static str, value: &V) -> Result<()>
         where V: ser::Serialize
     {
-        self.hash.insert(try!(to_yaml(key)), try!(to_yaml(value)));
+        self.hash.insert(to_yaml(key)?, to_yaml(value)?);
         Ok(())
     }
 
@@ -334,12 +334,12 @@ impl ser::SerializeStructVariant for SerializeStructVariant {
     fn serialize_field<V: ?Sized>(&mut self, field: &'static str, v: &V) -> Result<()>
         where V: ser::Serialize
     {
-        self.hash.insert(try!(to_yaml(field)), try!(to_yaml(v)));
+        self.hash.insert(to_yaml(field)?, to_yaml(v)?);
         Ok(())
     }
 
     fn end(self) -> Result<Yaml> {
-        Ok(singleton_hash(try!(to_yaml(self.name)), Yaml::Hash(self.hash)))
+        Ok(singleton_hash(to_yaml(self.name)?, Yaml::Hash(self.hash)))
     }
 }
 
@@ -347,11 +347,11 @@ pub fn to_writer<W, T>(writer: &mut W, value: &T) -> Result<()>
     where W: io::Write,
           T: ser::Serialize
 {
-    let doc = try!(to_yaml(value));
+    let doc = to_yaml(value)?;
     let mut writer_adapter = FmtToIoWriter {
         writer: writer,
     };
-    try!(YamlEmitter::new(&mut writer_adapter).dump(&doc));
+    YamlEmitter::new(&mut writer_adapter).dump(&doc)?;
     Ok(())
 }
 
@@ -359,14 +359,14 @@ pub fn to_vec<T>(value: &T) -> Result<Vec<u8>>
     where T: ser::Serialize
 {
     let mut vec = Vec::with_capacity(128);
-    try!(to_writer(&mut vec, value));
+    to_writer(&mut vec, value)?;
     Ok(vec)
 }
 
 pub fn to_string<T>(value: &T) -> Result<String>
     where T: ser::Serialize
 {
-    Ok(try!(String::from_utf8(try!(to_vec(value)))))
+    Ok(String::from_utf8(to_vec(value)?)?)
 }
 
 /// The yaml-rust library uses `fmt.Write` intead of `io.Write` so this is a

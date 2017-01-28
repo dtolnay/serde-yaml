@@ -151,7 +151,7 @@ impl<'a, 'r> de::EnumVisitor for VariantVisitor<'a, 'r> {
     ) -> Result<(V::Value, Self::Variant)>
         where V: DeserializeSeed
     {
-        Ok((try!(seed.deserialize(&mut *self.de)), self))
+        Ok((seed.deserialize(&mut *self.de)?, self))
     }
 }
 
@@ -199,7 +199,7 @@ impl<'a, 'r> de::EnumVisitor for UnitVariantVisitor<'a, 'r> {
     ) -> Result<(V::Value, Self::Variant)>
         where V: DeserializeSeed
     {
-        Ok((try!(seed.deserialize(&mut *self.de)), self))
+        Ok((seed.deserialize(&mut *self.de)?, self))
     }
 }
 
@@ -422,7 +422,7 @@ pub fn from_str<T>(s: &str) -> Result<T>
         events: Vec::new(),
         aliases: BTreeMap::new(),
     };
-    try!(parser.load(&mut loader, true));
+    parser.load(&mut loader, true)?;
     if loader.events.is_empty() {
         Err(Error::EndOfStream)
     } else {
@@ -445,7 +445,7 @@ pub fn from_iter<I, T>(iter: I) -> Result<T>
           T: Deserialize
 {
     let bytes: Vec<u8> = try!(iter.collect());
-    from_str(try!(str::from_utf8(&bytes)))
+    from_str(str::from_utf8(&bytes)?)
 }
 
 pub fn from_reader<R, T>(rdr: R) -> Result<T>

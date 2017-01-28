@@ -191,10 +191,10 @@ impl Serialize for Value {
             Value::Sequence(ref seq) => seq.serialize(serializer),
             Value::Mapping(ref hash) => {
                 use serde::ser::SerializeMap;
-                let mut map = try!(serializer.serialize_map(Some(hash.len())));
+                let mut map = serializer.serialize_map(Some(hash.len()))?;
                 for (k, v) in hash {
-                    try!(map.serialize_key(k));
-                    try!(map.serialize_value(v));
+                    map.serialize_key(k)?;
+                    map.serialize_value(v)?;
                 }
                 map.end()
             }
@@ -276,7 +276,7 @@ impl Deserialize for Value {
                 where V: serde::de::SeqVisitor
             {
                 use serde::de::impls::VecVisitor;
-                let values = try!(VecVisitor::new().visit_seq(visitor));
+                let values = VecVisitor::new().visit_seq(visitor)?;
                 Ok(Value::Sequence(values))
             }
 
@@ -285,7 +285,7 @@ impl Deserialize for Value {
             {
                 let mut values = LinkedHashMap::with_capacity(visitor.size_hint().0);
 
-                while let Some((key, value)) = try!(visitor.visit()) {
+                while let Some((key, value)) = visitor.visit()? {
                     values.insert(key, value);
                 }
 
@@ -357,7 +357,7 @@ impl Deserializer for Value {
             Value::Sequence(v) => {
                 let len = v.len();
                 let mut deserializer = SeqDeserializer::new(v);
-                let seq = try!(visitor.visit_seq(&mut deserializer));
+                let seq = visitor.visit_seq(&mut deserializer)?;
                 let remaining = deserializer.iter.len();
                 if remaining == 0 {
                     Ok(seq)
@@ -368,7 +368,7 @@ impl Deserializer for Value {
             Value::Mapping(v) => {
                 let len = v.len();
                 let mut deserializer = MapDeserializer::new(v);
-                let map = try!(visitor.visit_map(&mut deserializer));
+                let map = visitor.visit_map(&mut deserializer)?;
                 let remaining = deserializer.iter.len();
                 if remaining == 0 {
                     Ok(map)
@@ -542,7 +542,7 @@ impl serde::de::Deserializer for SeqDeserializer {
         if len == 0 {
             visitor.visit_unit()
         } else {
-            let ret = try!(visitor.visit_seq(&mut self));
+            let ret = visitor.visit_seq(&mut self)?;
             let remaining = self.iter.len();
             if remaining == 0 {
                 Ok(ret)
