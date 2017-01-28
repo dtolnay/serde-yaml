@@ -77,7 +77,7 @@ impl<'a> Deserializer<'a> {
     fn peek(&self) -> Result<&'a Event> {
         match self.events.get(self.pos) {
             Some(event) => Ok(&event.0),
-            None => Err(Error::EndOfStream), // FIXME
+            None => Err(Error::EndOfStream),
         }
     }
 
@@ -87,7 +87,7 @@ impl<'a> Deserializer<'a> {
                 self.pos += 1;
                 Ok(&event.0)
             }
-            None => Err(Error::EndOfStream), // FIXME
+            None => Err(Error::EndOfStream),
         }
     }
 
