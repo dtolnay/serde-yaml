@@ -93,7 +93,7 @@ impl<'a> Deserializer<'a> {
         }
     }
 
-    fn jump(&self, id: usize, marker: Marker) -> Result<Deserializer<'a>> {
+    fn jump(&self, id: usize) -> Result<Deserializer<'a>> {
         match self.aliases.get(&id) {
             Some(&pos) => {
                 Ok(Deserializer {
@@ -102,16 +102,15 @@ impl<'a> Deserializer<'a> {
                     pos: pos,
                 })
             }
-            None => Err(Error::UnresolvedAlias(marker)),
+            None => panic!("unresolved alias: {}", id),
         }
     }
 
     fn visit<V>(&mut self, visitor: V) -> Result<V::Value>
         where V: de::Visitor
     {
-        let (next, marker) = self.next()?;
-        match *next {
-            Event::Alias(i) => de::Deserializer::deserialize(&mut self.jump(i, marker)?, visitor),
+        match *self.next()?.0 {
+            Event::Alias(i) => de::Deserializer::deserialize(&mut self.jump(i)?, visitor),
             Event::Scalar(ref v, style, ref tag) => {
                 if style != TScalarStyle::Plain {
                     visitor.visit_str(v)
@@ -414,11 +413,10 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
         where V: de::Visitor
     {
-        let (next, marker) = self.peek()?;
-        let is_some = match *next {
+        let is_some = match *self.peek()?.0 {
             Event::Alias(i) => {
                 self.pos += 1;
-                return self.jump(i, marker)?.deserialize_option(visitor);
+                return self.jump(i)?.deserialize_option(visitor);
             }
             Event::Scalar(ref v, style, ref tag) => {
                 if style != TScalarStyle::Plain {
@@ -471,9 +469,8 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     ) -> Result<V::Value>
         where V: de::Visitor
     {
-        let (next, marker) = self.peek()?;
-        match *next {
-            Event::Alias(i) => return self.jump(i, marker)?.deserialize_enum(name, variants, visitor),
+        match *self.peek()?.0 {
+            Event::Alias(i) => return self.jump(i)?.deserialize_enum(name, variants, visitor),
             Event::Scalar(_, _, _) => {
                 visitor.visit_enum(UnitVariantVisitor { de: self })
             }
