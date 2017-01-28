@@ -11,13 +11,15 @@
 //! This module provides YAML deserialization with the type `Deserializer`.
 
 use std::collections::BTreeMap;
+use std::fmt;
 use std::io;
 use std::str;
 
 use yaml_rust::parser::{Parser, MarkedEventReceiver, Event as YamlEvent};
 use yaml_rust::scanner::{Marker, TokenType, TScalarStyle};
 
-use serde::de::{self, Deserialize, DeserializeSeed, Unexpected};
+use serde::de::{self, Deserialize, DeserializeSeed, Expected, Unexpected};
+use serde::de::impls::IgnoredAny as Ignore;
 
 use super::error::{Error, Result};
 
@@ -56,7 +58,7 @@ impl MarkedEventReceiver for Loader {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Event {
     Alias(usize),
     Scalar(String, TScalarStyle, Option<TokenType>),
@@ -105,35 +107,46 @@ impl<'a> Deserializer<'a> {
     }
 }
 
-impl<'a> de::SeqVisitor for Deserializer<'a> {
+struct CollectionVisitor<'a: 'r, 'r> {
+    de: &'r mut Deserializer<'a>,
+    len: usize,
+}
+
+impl<'a, 'r> de::SeqVisitor for CollectionVisitor<'a, 'r> {
     type Error = Error;
 
     fn visit_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
         where T: DeserializeSeed
     {
-        match *self.peek()? {
+        match *self.de.peek()? {
             Event::SequenceEnd => Ok(None),
-            _ => seed.deserialize(self).map(Some),
+            _ => {
+                self.len += 1;
+                seed.deserialize(&mut *self.de).map(Some)
+            }
         }
     }
 }
 
-impl<'a> de::MapVisitor for Deserializer<'a> {
+impl<'a, 'r> de::MapVisitor for CollectionVisitor<'a, 'r> {
     type Error = Error;
 
     fn visit_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
         where K: DeserializeSeed
     {
-        match *self.peek()? {
+        match *self.de.peek()? {
             Event::MappingEnd => Ok(None),
-            _ => seed.deserialize(self).map(Some),
+            _ => {
+                self.len += 1;
+                seed.deserialize(&mut *self.de).map(Some)
+            }
         }
     }
 
     fn visit_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
         where V: DeserializeSeed
     {
-        seed.deserialize(self)
+        seed.deserialize(&mut *self.de)
     }
 }
 
@@ -317,17 +330,49 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
                 }
             }
             Event::SequenceStart => {
-                let value = visitor.visit_seq(&mut *self)?;
-                match *self.next()? {
-                    Event::SequenceEnd => Ok(value),
-                    _ => Err(de::Error::custom("remaining elements in sequence")), // FIXME
+                let (value, len, remaining) = {
+                    let mut seq = CollectionVisitor { de: self, len: 0 };
+                    let value = visitor.visit_seq(&mut seq)?;
+                    let mut remaining = 0;
+                    while de::SeqVisitor::visit::<Ignore>(&mut seq)?.is_some() {
+                        remaining += 1;
+                    }
+                    (value, seq.len, remaining)
+                };
+                assert_eq!(Event::SequenceEnd, *self.next()?);
+                if remaining == 0 {
+                    Ok(value)
+                } else {
+                    struct ExpectedSeq(usize);
+                    impl Expected for ExpectedSeq {
+                        fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                            write!(formatter, "sequence of {} elements", self.0)
+                        }
+                    }
+                    Err(de::Error::invalid_length(len + remaining, &ExpectedSeq(len)))
                 }
             }
             Event::MappingStart => {
-                let value = visitor.visit_map(&mut *self)?;
-                match *self.next()? {
-                    Event::MappingEnd => Ok(value),
-                    _ => Err(de::Error::custom("remaining elements in map")), // FIXME
+                let (value, len, remaining) = {
+                    let mut map = CollectionVisitor { de: self, len: 0 };
+                    let value = visitor.visit_map(&mut map)?;
+                    let mut remaining = 0;
+                    while de::MapVisitor::visit::<Ignore, Ignore>(&mut map)?.is_some() {
+                        remaining += 1;
+                    }
+                    (value, map.len, remaining)
+                };
+                assert_eq!(Event::MappingEnd, *self.next()?);
+                if remaining == 0 {
+                    Ok(value)
+                } else {
+                    struct ExpectedMap(usize);
+                    impl Expected for ExpectedMap {
+                        fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                            write!(formatter, "map containing {} entries", self.0)
+                        }
+                    }
+                    Err(de::Error::invalid_length(len + remaining, &ExpectedMap(len)))
                 }
             }
             Event::SequenceEnd | Event::MappingEnd => Err(Error::EndOfStream), // FIXME
