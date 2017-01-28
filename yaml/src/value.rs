@@ -609,7 +609,7 @@ impl serde::de::MapVisitor for MapDeserializer {
     {
         match self.value.take() {
             Some(value) => seed.deserialize(value),
-            None => Err(serde::de::Error::custom("value is missing")),
+            None => panic!("visit_value called before visit_key"),
         }
     }
 
