@@ -11,5 +11,16 @@ matrix:
   allow_failures:
     - rust: nightly
 
+before_script:
+  - pip install 'travis-cargo<0.2' --user
+  - export PATH=$HOME/.local/bin:$PATH
+
 script:
-  scripts/build.sh
+  - (cd yaml && travis-cargo --skip nightly build)
+  - (cd yaml && travis-cargo --only nightly build -- --features clippy)
+  - (cd yaml && travis-cargo test)
+  - (cd yaml_tests && travis-cargo --only nightly test)
+
+env:
+  global:
+    - TRAVIS_CARGO_NIGHTLY_FEATURE=""

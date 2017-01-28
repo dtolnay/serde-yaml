@@ -91,9 +91,6 @@ Licensed under either of
 
 at your option.
 
-Build scripts are licensed under Creative Commons CC0 1.0 Universal
-([LICENSE-CC](LICENSE-CC) or https://creativecommons.org/publicdomain/zero/1.0/legalcode).
-
 ### Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
