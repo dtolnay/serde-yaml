@@ -72,24 +72,24 @@ fn test_option_alias() {
     let yaml = indoc!("
         ---
         none_f:
-            &none_f
-            ~
+          &none_f
+          ~
         none_s:
-            &none_s
-            ~
+          &none_s
+          ~
         none_b:
-            &none_b
-            ~
+          &none_b
+          ~
 
         some_f:
-            &some_f
-            1.0
+          &some_f
+          1.0
         some_s:
-            &some_s
-            x
+          &some_s
+          x
         some_b:
-            &some_b
-            true
+          &some_b
+          true
 
         a: *none_f
         b: *none_s
@@ -104,6 +104,38 @@ fn test_option_alias() {
         d: Some(1.0),
         e: Some("x".to_owned()),
         f: Some(true),
+    };
+    test_de(yaml, expected);
+}
+
+#[test]
+fn test_enum_alias() {
+    #[derive(Deserialize, PartialEq, Debug)]
+    enum E {
+        A,
+        B(u8, u8),
+    }
+    #[derive(Deserialize, PartialEq, Debug)]
+    struct Data {
+        a: E,
+        b: E,
+    }
+    let yaml = indoc!("
+        ---
+        aref:
+          &aref
+          A
+        bref:
+          &bref
+          B:
+            - 1
+            - 2
+
+        a: *aref
+        b: *bref");
+    let expected = Data {
+        a: E::A,
+        b: E::B(1, 2),
     };
     test_de(yaml, expected);
 }

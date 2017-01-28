@@ -470,7 +470,10 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
         where V: de::Visitor
     {
         match *self.peek()?.0 {
-            Event::Alias(i) => return self.jump(i)?.deserialize_enum(name, variants, visitor),
+            Event::Alias(i) => {
+                self.pos += 1;
+                return self.jump(i)?.deserialize_enum(name, variants, visitor);
+            }
             Event::Scalar(_, _, _) => {
                 visitor.visit_enum(UnitVariantVisitor { de: self })
             }
