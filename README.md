@@ -12,10 +12,9 @@ which is a pure Rust YAML 1.2 implementation.
 
 ## Dependency
 
-Version 0.5.\* of `serde_yaml` works with 0.8.\* of Serde.
-
 ```toml
 [dependencies]
+serde = "0.8"
 serde_yaml = "0.5"
 ```
 
