@@ -65,7 +65,8 @@ fn test_two_documents() {
         0
         ---
         1");
-    let expected = "Expected a single YAML document but found 2";
+    let expected = "deserializing from YAML containing more than one document \
+                    is not supported";
     test_error::<usize>(yaml, expected);
 }
 
@@ -79,7 +80,7 @@ fn test_variant_map_wrong_size() {
         ---
         "V": 16
         "other": 32"#);
-    let expected = "Expected a YAML map of size 1 while parsing variant \
+    let expected = "expected a YAML map of size 1 while parsing variant \
                     Variant but was size 2";
     test_error::<Variant>(yaml, expected);
 }
@@ -93,7 +94,7 @@ fn test_variant_not_a_map() {
     let yaml = indoc!(r#"
         ---
         - "V""#);
-    let expected = "Expected a YAML map or string while parsing variant \
+    let expected = "expected a YAML map or string while parsing variant \
                     Variant";
     test_error::<Variant>(yaml, expected);
 }
