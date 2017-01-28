@@ -13,7 +13,8 @@ use std::result;
 use std::str;
 use std::string;
 
-use yaml_rust::{emitter, scanner};
+use yaml_rust::emitter;
+use yaml_rust::scanner::{self, Marker, ScanError};
 
 use serde::{de, ser};
 
@@ -21,7 +22,7 @@ use serde::{de, ser};
 /// deserializing a value using YAML.
 #[derive(Debug)]
 pub enum Error {
-    Custom(String),
+    Custom(String, Option<Marker>),
 
     Emit(emitter::EmitError),
     Scan(scanner::ScanError),
@@ -37,7 +38,7 @@ pub enum Error {
 impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::Custom(ref msg) => msg,
+            Error::Custom(ref msg, _) => msg,
             Error::Emit(_) => "emit error",
             Error::Scan(_) => "scan error",
             Error::Io(ref err) => err.description(),
@@ -65,7 +66,10 @@ impl error::Error for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::Custom(ref msg) => write!(f, "{}", msg),
+            Error::Custom(ref msg, None) => write!(f, "{}", msg),
+            Error::Custom(ref msg, Some(marker)) => {
+                write!(f, "{}", ScanError::new(marker, msg))
+            }
             Error::Emit(ref err) => write!(f, "{:?}", err),
             Error::Scan(ref err) => err.fmt(f),
             Error::Io(ref err) => err.fmt(f),
@@ -114,13 +118,13 @@ impl From<string::FromUtf8Error> for Error {
 
 impl ser::Error for Error {
     fn custom<T: Display>(msg: T) -> Self {
-        Error::Custom(msg.to_string())
+        Error::Custom(msg.to_string(), None)
     }
 }
 
 impl de::Error for Error {
     fn custom<T: Display>(msg: T) -> Self {
-        Error::Custom(msg.to_string())
+        Error::Custom(msg.to_string(), None)
     }
 }
 

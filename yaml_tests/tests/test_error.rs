@@ -23,7 +23,7 @@ fn test_incorrect_type() {
     let yaml = indoc!("
         ---
         str");
-    let expected = "invalid type: string \"str\", expected i16";
+    let expected = "invalid type: string \"str\", expected i16 at line 2 column 1";
     test_error::<i16>(yaml, expected);
 }
 

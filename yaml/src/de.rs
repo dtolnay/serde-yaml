@@ -76,18 +76,18 @@ struct Deserializer<'a> {
 }
 
 impl<'a> Deserializer<'a> {
-    fn peek(&self) -> Result<&'a Event> {
+    fn peek(&self) -> Result<(&'a Event, Marker)> {
         match self.events.get(self.pos) {
-            Some(event) => Ok(&event.0),
+            Some(event) => Ok((&event.0, event.1)),
             None => Err(Error::EndOfStream),
         }
     }
 
-    fn next(&mut self) -> Result<&'a Event> {
+    fn next(&mut self) -> Result<(&'a Event, Marker)> {
         match self.events.get(self.pos) {
             Some(event) => {
                 self.pos += 1;
-                Ok(&event.0)
+                Ok((&event.0, event.1))
             }
             None => Err(Error::EndOfStream),
         }
@@ -112,7 +112,7 @@ impl<'a> Deserializer<'a> {
             while de::SeqVisitor::visit::<Ignore>(&mut seq)?.is_some() {}
             seq.len
         };
-        assert_eq!(Event::SequenceEnd, *self.next()?);
+        assert_eq!(Event::SequenceEnd, *self.next()?.0);
         if total == len {
             Ok(())
         } else {
@@ -136,7 +136,7 @@ impl<'a> Deserializer<'a> {
             while de::MapVisitor::visit::<Ignore, Ignore>(&mut map)?.is_some() {}
             map.len
         };
-        assert_eq!(Event::MappingEnd, *self.next()?);
+        assert_eq!(Event::MappingEnd, *self.next()?.0);
         if total == len {
             Ok(())
         } else {
@@ -166,7 +166,7 @@ impl<'a, 'r> de::SeqVisitor for CollectionVisitor<'a, 'r> {
     fn visit_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
         where T: DeserializeSeed
     {
-        match *self.de.peek()? {
+        match *self.de.peek()?.0 {
             Event::SequenceEnd => Ok(None),
             _ => {
                 self.len += 1;
@@ -182,7 +182,7 @@ impl<'a, 'r> de::MapVisitor for CollectionVisitor<'a, 'r> {
     fn visit_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
         where K: DeserializeSeed
     {
-        match *self.de.peek()? {
+        match *self.de.peek()?.0 {
             Event::MappingEnd => Ok(None),
             _ => {
                 self.len += 1;
@@ -336,7 +336,8 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     fn deserialize<V>(self, visitor: V) -> Result<V::Value>
         where V: de::Visitor
     {
-        match *self.next()? {
+        let (next, marker) = self.next()?;
+        let result = match *next {
             Event::Alias(i) => self.jump(i)?.deserialize(visitor),
             Event::Scalar(ref v, style, ref tag) => {
                 if style != TScalarStyle::Plain {
@@ -397,6 +398,14 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
             }
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
+        };
+        match result {
+            Ok(value) => Ok(value),
+            // The de::Error and From<de::value::Error> impls both create errors
+            // with unknown line and column. Fill in the position here by
+            // looking at the current index in the input.
+            Err(Error::Custom(msg, None)) => Err(Error::Custom(msg, Some(marker))),
+            Err(err) => Err(err),
         }
     }
 
@@ -404,7 +413,7 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
         where V: de::Visitor
     {
-        let is_some = match *self.peek()? {
+        let is_some = match *self.peek()?.0 {
             Event::Alias(i) => return self.jump(i)?.deserialize_option(visitor),
             Event::Scalar(ref v, style, ref tag) => {
                 if style != TScalarStyle::Plain {
@@ -457,7 +466,7 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     ) -> Result<V::Value>
         where V: de::Visitor
     {
-        match *self.peek()? {
+        match *self.peek()?.0 {
             Event::Alias(i) => return self.jump(i)?.deserialize_enum(name, variants, visitor),
             Event::Scalar(_, _, _) => {
                 visitor.visit_enum(UnitVariantVisitor { de: self })
