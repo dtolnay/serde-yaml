@@ -79,7 +79,7 @@ impl<'a> Deserializer<'a> {
     fn peek(&self) -> Result<(&'a Event, Marker)> {
         match self.events.get(self.pos) {
             Some(event) => Ok((&event.0, event.1)),
-            None => Err(Error::EndOfStream),
+            None => Err(Error::end_of_stream()),
         }
     }
 
@@ -89,7 +89,7 @@ impl<'a> Deserializer<'a> {
                 self.pos += 1;
                 Ok((&event.0, event.1))
             }
-            None => Err(Error::EndOfStream),
+            None => Err(Error::end_of_stream()),
         }
     }
 
@@ -507,7 +507,7 @@ pub fn from_str<T>(s: &str) -> Result<T>
     };
     parser.load(&mut loader, true)?;
     if loader.events.is_empty() {
-        Err(Error::EndOfStream)
+        Err(Error::end_of_stream())
     } else {
         let mut deserializer = Deserializer {
             events: &loader.events,
@@ -518,7 +518,7 @@ pub fn from_str<T>(s: &str) -> Result<T>
         if deserializer.pos == loader.events.len() {
             Ok(t)
         } else {
-            Err(Error::MoreThanOneDocument)
+            Err(Error::more_than_one_document())
         }
     }
 }
