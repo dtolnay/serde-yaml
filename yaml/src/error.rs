@@ -55,6 +55,7 @@ impl error::Error for Error {
         match *self {
             Error::Scan(ref err) => Some(err),
             Error::Io(ref err) => Some(err),
+            Error::Utf8(ref err) => Some(err),
             Error::FromUtf8(ref err) => Some(err),
             _ => None,
         }
