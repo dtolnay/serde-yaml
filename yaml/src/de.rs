@@ -10,178 +10,168 @@
 //!
 //! This module provides YAML deserialization with the type `Deserializer`.
 
+use std::collections::BTreeMap;
 use std::io;
-use std::iter;
 use std::str;
 
-use yaml_rust::{yaml, Yaml, YamlLoader};
-use yaml_rust::parser::{Parser, MarkedEventReceiver, Event};
+use yaml_rust::parser::{Parser, MarkedEventReceiver, Event as YamlEvent};
 use yaml_rust::scanner::{Marker, TokenType, TScalarStyle};
 
-use serde::de::{self, Deserialize, DeserializeSeed};
+use serde::de::{self, Deserialize, DeserializeSeed, Unexpected};
 
 use super::error::{Error, Result};
 
 pub struct Loader {
     events: Vec<(Event, Marker)>,
+    /// Map from alias id to index in events.
+    aliases: BTreeMap<usize, usize>,
 }
 
 impl MarkedEventReceiver for Loader {
-    fn on_event(&mut self, event: &Event, marker: Marker) {
-        match *event {
-            Event::Nothing
-                | Event::StreamStart
-                | Event::StreamEnd
-                | Event::DocumentStart
-                | Event::DocumentEnd => {}
+    fn on_event(&mut self, event: &YamlEvent, marker: Marker) {
+        let event = match *event {
+            YamlEvent::Nothing
+                | YamlEvent::StreamStart
+                | YamlEvent::StreamEnd
+                | YamlEvent::DocumentStart
+                | YamlEvent::DocumentEnd => return,
 
-            Event::Alias(_)
-                | Event::Scalar(_, _, _, _)
-                | Event::SequenceStart(_)
-                | Event::SequenceEnd
-                | Event::MappingStart(_)
-                | Event::MappingEnd => self.events.push((event.clone(), marker)),
+            YamlEvent::Alias(id) => Event::Alias(id),
+            YamlEvent::Scalar(ref value, style, id, ref tag) => {
+                self.aliases.insert(id, self.events.len());
+                Event::Scalar(value.clone(), style, tag.clone())
+            }
+            YamlEvent::SequenceStart(id) => {
+                self.aliases.insert(id, self.events.len());
+                Event::SequenceStart
+            }
+            YamlEvent::SequenceEnd => Event::SequenceEnd,
+            YamlEvent::MappingStart(id) => {
+                self.aliases.insert(id, self.events.len());
+                Event::MappingStart
+            }
+            YamlEvent::MappingEnd => Event::MappingEnd,
+        };
+        self.events.push((event, marker));
+    }
+}
+
+#[derive(Debug)]
+enum Event {
+    Alias(usize),
+    Scalar(String, TScalarStyle, Option<TokenType>),
+    SequenceStart,
+    SequenceEnd,
+    MappingStart,
+    MappingEnd,
+}
+
+struct Deserializer<'a> {
+    events: &'a [(Event, Marker)],
+    /// Map from alias id to index in events.
+    aliases: &'a BTreeMap<usize, usize>,
+    pos: usize,
+}
+
+impl<'a> Deserializer<'a> {
+    fn peek(&self) -> Result<&'a Event> {
+        match self.events.get(self.pos) {
+            Some(event) => Ok(&event.0),
+            None => Err(Error::EndOfStream), // FIXME
+        }
+    }
+
+    fn next(&mut self) -> Result<&'a Event> {
+        match self.events.get(self.pos) {
+            Some(event) => {
+                self.pos += 1;
+                Ok(&event.0)
+            }
+            None => Err(Error::EndOfStream), // FIXME
+        }
+    }
+
+    fn jump(&self, id: usize) -> Result<Deserializer<'a>> {
+        match self.aliases.get(&id) {
+            Some(&pos) => {
+                Ok(Deserializer {
+                    events: self.events,
+                    aliases: self.aliases,
+                    pos: pos,
+                })
+            }
+            None => Err(Error::AliasNotFound),
         }
     }
 }
 
-pub struct Deserializer {
-    doc: Yaml,
-}
-
-impl Deserializer {
-    pub fn new(doc: Yaml) -> Self {
-        Deserializer {
-            doc: doc,
-        }
-    }
-}
-
-struct SeqVisitor {
-    /// Iterator over the YAML array being visited.
-    iter: <yaml::Array as iter::IntoIterator>::IntoIter,
-}
-
-impl SeqVisitor {
-    fn new(seq: yaml::Array) -> Self {
-        SeqVisitor {
-            iter: seq.into_iter(),
-        }
-    }
-}
-
-impl de::SeqVisitor for SeqVisitor {
+impl<'a> de::SeqVisitor for Deserializer<'a> {
     type Error = Error;
 
     fn visit_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
         where T: DeserializeSeed
     {
-        match self.iter.next() {
-            None => Ok(None),
-            Some(t) => seed.deserialize(Deserializer::new(t)).map(Some),
+        match *self.peek()? {
+            Event::SequenceEnd => Ok(None),
+            _ => seed.deserialize(self).map(Some),
         }
     }
 }
 
-struct MapVisitor {
-    /// Iterator over the YAML hash being visited.
-    iter: <yaml::Hash as iter::IntoIterator>::IntoIter,
-    /// Value associated with the most recently visited key.
-    v: Option<Yaml>,
-}
-
-impl MapVisitor {
-    fn new(hash: yaml::Hash) -> Self {
-        MapVisitor {
-            iter: hash.into_iter(),
-            v: None,
-        }
-    }
-}
-
-impl de::MapVisitor for MapVisitor {
+impl<'a> de::MapVisitor for Deserializer<'a> {
     type Error = Error;
 
     fn visit_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
         where K: DeserializeSeed
     {
-        match self.iter.next() {
-            None => Ok(None),
-            Some((k, v)) => {
-                self.v = Some(v);
-                seed.deserialize(Deserializer::new(k)).map(Some)
-            }
+        match *self.peek()? {
+            Event::MappingEnd => Ok(None),
+            _ => seed.deserialize(self).map(Some),
         }
     }
 
     fn visit_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
         where V: DeserializeSeed
     {
-        match self.v.take() {
-            Some(v) => seed.deserialize(Deserializer::new(v)),
-            None => panic!("visit_value called before visit_key"),
-        }
+        seed.deserialize(self)
     }
 }
 
-struct EnumVisitor {
-    variant: Yaml,
-    content: Yaml,
+struct VariantVisitor<'a: 'r, 'r> {
+    de: &'r mut Deserializer<'a>,
 }
 
-impl EnumVisitor {
-    fn new(variant: Yaml, content: Yaml) -> Self {
-        EnumVisitor {
-            variant: variant,
-            content: content,
-        }
-    }
-}
-
-impl de::EnumVisitor for EnumVisitor {
+impl<'a, 'r> de::EnumVisitor for VariantVisitor<'a, 'r> {
     type Error = Error;
-    type Variant = VariantVisitor;
+    type Variant = VariantVisitor<'a, 'r>;
 
     fn visit_variant_seed<V>(
         self,
         seed: V,
-    ) -> Result<(V::Value, VariantVisitor)>
+    ) -> Result<(V::Value, Self::Variant)>
         where V: DeserializeSeed
     {
-        let variant = try!(seed.deserialize(Deserializer::new(self.variant)));
-        Ok((variant, VariantVisitor::new(self.content)))
+        Ok((try!(seed.deserialize(&mut *self.de)), self))
     }
 }
 
-struct VariantVisitor {
-    content: Yaml,
-}
-
-impl VariantVisitor {
-    fn new(content: Yaml) -> Self {
-        VariantVisitor {
-            content: content,
-        }
-    }
-}
-
-impl de::VariantVisitor for VariantVisitor {
+impl<'a, 'r> de::VariantVisitor for VariantVisitor<'a, 'r> {
     type Error = Error;
 
     fn visit_unit(self) -> Result<()> {
-        Ok(())
+        Deserialize::deserialize(self.de)
     }
 
     fn visit_newtype_seed<T>(self, seed: T) -> Result<T::Value>
         where T: DeserializeSeed
     {
-        seed.deserialize(Deserializer::new(self.content))
+        seed.deserialize(self.de)
     }
 
     fn visit_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
         where V: de::Visitor
     {
-        de::Deserializer::deserialize(Deserializer::new(self.content), visitor)
+        de::Deserializer::deserialize(self.de, visitor)
     }
 
     fn visit_struct<V>(
@@ -191,37 +181,156 @@ impl de::VariantVisitor for VariantVisitor {
     ) -> Result<V::Value>
         where V: de::Visitor
     {
-        de::Deserializer::deserialize(Deserializer::new(self.content), visitor)
+        de::Deserializer::deserialize(self.de, visitor)
     }
 }
 
-impl de::Deserializer for Deserializer {
+struct UnitVariantVisitor<'a: 'r, 'r> {
+    de: &'r mut Deserializer<'a>,
+}
+
+impl<'a, 'r> de::EnumVisitor for UnitVariantVisitor<'a, 'r> {
+    type Error = Error;
+    type Variant = Self;
+
+    fn visit_variant_seed<V>(
+        self,
+        seed: V,
+    ) -> Result<(V::Value, Self::Variant)>
+        where V: DeserializeSeed
+    {
+        Ok((try!(seed.deserialize(&mut *self.de)), self))
+    }
+}
+
+impl<'a, 'r> de::VariantVisitor for UnitVariantVisitor<'a, 'r> {
+    type Error = Error;
+
+    fn visit_unit(self) -> Result<()> {
+        Ok(())
+    }
+
+    fn visit_newtype_seed<T>(self, _seed: T) -> Result<T::Value>
+        where T: DeserializeSeed
+    {
+        Err(de::Error::invalid_type(Unexpected::UnitVariant, &"newtype variant"))
+    }
+
+    fn visit_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value>
+        where V: de::Visitor
+    {
+        Err(de::Error::invalid_type(Unexpected::UnitVariant, &"tuple variant"))
+    }
+
+    fn visit_struct<V>(
+        self,
+        _fields: &'static [&'static str],
+        _visitor: V
+    ) -> Result<V::Value>
+        where V: de::Visitor
+    {
+        Err(de::Error::invalid_type(Unexpected::UnitVariant, &"struct variant"))
+    }
+}
+
+fn visit_str<V>(visitor: V, v: &str) -> Result<V::Value>
+    where V: de::Visitor
+{
+    if v == "~" || v == "null" {
+        return visitor.visit_unit();
+    }
+    if v == "true" {
+        return visitor.visit_bool(true);
+    }
+    if v == "false" {
+        return visitor.visit_bool(false);
+    }
+    if v.starts_with("0x") {
+        if let Ok(n) = i64::from_str_radix(&v[2..], 16) {
+            return visitor.visit_i64(n);
+        }
+    }
+    if v.starts_with("0o") {
+        if let Ok(n) = i64::from_str_radix(&v[2..], 8) {
+            return visitor.visit_i64(n);
+        }
+    }
+    if v.starts_with('+') {
+        if let Ok(n) = v[1..].parse() {
+            return visitor.visit_i64(n);
+        }
+    }
+    if let Ok(n) = v.parse() {
+        return visitor.visit_i64(n);
+    }
+    if let Ok(n) = v.parse() {
+        return visitor.visit_f64(n);
+    }
+    visitor.visit_str(v)
+}
+
+impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     type Error = Error;
 
     fn deserialize<V>(self, visitor: V) -> Result<V::Value>
         where V: de::Visitor
     {
-        match self.doc {
-            Yaml::Real(ref s) => {
-                match s.parse() {
-                    Ok(f) => visitor.visit_f64(f),
-                    Err(_) => visitor.visit_str(s),
+        match *self.next()? {
+            Event::Alias(i) => self.jump(i)?.deserialize(visitor),
+            Event::Scalar(ref v, style, ref tag) => {
+                if style != TScalarStyle::Plain {
+                    visitor.visit_str(v)
+                } else if let Some(TokenType::Tag(ref handle, ref suffix)) = *tag {
+                    if handle == "!!" {
+                        match suffix.as_ref() {
+                            "bool" => {
+                                match v.parse::<bool>() {
+                                    Ok(v) => visitor.visit_bool(v),
+                                    Err(err) => Err(de::Error::custom(err)), // FIXME
+                                }
+                            },
+                            "int" => {
+                                match v.parse::<i64>() {
+                                    Ok(v) => visitor.visit_i64(v),
+                                    Err(err) => Err(de::Error::custom(err)), // FIXME
+                                }
+                            },
+                            "float" => {
+                                match v.parse::<f64>() {
+                                    Ok(v) => visitor.visit_f64(v),
+                                    Err(err) => Err(de::Error::custom(err)), // FIXME
+                                }
+                            },
+                            "null" => {
+                                match v.as_ref() {
+                                    "~" | "null" => visitor.visit_unit(),
+                                    _ => Err(de::Error::custom("failed to parse null")), // FIXME
+                                }
+                            }
+                            _  => visitor.visit_str(v),
+                        }
+                    } else {
+                        visitor.visit_str(v)
+                    }
+                } else {
+                    visit_str(visitor, v)
                 }
             }
-            Yaml::Integer(i) => visitor.visit_i64(i),
-            Yaml::String(s) => visitor.visit_string(s),
-            Yaml::Boolean(b) => visitor.visit_bool(b),
-            Yaml::Array(seq) => visitor.visit_seq(SeqVisitor::new(seq)),
-            Yaml::Hash(hash) => visitor.visit_map(MapVisitor::new(hash)),
-            Yaml::Alias(_) => Err(Error::AliasUnsupported),
-            Yaml::Null => visitor.visit_unit(),
-            Yaml::BadValue => {
-                // The yaml-rust library produces BadValue when a nonexistent
-                // node is accessed by the Index trait, and when a type
-                // conversion is invalid. Both of these are unexpected in our
-                // usage.
-                panic!("bad value")
+            Event::SequenceStart => {
+                let value = visitor.visit_seq(&mut *self)?;
+                match *self.next()? {
+                    Event::SequenceEnd => Ok(value),
+                    _ => Err(de::Error::custom("remaining elements in sequence")), // FIXME
+                }
             }
+            Event::MappingStart => {
+                let value = visitor.visit_map(&mut *self)?;
+                match *self.next()? {
+                    Event::MappingEnd => Ok(value),
+                    _ => Err(de::Error::custom("remaining elements in map")), // FIXME
+                }
+            }
+            Event::SequenceEnd | Event::MappingEnd => Err(Error::EndOfStream), // FIXME
         }
     }
 
@@ -229,9 +338,33 @@ impl de::Deserializer for Deserializer {
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
         where V: de::Visitor
     {
-        match self.doc {
-            Yaml::Null => visitor.visit_none(),
-            _ => visitor.visit_some(self),
+        let is_some = match *self.peek()? {
+            Event::Alias(i) => return self.jump(i)?.deserialize_option(visitor),
+            Event::Scalar(ref v, style, ref tag) => {
+                if style != TScalarStyle::Plain {
+                    true
+                } else if let Some(TokenType::Tag(ref handle, ref suffix)) = *tag {
+                    if handle == "!!" && suffix == "null" {
+                        if v == "~" || v == "null" {
+                            false
+                        } else {
+                            return Err(de::Error::custom("failed to parse null")); // FIXME
+                        }
+                    } else {
+                        true
+                    }
+                } else {
+                    v != "~" && v != "null"
+                }
+            }
+            Event::SequenceStart | Event::MappingStart => true,
+            Event::SequenceEnd | Event::MappingEnd => return Err(Error::EndOfStream), // FIXME
+        };
+        if is_some {
+            visitor.visit_some(self)
+        } else {
+            self.pos += 1;
+            visitor.visit_none()
         }
     }
 
@@ -257,21 +390,19 @@ impl de::Deserializer for Deserializer {
     ) -> Result<V::Value>
         where V: de::Visitor
     {
-        match self.doc {
-            Yaml::Hash(hash) => {
-                let len = hash.len();
-                let mut iter = hash.into_iter();
-                if let (Some(entry), None) = (iter.next(), iter.next()) {
-                    let (variant, content) = entry;
-                    visitor.visit_enum(EnumVisitor::new(variant, content))
-                } else {
-                    Err(Error::VariantMapWrongSize(String::from(name), len))
+        match *self.peek()? {
+            Event::MappingStart => {
+                self.pos += 1;
+                let value = visitor.visit_enum(VariantVisitor { de: self })?;
+                match *self.next()? {
+                    Event::MappingEnd => Ok(value),
+                    _ => Err(Error::VariantMapWrongSize(name.to_owned(), 2)), // FIXME
                 }
             }
-            ystr @ Yaml::String(_) => {
-                visitor.visit_enum(EnumVisitor::new(ystr, Yaml::Null))
+            Event::Scalar(_, _, _) => {
+                visitor.visit_enum(UnitVariantVisitor { de: self })
             }
-            _ => Err(Error::VariantNotAMapOrString(String::from(name))),
+            _ => Err(Error::VariantNotAMapOrString(name.to_owned())),
         }
     }
 
@@ -286,14 +417,26 @@ impl de::Deserializer for Deserializer {
 pub fn from_str<T>(s: &str) -> Result<T>
     where T: Deserialize
 {
-    let docs = try!(YamlLoader::load_from_str(s));
-    match docs.len() {
-        0 => Err(Error::EndOfStream),
-        1 => {
-            let doc = docs.into_iter().next().unwrap();
-            Deserialize::deserialize(Deserializer::new(doc))
+    let mut parser = Parser::new(s.chars());
+    let mut loader = Loader {
+        events: Vec::new(),
+        aliases: BTreeMap::new(),
+    };
+    try!(parser.load(&mut loader, true));
+    if loader.events.is_empty() {
+        Err(Error::EndOfStream)
+    } else {
+        let mut deserializer = Deserializer {
+            events: &loader.events,
+            aliases: &loader.aliases,
+            pos: 0,
+        };
+        let t = Deserialize::deserialize(&mut deserializer)?;
+        if deserializer.pos == loader.events.len() {
+            Ok(t)
+        } else {
+            Err(Error::TooManyDocuments(2)) // FIXME
         }
-        n => Err(Error::TooManyDocuments(n)),
     }
 }
 

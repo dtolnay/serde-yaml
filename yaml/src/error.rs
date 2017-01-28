@@ -30,7 +30,7 @@ pub enum Error {
     Utf8(str::Utf8Error),
     FromUtf8(string::FromUtf8Error),
 
-    AliasUnsupported,
+    AliasNotFound,
     TooManyDocuments(usize),
     VariantMapWrongSize(String, usize),
     VariantNotAMapOrString(String),
@@ -46,7 +46,7 @@ impl error::Error for Error {
             Error::Io(ref err) => err.description(),
             Error::Utf8(ref err) => err.description(),
             Error::FromUtf8(ref err) => err.description(),
-            Error::AliasUnsupported => "YAML aliases are not supported",
+            Error::AliasNotFound => "alias not found",
             Error::TooManyDocuments(_) => {
                 "expected a single YAML document but found multiple"
             }
@@ -79,8 +79,8 @@ impl fmt::Display for Error {
             Error::Io(ref err) => err.fmt(f),
             Error::Utf8(ref err) => err.fmt(f),
             Error::FromUtf8(ref err) => err.fmt(f),
-            Error::AliasUnsupported => {
-                write!(f, "YAML aliases are not supported")
+            Error::AliasNotFound => {
+                write!(f, "alias not found")
             }
             Error::TooManyDocuments(n) => {
                 write!(f, "Expected a single YAML document but found {}", n)
