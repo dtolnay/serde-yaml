@@ -31,7 +31,7 @@ pub enum Error {
     FromUtf8(string::FromUtf8Error),
 
     EndOfStream,
-    AliasNotFound,
+    UnresolvedAlias(Marker),
     MoreThanOneDocument,
 }
 
@@ -57,7 +57,7 @@ impl error::Error for Error {
             Error::Utf8(ref err) => err.description(),
             Error::FromUtf8(ref err) => err.description(),
             Error::EndOfStream => "EOF while parsing a value",
-            Error::AliasNotFound => "alias not found",
+            Error::UnresolvedAlias(_) => "unresolved alias",
             Error::MoreThanOneDocument => {
                 "deserializing from YAML containing more than one document is not supported"
             }
@@ -88,8 +88,8 @@ impl fmt::Display for Error {
             Error::Utf8(ref err) => err.fmt(f),
             Error::FromUtf8(ref err) => err.fmt(f),
             Error::EndOfStream => write!(f, "EOF while parsing a value"),
-            Error::AliasNotFound => {
-                write!(f, "alias not found")
+            Error::UnresolvedAlias(marker) => {
+                write!(f, "{}", ScanError::new(marker, "unresolved alias"))
             }
             Error::MoreThanOneDocument => {
                 write!(f, "deserializing from YAML containing more than one document is not supported")
