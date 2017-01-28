@@ -80,8 +80,7 @@ fn test_variant_map_wrong_size() {
         ---
         "V": 16
         "other": 32"#);
-    let expected = "expected a YAML map of size 1 while parsing variant \
-                    Variant but was size 2";
+    let expected = "invalid length 2, expected map containing 1 entry";
     test_error::<Variant>(yaml, expected);
 }
 

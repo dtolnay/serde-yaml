@@ -105,6 +105,54 @@ impl<'a> Deserializer<'a> {
             None => Err(Error::AliasNotFound),
         }
     }
+
+    fn end_sequence(&mut self, len: usize) -> Result<()> {
+        let total = {
+            let mut seq = CollectionVisitor { de: self, len: len };
+            while de::SeqVisitor::visit::<Ignore>(&mut seq)?.is_some() {}
+            seq.len
+        };
+        assert_eq!(Event::SequenceEnd, *self.next()?);
+        if total == len {
+            Ok(())
+        } else {
+            struct ExpectedSeq(usize);
+            impl Expected for ExpectedSeq {
+                fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                    if self.0 == 1 {
+                        write!(formatter, "sequence of 1 element")
+                    } else {
+                        write!(formatter, "sequence of {} elements", self.0)
+                    }
+                }
+            }
+            Err(de::Error::invalid_length(total, &ExpectedSeq(len)))
+        }
+    }
+
+    fn end_mapping(&mut self, len: usize) -> Result<()> {
+        let total = {
+            let mut map = CollectionVisitor { de: self, len: len };
+            while de::MapVisitor::visit::<Ignore, Ignore>(&mut map)?.is_some() {}
+            map.len
+        };
+        assert_eq!(Event::MappingEnd, *self.next()?);
+        if total == len {
+            Ok(())
+        } else {
+            struct ExpectedMap(usize);
+            impl Expected for ExpectedMap {
+                fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                    if self.0 == 1 {
+                        write!(formatter, "map containing 1 entry")
+                    } else {
+                        write!(formatter, "map containing {} entries", self.0)
+                    }
+                }
+            }
+            Err(de::Error::invalid_length(total, &ExpectedMap(len)))
+        }
+    }
 }
 
 struct CollectionVisitor<'a: 'r, 'r> {
@@ -330,50 +378,22 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
                 }
             }
             Event::SequenceStart => {
-                let (value, len, remaining) = {
+                let (value, len) = {
                     let mut seq = CollectionVisitor { de: self, len: 0 };
                     let value = visitor.visit_seq(&mut seq)?;
-                    let mut remaining = 0;
-                    while de::SeqVisitor::visit::<Ignore>(&mut seq)?.is_some() {
-                        remaining += 1;
-                    }
-                    (value, seq.len, remaining)
+                    (value, seq.len)
                 };
-                assert_eq!(Event::SequenceEnd, *self.next()?);
-                if remaining == 0 {
-                    Ok(value)
-                } else {
-                    struct ExpectedSeq(usize);
-                    impl Expected for ExpectedSeq {
-                        fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                            write!(formatter, "sequence of {} elements", self.0)
-                        }
-                    }
-                    Err(de::Error::invalid_length(len + remaining, &ExpectedSeq(len)))
-                }
+                self.end_sequence(len)?;
+                Ok(value)
             }
             Event::MappingStart => {
-                let (value, len, remaining) = {
+                let (value, len) = {
                     let mut map = CollectionVisitor { de: self, len: 0 };
                     let value = visitor.visit_map(&mut map)?;
-                    let mut remaining = 0;
-                    while de::MapVisitor::visit::<Ignore, Ignore>(&mut map)?.is_some() {
-                        remaining += 1;
-                    }
-                    (value, map.len, remaining)
+                    (value, map.len)
                 };
-                assert_eq!(Event::MappingEnd, *self.next()?);
-                if remaining == 0 {
-                    Ok(value)
-                } else {
-                    struct ExpectedMap(usize);
-                    impl Expected for ExpectedMap {
-                        fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                            write!(formatter, "map containing {} entries", self.0)
-                        }
-                    }
-                    Err(de::Error::invalid_length(len + remaining, &ExpectedMap(len)))
-                }
+                self.end_mapping(len)?;
+                Ok(value)
             }
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
@@ -441,10 +461,8 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
             Event::MappingStart => {
                 self.pos += 1;
                 let value = visitor.visit_enum(VariantVisitor { de: self })?;
-                match *self.next()? {
-                    Event::MappingEnd => Ok(value),
-                    _ => Err(Error::VariantMapWrongSize(name.to_owned(), 2)), // FIXME
-                }
+                self.end_mapping(1)?;
+                Ok(value)
             }
             Event::Scalar(_, _, _) => {
                 visitor.visit_enum(UnitVariantVisitor { de: self })
