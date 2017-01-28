@@ -33,25 +33,38 @@ pub enum Value {
 pub type Sequence = Vec<Value>;
 pub type Mapping = LinkedHashMap<Value, Value>;
 
-/// Shortcut function to encode a `T` into a YAML `Value`.
+/// Convert a `T` into `serde_yaml::Value` which is an enum that can represent
+/// any valid YAML data.
+///
+/// This conversion can fail if `T`'s implementation of `Serialize` decides to
+/// return an error.
 ///
 /// ```rust
-/// use serde_yaml::{Value, to_value};
-/// let val = to_value("foo").unwrap();
-/// assert_eq!(val, Value::String("foo".to_owned()))
+/// # use serde_yaml::Value;
+/// let val = serde_yaml::to_value("s").unwrap();
+/// assert_eq!(val, Value::String("s".to_owned()));
 /// ```
-pub fn to_value<T: ?Sized>(value: &T) -> Result<Value, Error>
+pub fn to_value<T>(value: T) -> Result<Value, Error>
     where T: Serialize
 {
     value.serialize(Serializer).map(Into::into)
 }
 
-/// Shortcut function to decode a YAML `Value` into a `T`.
+/// Interpret a `serde_yaml::Value` as an instance of type `T`.
+///
+/// This conversion can fail if the structure of the Value does not match the
+/// structure expected by `T`, for example if `T` is a struct type but the Value
+/// contains something other than a YAML map. It can also fail if the structure
+/// is correct but `T`'s implementation of `Deserialize` decides that something
+/// is wrong with the data, for example required struct fields are missing from
+/// the YAML map or some number is too big to fit in the expected primitive
+/// type.
 ///
 /// ```rust
-/// use serde_yaml::{Value, from_value};
+/// # use serde_yaml::Value;
 /// let val = Value::String("foo".to_owned());
-/// assert_eq!("foo", from_value::<String>(val).unwrap());
+/// let s: String = serde_yaml::from_value(val).unwrap();
+/// assert_eq!("foo", s);
 /// ```
 pub fn from_value<T>(value: Value) -> Result<T, Error>
     where T: Deserialize

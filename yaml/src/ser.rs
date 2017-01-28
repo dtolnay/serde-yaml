@@ -351,7 +351,11 @@ impl ser::SerializeStructVariant for SerializeStructVariant {
     }
 }
 
-pub fn to_writer<W, T>(writer: &mut W, value: &T) -> Result<()>
+/// Serialize the given data structure as YAML into the IO stream.
+///
+/// Serialization can fail if `T`'s implementation of `Serialize` decides to
+/// return an error.
+pub fn to_writer<W: ?Sized, T: ?Sized>(writer: &mut W, value: &T) -> Result<()>
     where W: io::Write,
           T: ser::Serialize
 {
@@ -363,7 +367,11 @@ pub fn to_writer<W, T>(writer: &mut W, value: &T) -> Result<()>
     Ok(())
 }
 
-pub fn to_vec<T>(value: &T) -> Result<Vec<u8>>
+/// Serialize the given data structure as a YAML byte vector.
+///
+/// Serialization can fail if `T`'s implementation of `Serialize` decides to
+/// return an error.
+pub fn to_vec<T: ?Sized>(value: &T) -> Result<Vec<u8>>
     where T: ser::Serialize
 {
     let mut vec = Vec::with_capacity(128);
@@ -371,21 +379,25 @@ pub fn to_vec<T>(value: &T) -> Result<Vec<u8>>
     Ok(vec)
 }
 
-pub fn to_string<T>(value: &T) -> Result<String>
+/// Serialize the given data structure as a String of YAML.
+///
+/// Serialization can fail if `T`'s implementation of `Serialize` decides to
+/// return an error.
+pub fn to_string<T: ?Sized>(value: &T) -> Result<String>
     where T: ser::Serialize
 {
     Ok(String::from_utf8(to_vec(value)?)?)
 }
 
-/// The yaml-rust library uses `fmt.Write` intead of `io.Write` so this is a
+/// The yaml-rust library uses `fmt::Write` intead of `io::Write` so this is a
 /// simple adapter.
-struct FmtToIoWriter<'a, W>
+struct FmtToIoWriter<'a, W: ?Sized>
     where W: io::Write + 'a
 {
     writer: &'a mut W,
 }
 
-impl<'a, W> fmt::Write for FmtToIoWriter<'a, W>
+impl<'a, W: ?Sized> fmt::Write for FmtToIoWriter<'a, W>
     where W: io::Write + 'a
 {
     fn write_str(&mut self, s: &str) -> fmt::Result {

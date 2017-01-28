@@ -518,7 +518,15 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     }
 }
 
-/// Decodes a YAML value from a `&str`.
+/// Deserialize an instance of type `T` from a string of YAML text.
+///
+/// This conversion can fail if the structure of the Value does not match the
+/// structure expected by `T`, for example if `T` is a struct type but the Value
+/// contains something other than a YAML map. It can also fail if the structure
+/// is correct but `T`'s implementation of `Deserialize` decides that something
+/// is wrong with the data, for example required struct fields are missing from
+/// the YAML map or some number is too big to fit in the expected primitive
+/// type.
 pub fn from_str<T>(s: &str) -> Result<T>
     where T: Deserialize
 {
@@ -545,6 +553,15 @@ pub fn from_str<T>(s: &str) -> Result<T>
     }
 }
 
+/// Deserialize an instance of type `T` from an iterator over bytes of YAML.
+///
+/// This conversion can fail if the structure of the Value does not match the
+/// structure expected by `T`, for example if `T` is a struct type but the Value
+/// contains something other than a YAML map. It can also fail if the structure
+/// is correct but `T`'s implementation of `Deserialize` decides that something
+/// is wrong with the data, for example required struct fields are missing from
+/// the YAML map or some number is too big to fit in the expected primitive
+/// type.
 pub fn from_iter<I, T>(iter: I) -> Result<T>
     where I: Iterator<Item = io::Result<u8>>,
           T: Deserialize
@@ -553,6 +570,15 @@ pub fn from_iter<I, T>(iter: I) -> Result<T>
     from_str(str::from_utf8(&bytes)?)
 }
 
+/// Deserialize an instance of type `T` from an IO stream of YAML.
+///
+/// This conversion can fail if the structure of the Value does not match the
+/// structure expected by `T`, for example if `T` is a struct type but the Value
+/// contains something other than a YAML map. It can also fail if the structure
+/// is correct but `T`'s implementation of `Deserialize` decides that something
+/// is wrong with the data, for example required struct fields are missing from
+/// the YAML map or some number is too big to fit in the expected primitive
+/// type.
 pub fn from_reader<R, T>(rdr: R) -> Result<T>
     where R: io::Read,
           T: Deserialize
@@ -560,6 +586,15 @@ pub fn from_reader<R, T>(rdr: R) -> Result<T>
     from_iter(rdr.bytes())
 }
 
+/// Deserialize an instance of type `T` from bytes of YAML text.
+///
+/// This conversion can fail if the structure of the Value does not match the
+/// structure expected by `T`, for example if `T` is a struct type but the Value
+/// contains something other than a YAML map. It can also fail if the structure
+/// is correct but `T`'s implementation of `Deserialize` decides that something
+/// is wrong with the data, for example required struct fields are missing from
+/// the YAML map or some number is too big to fit in the expected primitive
+/// type.
 pub fn from_slice<T>(v: &[u8]) -> Result<T>
     where T: Deserialize
 {
