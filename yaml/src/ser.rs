@@ -306,6 +306,14 @@ impl ser::SerializeMap for SerializeMap {
         Ok(())
     }
 
+    fn serialize_entry<K: ?Sized, V: ?Sized>(&mut self, key: &K, value: &V) -> Result<()>
+        where K: ser::Serialize,
+              V: ser::Serialize
+    {
+        self.hash.insert(to_yaml(key)?, to_yaml(value)?);
+        Ok(())
+    }
+
     fn end(self) -> Result<Yaml> {
         Ok(Yaml::Hash(self.hash))
     }
