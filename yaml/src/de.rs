@@ -438,7 +438,7 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     /// Parses a newtype struct as the underlying value.
     fn deserialize_newtype_struct<V>(
         self,
-        _name: &str,
+        _name: &'static str,
         visitor: V
     ) -> Result<V::Value>
         where V: de::Visitor
