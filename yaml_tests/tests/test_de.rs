@@ -27,11 +27,13 @@ fn test_alias() {
           &alias
           1
         second:
-          *alias");
+          *alias
+        third: 3");
     let mut expected = BTreeMap::new();
     {
         expected.insert(String::from("first"), 1);
         expected.insert(String::from("second"), 1);
+        expected.insert(String::from("third"), 3);
     }
     test_de(yaml, expected);
 }
@@ -52,6 +54,56 @@ fn test_option() {
         a: None,
         b: None,
         c: Some(true),
+    };
+    test_de(yaml, expected);
+}
+
+#[test]
+fn test_option_alias() {
+    #[derive(Deserialize, PartialEq, Debug)]
+    struct Data {
+        a: Option<f64>,
+        b: Option<String>,
+        c: Option<bool>,
+        d: Option<f64>,
+        e: Option<String>,
+        f: Option<bool>,
+    }
+    let yaml = indoc!("
+        ---
+        none_f:
+            &none_f
+            ~
+        none_s:
+            &none_s
+            ~
+        none_b:
+            &none_b
+            ~
+
+        some_f:
+            &some_f
+            1.0
+        some_s:
+            &some_s
+            x
+        some_b:
+            &some_b
+            true
+
+        a: *none_f
+        b: *none_s
+        c: *none_b
+        d: *some_f
+        e: *some_s
+        f: *some_b");
+    let expected = Data {
+        a: None,
+        b: None,
+        c: None,
+        d: Some(1.0),
+        e: Some("x".to_owned()),
+        f: Some(true),
     };
     test_de(yaml, expected);
 }

@@ -416,7 +416,10 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     {
         let (next, marker) = self.peek()?;
         let is_some = match *next {
-            Event::Alias(i) => return self.jump(i, marker)?.deserialize_option(visitor),
+            Event::Alias(i) => {
+                self.pos += 1;
+                return self.jump(i, marker)?.deserialize_option(visitor);
+            }
             Event::Scalar(ref v, style, ref tag) => {
                 if style != TScalarStyle::Plain {
                     true
