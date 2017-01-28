@@ -22,18 +22,9 @@ test_with_macros() {
         cargo test --verbose)
 }
 
-test_with_syntex() {
-    (cd yaml;
-        cargo test --verbose)
-    (cd yaml_tests;
-        cargo test --features with-syntex --no-default-features --verbose)
-}
-
 if [ "$TRAVIS_RUST_VERSION" = nightly ]; then
     build_with_clippy
     test_with_macros
-    test_with_syntex
 else
     build_without_clippy
-    test_with_syntex
 fi

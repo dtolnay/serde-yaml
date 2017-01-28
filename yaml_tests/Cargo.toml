@@ -2,21 +2,11 @@
 name = "serde_yaml_tests"
 version = "0.5.1"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
-build = "build.rs"
-
-[features]
-default = ["serde_derive"]
-with-syntex = ["syntex", "serde_codegen", "indoc/with-syntex"]
-
-[build-dependencies]
-syntex = { version = "*", optional = true }
-serde_codegen = { version = "0.8", optional = true }
-indoc = "*"
 
 [dependencies]
 serde = "0.8"
 serde_yaml = { path = "../yaml" }
-serde_derive = { version = "0.8", optional = true }
+serde_derive = "0.8"
 indoc = "*"
 
 [[test]]

@@ -6,18 +6,15 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![cfg_attr(not(feature = "with-syntex"), feature(custom_derive, plugin, proc_macro))]
-#![cfg_attr(not(feature = "with-syntex"), plugin(indoc))]
+#![feature(plugin)]
+#![plugin(indoc)]
 
-#![cfg(not(feature = "with-syntex"))]
 #[macro_use]
 extern crate serde_derive;
 
 extern crate serde;
 extern crate serde_yaml;
 
-#[cfg(feature = "with-syntex")]
-include!(concat!(env!("OUT_DIR"), "/test.rs"));
-
-#[cfg(not(feature = "with-syntex"))]
-include!("test.rs.in");
+mod test_de;
+mod test_serde;
+mod test_error;
