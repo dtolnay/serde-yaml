@@ -22,7 +22,6 @@ use serde::{de, ser};
 #[derive(Debug)]
 pub enum Error {
     Custom(String),
-    EndOfStream,
 
     Emit(emitter::EmitError),
     Scan(scanner::ScanError),
@@ -30,31 +29,24 @@ pub enum Error {
     Utf8(str::Utf8Error),
     FromUtf8(string::FromUtf8Error),
 
+    EndOfStream,
     AliasNotFound,
     MoreThanOneDocument,
-    VariantMapWrongSize(String, usize),
-    VariantNotAMapOrString(String),
 }
 
 impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::Custom(ref msg) => msg,
-            Error::EndOfStream => "EOF while parsing a value",
             Error::Emit(_) => "emit error",
             Error::Scan(_) => "scan error",
             Error::Io(ref err) => err.description(),
             Error::Utf8(ref err) => err.description(),
             Error::FromUtf8(ref err) => err.description(),
+            Error::EndOfStream => "EOF while parsing a value",
             Error::AliasNotFound => "alias not found",
             Error::MoreThanOneDocument => {
                 "deserializing from YAML containing more than one document is not supported"
-            }
-            Error::VariantMapWrongSize(..) => {
-                "expected a YAML map of size 1 while parsing variant"
-            }
-            Error::VariantNotAMapOrString(_) => {
-                "expected a YAML map or string while parsing variant"
             }
         }
     }
@@ -73,29 +65,17 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::Custom(ref msg) => write!(f, "{}", msg),
-            Error::EndOfStream => write!(f, "EOF while parsing a value"),
             Error::Emit(ref err) => write!(f, "{:?}", err),
             Error::Scan(ref err) => err.fmt(f),
             Error::Io(ref err) => err.fmt(f),
             Error::Utf8(ref err) => err.fmt(f),
             Error::FromUtf8(ref err) => err.fmt(f),
+            Error::EndOfStream => write!(f, "EOF while parsing a value"),
             Error::AliasNotFound => {
                 write!(f, "alias not found")
             }
             Error::MoreThanOneDocument => {
                 write!(f, "deserializing from YAML containing more than one document is not supported")
-            }
-            Error::VariantMapWrongSize(ref variant, size) => {
-                write!(f,
-                       "expected a YAML map of size 1 while parsing variant \
-                        {} but was size {}",
-                       variant,
-                       size)
-            }
-            Error::VariantNotAMapOrString(ref variant) => {
-                write!(f,
-                       "expected a YAML map or string while parsing variant {}",
-                       variant)
             }
         }
     }
