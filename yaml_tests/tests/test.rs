@@ -6,14 +6,18 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![feature(plugin)]
-#![plugin(indoc)]
-
 #[macro_use]
 extern crate serde_derive;
 
 extern crate serde;
 extern crate serde_yaml;
+
+extern crate unindent;
+macro_rules! indoc {
+    ($doc:tt) => {
+        &$crate::unindent::unindent($doc)
+    };
+}
 
 mod test_de;
 mod test_serde;

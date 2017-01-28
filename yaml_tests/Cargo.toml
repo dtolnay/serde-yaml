@@ -7,7 +7,7 @@ authors = ["David Tolnay <dtolnay@gmail.com>"]
 serde = "0.8"
 serde_yaml = { path = "../yaml" }
 serde_derive = "0.8"
-indoc = "*"
+unindent = "0.1"
 
 [[test]]
 name = "test"
