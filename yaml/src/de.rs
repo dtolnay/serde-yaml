@@ -451,23 +451,26 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     /// to a unit enum value.
     fn deserialize_enum<V>(
         self,
-        name: &str,
-        _variants: &'static [&'static str],
+        name: &'static str,
+        variants: &'static [&'static str],
         visitor: V
     ) -> Result<V::Value>
         where V: de::Visitor
     {
         match *self.peek()? {
+            Event::Alias(i) => return self.jump(i)?.deserialize_enum(name, variants, visitor),
+            Event::Scalar(_, _, _) => {
+                visitor.visit_enum(UnitVariantVisitor { de: self })
+            }
             Event::MappingStart => {
                 self.pos += 1;
                 let value = visitor.visit_enum(VariantVisitor { de: self })?;
                 self.end_mapping(1)?;
                 Ok(value)
             }
-            Event::Scalar(_, _, _) => {
-                visitor.visit_enum(UnitVariantVisitor { de: self })
-            }
-            _ => Err(Error::VariantNotAMapOrString(name.to_owned())),
+            Event::SequenceStart => Err(de::Error::invalid_type(Unexpected::Seq, &"string or singleton map")),
+            Event::SequenceEnd => panic!("unexpected end of sequence"),
+            Event::MappingEnd => panic!("unexpected end of mapping"),
         }
     }
 

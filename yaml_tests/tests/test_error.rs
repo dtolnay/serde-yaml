@@ -93,7 +93,6 @@ fn test_variant_not_a_map() {
     let yaml = indoc!(r#"
         ---
         - "V""#);
-    let expected = "expected a YAML map or string while parsing variant \
-                    Variant";
+    let expected = "invalid type: sequence, expected string or singleton map";
     test_error::<Variant>(yaml, expected);
 }
