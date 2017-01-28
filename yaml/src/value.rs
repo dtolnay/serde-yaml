@@ -37,7 +37,7 @@ pub type Mapping = LinkedHashMap<Value, Value>;
 ///
 /// ```rust
 /// use serde_yaml::{Value, to_value};
-/// let val = to_value("foo");
+/// let val = to_value("foo").unwrap();
 /// assert_eq!(val, Value::String("foo".to_owned()))
 /// ```
 pub fn to_value<T: ?Sized>(value: &T) -> Result<Value, Error>
