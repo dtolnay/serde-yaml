@@ -5,7 +5,7 @@ authors = ["David Tolnay <dtolnay@gmail.com>"]
 license = "MIT/Apache-2.0"
 description = "YAML support for Serde"
 repository = "https://github.com/dtolnay/serde-yaml"
-documentation = "https://dtolnay.github.io/serde-yaml/"
+documentation = "https://docs.rs/serde_yaml/"
 readme = "../README.md"
 keywords = ["yaml", "serde"]
 
