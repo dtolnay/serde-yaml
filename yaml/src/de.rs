@@ -286,25 +286,25 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
                             "bool" => {
                                 match v.parse::<bool>() {
                                     Ok(v) => visitor.visit_bool(v),
-                                    Err(err) => Err(de::Error::custom(err)), // FIXME
+                                    Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a boolean")),
                                 }
                             },
                             "int" => {
                                 match v.parse::<i64>() {
                                     Ok(v) => visitor.visit_i64(v),
-                                    Err(err) => Err(de::Error::custom(err)), // FIXME
+                                    Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"an integer")),
                                 }
                             },
                             "float" => {
                                 match v.parse::<f64>() {
                                     Ok(v) => visitor.visit_f64(v),
-                                    Err(err) => Err(de::Error::custom(err)), // FIXME
+                                    Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a float")),
                                 }
                             },
                             "null" => {
                                 match v.as_ref() {
                                     "~" | "null" => visitor.visit_unit(),
-                                    _ => Err(de::Error::custom("failed to parse null")), // FIXME
+                                    _ => Err(de::Error::invalid_value(Unexpected::Str(v), &"null")),
                                 }
                             }
                             _  => visitor.visit_str(v),
