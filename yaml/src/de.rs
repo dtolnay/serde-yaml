@@ -14,12 +14,36 @@ use std::io;
 use std::iter;
 use std::str;
 
-use yaml_rust::{Yaml, YamlLoader};
-use yaml_rust::yaml;
+use yaml_rust::{yaml, Yaml, YamlLoader};
+use yaml_rust::parser::{Parser, MarkedEventReceiver, Event};
+use yaml_rust::scanner::{Marker, TokenType, TScalarStyle};
 
 use serde::de::{self, Deserialize, DeserializeSeed};
 
 use super::error::{Error, Result};
+
+pub struct Loader {
+    events: Vec<(Event, Marker)>,
+}
+
+impl MarkedEventReceiver for Loader {
+    fn on_event(&mut self, event: &Event, marker: Marker) {
+        match *event {
+            Event::Nothing
+                | Event::StreamStart
+                | Event::StreamEnd
+                | Event::DocumentStart
+                | Event::DocumentEnd => {}
+
+            Event::Alias(_)
+                | Event::Scalar(_, _, _, _)
+                | Event::SequenceStart(_)
+                | Event::SequenceEnd
+                | Event::MappingStart(_)
+                | Event::MappingEnd => self.events.push((event.clone(), marker)),
+        }
+    }
+}
 
 pub struct Deserializer {
     doc: Yaml,
