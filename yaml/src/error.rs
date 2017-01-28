@@ -35,6 +35,18 @@ pub enum Error {
     MoreThanOneDocument,
 }
 
+impl Error {
+    // Not public API. Should be pub(crate).
+    #[doc(hidden)]
+    pub fn fix_marker(self, marker: Marker) -> Self {
+        if let Error::Custom(msg, None) = self {
+            Error::Custom(msg, Some(marker))
+        } else {
+            self
+        }
+    }
+}
+
 impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {

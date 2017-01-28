@@ -44,7 +44,7 @@ fn test_missing_field() {
     let yaml = indoc!("
         ---
         v: true");
-    let expected = "missing field `w`";
+    let expected = "missing field `w` at line 2 column 2";
     test_error::<Basic>(yaml, expected);
 }
 

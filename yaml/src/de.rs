@@ -106,6 +106,73 @@ impl<'a> Deserializer<'a> {
         }
     }
 
+    fn visit<V>(&mut self, visitor: V) -> Result<V::Value>
+        where V: de::Visitor
+    {
+        match *self.next()?.0 {
+            Event::Alias(i) => de::Deserializer::deserialize(&mut self.jump(i)?, visitor),
+            Event::Scalar(ref v, style, ref tag) => {
+                if style != TScalarStyle::Plain {
+                    visitor.visit_str(v)
+                } else if let Some(TokenType::Tag(ref handle, ref suffix)) = *tag {
+                    if handle == "!!" {
+                        match suffix.as_ref() {
+                            "bool" => {
+                                match v.parse::<bool>() {
+                                    Ok(v) => visitor.visit_bool(v),
+                                    Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a boolean")),
+                                }
+                            },
+                            "int" => {
+                                match v.parse::<i64>() {
+                                    Ok(v) => visitor.visit_i64(v),
+                                    Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"an integer")),
+                                }
+                            },
+                            "float" => {
+                                match v.parse::<f64>() {
+                                    Ok(v) => visitor.visit_f64(v),
+                                    Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a float")),
+                                }
+                            },
+                            "null" => {
+                                match v.as_ref() {
+                                    "~" | "null" => visitor.visit_unit(),
+                                    _ => Err(de::Error::invalid_value(Unexpected::Str(v), &"null")),
+                                }
+                            }
+                            _  => visitor.visit_str(v),
+                        }
+                    } else {
+                        visitor.visit_str(v)
+                    }
+                } else {
+                    visit_untagged_str(visitor, v)
+                }
+            }
+            Event::SequenceStart => {
+                let (value, len) = {
+                    let mut seq = CollectionVisitor { de: self, len: 0 };
+                    let value = visitor.visit_seq(&mut seq)?;
+                    (value, seq.len)
+                };
+                self.end_sequence(len)?;
+                Ok(value)
+            }
+            Event::MappingStart => {
+                let (value, len) = {
+                    let mut map = CollectionVisitor { de: self, len: 0 };
+                    let value = visitor.visit_map(&mut map)?;
+                    (value, map.len)
+                };
+                self.end_mapping(len)?;
+                Ok(value)
+            }
+            Event::SequenceEnd => panic!("unexpected end of sequence"),
+            Event::MappingEnd => panic!("unexpected end of mapping"),
+        }
+    }
+
     fn end_sequence(&mut self, len: usize) -> Result<()> {
         let total = {
             let mut seq = CollectionVisitor { de: self, len: len };
@@ -336,77 +403,10 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     fn deserialize<V>(self, visitor: V) -> Result<V::Value>
         where V: de::Visitor
     {
-        let (next, marker) = self.next()?;
-        let result = match *next {
-            Event::Alias(i) => self.jump(i)?.deserialize(visitor),
-            Event::Scalar(ref v, style, ref tag) => {
-                if style != TScalarStyle::Plain {
-                    visitor.visit_str(v)
-                } else if let Some(TokenType::Tag(ref handle, ref suffix)) = *tag {
-                    if handle == "!!" {
-                        match suffix.as_ref() {
-                            "bool" => {
-                                match v.parse::<bool>() {
-                                    Ok(v) => visitor.visit_bool(v),
-                                    Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a boolean")),
-                                }
-                            },
-                            "int" => {
-                                match v.parse::<i64>() {
-                                    Ok(v) => visitor.visit_i64(v),
-                                    Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"an integer")),
-                                }
-                            },
-                            "float" => {
-                                match v.parse::<f64>() {
-                                    Ok(v) => visitor.visit_f64(v),
-                                    Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a float")),
-                                }
-                            },
-                            "null" => {
-                                match v.as_ref() {
-                                    "~" | "null" => visitor.visit_unit(),
-                                    _ => Err(de::Error::invalid_value(Unexpected::Str(v), &"null")),
-                                }
-                            }
-                            _  => visitor.visit_str(v),
-                        }
-                    } else {
-                        visitor.visit_str(v)
-                    }
-                } else {
-                    visit_untagged_str(visitor, v)
-                }
-            }
-            Event::SequenceStart => {
-                let (value, len) = {
-                    let mut seq = CollectionVisitor { de: self, len: 0 };
-                    let value = visitor.visit_seq(&mut seq)?;
-                    (value, seq.len)
-                };
-                self.end_sequence(len)?;
-                Ok(value)
-            }
-            Event::MappingStart => {
-                let (value, len) = {
-                    let mut map = CollectionVisitor { de: self, len: 0 };
-                    let value = visitor.visit_map(&mut map)?;
-                    (value, map.len)
-                };
-                self.end_mapping(len)?;
-                Ok(value)
-            }
-            Event::SequenceEnd => panic!("unexpected end of sequence"),
-            Event::MappingEnd => panic!("unexpected end of mapping"),
-        };
-        match result {
-            Ok(value) => Ok(value),
-            // The de::Error and From<de::value::Error> impls both create errors
-            // with unknown line and column. Fill in the position here by
-            // looking at the current index in the input.
-            Err(Error::Custom(msg, None)) => Err(Error::Custom(msg, Some(marker))),
-            Err(err) => Err(err),
-        }
+        let marker = self.peek()?.1;
+        // The de::Error impl creates errors with unknown line and column. Fill
+        // in the position here by looking at the current index in the input.
+        self.visit(visitor).map_err(|err| err.fix_marker(marker))
     }
 
     /// Parses `null` as None and any other values as `Some(...)`.
