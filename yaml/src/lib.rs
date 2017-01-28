@@ -10,7 +10,6 @@
 #![cfg_attr(feature="clippy", plugin(clippy))]
 #![cfg_attr(feature="clippy", deny(clippy))] // turn warnings into errors
 
-extern crate dtoa;
 extern crate linked_hash_map;
 #[macro_use]
 extern crate serde;
