@@ -19,18 +19,30 @@ use yaml_rust::Yaml;
 use error::Error;
 use ser::Serializer;
 
+/// Represents any valid YAML value.
 #[derive(Clone, PartialOrd, Debug)]
 pub enum Value {
+    /// Represents a YAML null value.
     Null,
+    /// Represents a YAML boolean.
     Bool(bool),
+    /// Represents a YAML integer value.
     I64(i64),
+    /// Represents a YAML floating-point value.
     F64(f64),
+    /// Represents a YAML string.
     String(String),
+    /// Represents a YAML sequence in which the elements are
+    /// `serde_yaml::Value`.
     Sequence(Sequence),
+    /// Represents a YAML mapping in which the keys and values are both
+    /// `serde_yaml::Value`.
     Mapping(Mapping),
 }
 
+/// A YAML sequence in which the elements are `serde_yaml::Value`.
 pub type Sequence = Vec<Value>;
+/// A YAML mapping in which the keys and values are both `serde_yaml::Value`.
 pub type Mapping = LinkedHashMap<Value, Value>;
 
 /// Convert a `T` into `serde_yaml::Value` which is an enum that can represent
