@@ -12,6 +12,6 @@ keywords = ["yaml", "serde"]
 [dependencies]
 clippy = { version = "^0.*", optional = true }
 dtoa = "0.3"
-linked-hash-map = { version = "0.3", features = ["serde_impl"] }
+linked-hash-map = "0.3"
 serde = "0.8.12"
 yaml-rust = { version = "^0.3.4", features = ["preserve_order"] }

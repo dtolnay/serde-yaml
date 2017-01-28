@@ -216,7 +216,14 @@ impl Serialize for Value {
             Value::F64(f) => serializer.serialize_f64(f),
             Value::String(ref s) => serializer.serialize_str(s),
             Value::Sequence(ref seq) => seq.serialize(serializer),
-            Value::Mapping(ref map) => map.serialize(serializer),
+            Value::Mapping(ref map) => {
+                let mut state = try!(serializer.serialize_map(Some(map.len())));
+                for (k, v) in map {
+                    try!(serializer.serialize_map_key(&mut state, k));
+                    try!(serializer.serialize_map_value(&mut state, v));
+                }
+                serializer.serialize_map_end(state)
+            }
         }
     }
 }
@@ -295,11 +302,15 @@ impl Deserialize for Value {
                 Ok(Value::Sequence(values))
             }
 
-            fn visit_map<V>(&mut self, visitor: V) -> Result<Value, V::Error>
+            fn visit_map<V>(&mut self, mut visitor: V) -> Result<Value, V::Error>
                 where V: serde::de::MapVisitor,
             {
-                use linked_hash_map::serde::LinkedHashMapVisitor;
-                let values = try!(LinkedHashMapVisitor::new().visit_map(visitor));
+                let mut values = LinkedHashMap::with_capacity(visitor.size_hint().0);
+
+                while let Some((key, value)) = try!(visitor.visit()) {
+                    values.insert(key, value);
+                }
+
                 Ok(Value::Mapping(values))
             }
         }
