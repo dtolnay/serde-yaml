@@ -375,7 +375,8 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
                     Err(de::Error::invalid_length(len + remaining, &ExpectedMap(len)))
                 }
             }
-            Event::SequenceEnd | Event::MappingEnd => Err(Error::EndOfStream), // FIXME
+            Event::SequenceEnd => panic!("unexpected end of sequence"),
+            Event::MappingEnd => panic!("unexpected end of mapping"),
         }
     }
 
@@ -403,7 +404,8 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
                 }
             }
             Event::SequenceStart | Event::MappingStart => true,
-            Event::SequenceEnd | Event::MappingEnd => return Err(Error::EndOfStream), // FIXME
+            Event::SequenceEnd => panic!("unexpected end of sequence"),
+            Event::MappingEnd => panic!("unexpected end of mapping"),
         };
         if is_some {
             visitor.visit_some(self)
