@@ -53,8 +53,7 @@ fn test_unknown_anchor() {
     let yaml = indoc!("
         ---
         *some");
-    let expected = "while parsing node, found unknown anchor at line 2 column \
-                    1";
+    let expected = "while parsing node, found unknown anchor at line 2 column 1";
     test_error::<String>(yaml, expected);
 }
 
@@ -65,8 +64,7 @@ fn test_two_documents() {
         0
         ---
         1");
-    let expected = "deserializing from YAML containing more than one document \
-                    is not supported";
+    let expected = "deserializing from YAML containing more than one document is not supported";
     test_error::<usize>(yaml, expected);
 }
 
@@ -93,6 +91,6 @@ fn test_variant_not_a_map() {
     let yaml = indoc!(r#"
         ---
         - "V""#);
-    let expected = "invalid type: sequence, expected string or singleton map";
+    let expected = "invalid type: sequence, expected string or singleton map at line 2 column 1";
     test_error::<Variant>(yaml, expected);
 }

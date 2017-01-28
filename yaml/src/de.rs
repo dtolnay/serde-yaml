@@ -469,7 +469,8 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     ) -> Result<V::Value>
         where V: de::Visitor
     {
-        match *self.peek()?.0 {
+        let (next, marker) = self.peek()?;
+        match *next {
             Event::Alias(i) => {
                 self.pos += 1;
                 return self.jump(i)?.deserialize_enum(name, variants, visitor);
@@ -483,7 +484,10 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
                 self.end_mapping(1)?;
                 Ok(value)
             }
-            Event::SequenceStart => Err(de::Error::invalid_type(Unexpected::Seq, &"string or singleton map")),
+            Event::SequenceStart => {
+                let err = de::Error::invalid_type(Unexpected::Seq, &"string or singleton map");
+                Err(Error::fix_marker(err, marker))
+            }
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
         }
