@@ -39,7 +39,7 @@ pub enum Error {
 impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::Custom(_) => "syntax error",
+            Error::Custom(ref msg) => msg,
             Error::EndOfStream => "EOF while parsing a value",
             Error::Emit(_) => "emit error",
             Error::Scan(_) => "scan error",
