@@ -233,7 +233,7 @@ impl<'a, 'r> de::VariantVisitor for UnitVariantVisitor<'a, 'r> {
     }
 }
 
-fn visit_str<V>(visitor: V, v: &str) -> Result<V::Value>
+fn visit_untagged_str<V>(visitor: V, v: &str) -> Result<V::Value>
     where V: de::Visitor
 {
     if v == "~" || v == "null" {
@@ -313,7 +313,7 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
                         visitor.visit_str(v)
                     }
                 } else {
-                    visit_str(visitor, v)
+                    visit_untagged_str(visitor, v)
                 }
             }
             Event::SequenceStart => {
