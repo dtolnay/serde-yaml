@@ -6,6 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::mem;
 
@@ -14,7 +15,9 @@ use linked_hash_map::LinkedHashMap;
 use serde::{self, Serialize, Deserialize};
 use yaml_rust::Yaml;
 
-use super::{Error, Deserializer, Serializer};
+use error::Error;
+use de::Deserializer;
+use ser::Serializer;
 
 #[derive(Clone, PartialOrd, Debug)]
 pub enum Value {
@@ -37,12 +40,10 @@ pub type Mapping = LinkedHashMap<Value, Value>;
 /// let val = to_value("foo");
 /// assert_eq!(val, Value::String("foo".to_owned()))
 /// ```
-pub fn to_value<T: ?Sized>(value: &T) -> Value
-    where T: Serialize,
+pub fn to_value<T: ?Sized>(value: &T) -> Result<Value, Error>
+    where T: Serialize
 {
-    let mut ser = Serializer::new();
-    value.serialize(&mut ser).unwrap();
-    ser.take().into()
+    value.serialize(Serializer).map(Into::into)
 }
 
 /// Shortcut function to decode a YAML `Value` into a `T`.
@@ -53,11 +54,9 @@ pub fn to_value<T: ?Sized>(value: &T) -> Value
 /// assert_eq!("foo", from_value::<String>(val).unwrap());
 /// ```
 pub fn from_value<T>(value: Value) -> Result<T, Error>
-    where T: Deserialize,
+    where T: Deserialize
 {
-    let yaml = value.into();
-    let mut de = Deserializer::new(&yaml);
-    Deserialize::deserialize(&mut de)
+    Deserialize::deserialize(Deserializer::new(value.into()))
 }
 
 impl Value {
@@ -206,7 +205,7 @@ impl From<Value> for Yaml {
 }
 
 impl Serialize for Value {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: serde::Serializer
     {
         match *self {
@@ -216,20 +215,21 @@ impl Serialize for Value {
             Value::F64(f) => serializer.serialize_f64(f),
             Value::String(ref s) => serializer.serialize_str(s),
             Value::Sequence(ref seq) => seq.serialize(serializer),
-            Value::Mapping(ref map) => {
-                let mut state = try!(serializer.serialize_map(Some(map.len())));
-                for (k, v) in map {
-                    try!(serializer.serialize_map_key(&mut state, k));
-                    try!(serializer.serialize_map_value(&mut state, v));
+            Value::Mapping(ref hash) => {
+                use serde::ser::SerializeMap;
+                let mut map = try!(serializer.serialize_map(Some(hash.len())));
+                for (k, v) in hash {
+                    try!(map.serialize_key(k));
+                    try!(map.serialize_value(v));
                 }
-                serializer.serialize_map_end(state)
+                map.end()
             }
         }
     }
 }
 
 impl Deserialize for Value {
-    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: serde::Deserializer
     {
         struct ValueVisitor;
@@ -237,73 +237,77 @@ impl Deserialize for Value {
         impl serde::de::Visitor for ValueVisitor {
             type Value = Value;
 
-            fn visit_bool<E>(&mut self, b: bool) -> Result<Value, E>
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("any YAML value")
+            }
+
+            fn visit_bool<E>(self, b: bool) -> Result<Value, E>
                 where E: serde::de::Error
             {
                 Ok(Value::Bool(b))
             }
 
-            fn visit_i64<E>(&mut self, i: i64) -> Result<Value, E>
+            fn visit_i64<E>(self, i: i64) -> Result<Value, E>
                 where E: serde::de::Error
             {
                 Ok(Value::I64(i))
             }
 
-            fn visit_u64<E>(&mut self, u: u64) -> Result<Value, E>
+            fn visit_u64<E>(self, u: u64) -> Result<Value, E>
                 where E: serde::de::Error
             {
                 Ok(Value::I64(u as i64))
             }
 
-            fn visit_f64<E>(&mut self, f: f64) -> Result<Value, E>
+            fn visit_f64<E>(self, f: f64) -> Result<Value, E>
                 where E: serde::de::Error
             {
                 Ok(Value::F64(f))
             }
 
-            fn visit_str<E>(&mut self, s: &str) -> Result<Value, E>
+            fn visit_str<E>(self, s: &str) -> Result<Value, E>
                 where E: serde::de::Error
             {
                 Ok(Value::String(s.to_owned()))
             }
 
-            fn visit_string<E>(&mut self, s: String) -> Result<Value, E>
+            fn visit_string<E>(self, s: String) -> Result<Value, E>
                 where E: serde::de::Error
             {
                 Ok(Value::String(s))
             }
 
-            fn visit_unit<E>(&mut self) -> Result<Value, E>
+            fn visit_unit<E>(self) -> Result<Value, E>
                 where E: serde::de::Error
             {
                 Ok(Value::Null)
             }
 
-            fn visit_none<E>(&mut self) -> Result<Value, E>
+            fn visit_none<E>(self) -> Result<Value, E>
                 where E: serde::de::Error
             {
                 Ok(Value::Null)
             }
 
             fn visit_some<D>(
-                &mut self,
-                deserializer: &mut D
+                self,
+                deserializer: D
             ) -> Result<Value, D::Error>
-                where D: serde::Deserializer,
+                where D: serde::Deserializer
             {
                 Deserialize::deserialize(deserializer)
             }
 
-            fn visit_seq<V>(&mut self, visitor: V) -> Result<Value, V::Error>
-                where V: serde::de::SeqVisitor,
+            fn visit_seq<V>(self, visitor: V) -> Result<Value, V::Error>
+                where V: serde::de::SeqVisitor
             {
                 use serde::de::impls::VecVisitor;
                 let values = try!(VecVisitor::new().visit_seq(visitor));
                 Ok(Value::Sequence(values))
             }
 
-            fn visit_map<V>(&mut self, mut visitor: V) -> Result<Value, V::Error>
-                where V: serde::de::MapVisitor,
+            fn visit_map<V>(self, mut visitor: V) -> Result<Value, V::Error>
+                where V: serde::de::MapVisitor
             {
                 let mut values = LinkedHashMap::with_capacity(visitor.size_hint().0);
 

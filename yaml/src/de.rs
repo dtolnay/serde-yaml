@@ -12,72 +12,62 @@
 
 use std::io;
 use std::iter;
-use std::slice;
 use std::str;
 
 use yaml_rust::{Yaml, YamlLoader};
 use yaml_rust::yaml;
 
-use serde::de::{self, Deserialize};
+use serde::de::{self, Deserialize, DeserializeSeed};
 
 use super::error::{Error, Result};
 
-/// A structure for deserializing a YAML value into a Rust value.
-pub struct Deserializer<'a> {
-    /// YAML value being deserialized.
-    doc: &'a Yaml,
+pub struct Deserializer {
+    doc: Yaml,
 }
 
-impl<'a> Deserializer<'a> {
-    /// Creates the YAML deserializer from an in-memory `Yaml`.
-    pub fn new(doc: &'a Yaml) -> Self {
+impl Deserializer {
+    pub fn new(doc: Yaml) -> Self {
         Deserializer {
             doc: doc,
         }
     }
 }
 
-struct SeqVisitor<'a> {
+struct SeqVisitor {
     /// Iterator over the YAML array being visited.
-    iter: slice::Iter<'a, Yaml>,
+    iter: <yaml::Array as iter::IntoIterator>::IntoIter,
 }
 
-impl<'a> SeqVisitor<'a> {
-    fn new(seq: &'a [Yaml]) -> Self {
+impl SeqVisitor {
+    fn new(seq: yaml::Array) -> Self {
         SeqVisitor {
-            iter: seq.iter(),
+            iter: seq.into_iter(),
         }
     }
 }
 
-impl<'a> de::SeqVisitor for SeqVisitor<'a> {
+impl de::SeqVisitor for SeqVisitor {
     type Error = Error;
 
-    fn visit<T>(&mut self) -> Result<Option<T>>
-        where T: Deserialize,
+    fn visit_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
+        where T: DeserializeSeed
     {
         match self.iter.next() {
             None => Ok(None),
-            Some(t) => {
-                Deserialize::deserialize(&mut Deserializer::new(t)).map(Some)
-            }
+            Some(t) => seed.deserialize(Deserializer::new(t)).map(Some),
         }
     }
-
-    fn end(&mut self) -> Result<()> {
-        Ok(())
-    }
 }
 
-struct MapVisitor<'a> {
+struct MapVisitor {
     /// Iterator over the YAML hash being visited.
-    iter: <&'a yaml::Hash as iter::IntoIterator>::IntoIter,
+    iter: <yaml::Hash as iter::IntoIterator>::IntoIter,
     /// Value associated with the most recently visited key.
-    v: Option<&'a Yaml>,
+    v: Option<Yaml>,
 }
 
-impl<'a> MapVisitor<'a> {
-    fn new(hash: &'a yaml::Hash) -> Self {
+impl MapVisitor {
+    fn new(hash: yaml::Hash) -> Self {
         MapVisitor {
             iter: hash.into_iter(),
             v: None,
@@ -85,132 +75,109 @@ impl<'a> MapVisitor<'a> {
     }
 }
 
-impl<'a> de::MapVisitor for MapVisitor<'a> {
+impl de::MapVisitor for MapVisitor {
     type Error = Error;
 
-    fn visit_key<K>(&mut self) -> Result<Option<K>>
-        where K: Deserialize,
+    fn visit_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
+        where K: DeserializeSeed
     {
         match self.iter.next() {
             None => Ok(None),
             Some((k, v)) => {
                 self.v = Some(v);
-                Deserialize::deserialize(&mut Deserializer::new(k)).map(Some)
+                seed.deserialize(Deserializer::new(k)).map(Some)
             }
         }
     }
 
-    fn visit_value<V>(&mut self) -> Result<V>
-        where V: Deserialize,
+    fn visit_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
+        where V: DeserializeSeed
     {
-        if let Some(v) = self.v {
-            Deserialize::deserialize(&mut Deserializer::new(v))
-        } else {
-            panic!("must call visit_key before visit_value")
+        match self.v.take() {
+            Some(v) => seed.deserialize(Deserializer::new(v)),
+            None => panic!("visit_value called before visit_key"),
         }
-    }
-
-    fn end(&mut self) -> Result<()> {
-        Ok(())
-    }
-
-    fn missing_field<V>(&mut self, field: &'static str) -> Result<V>
-        where V: de::Deserialize,
-    {
-        struct MissingFieldDeserializer(&'static str);
-
-        impl de::Deserializer for MissingFieldDeserializer {
-            type Error = Error;
-
-            fn deserialize<V>(&mut self, _visitor: V) -> Result<V::Value>
-                where V: de::Visitor,
-            {
-                Err(de::Error::missing_field(self.0))
-            }
-
-            fn deserialize_option<V>(
-                &mut self,
-                mut visitor: V
-            ) -> Result<V::Value>
-                where V: de::Visitor,
-            {
-                visitor.visit_none()
-            }
-
-            forward_to_deserialize!{
-                bool usize u8 u16 u32 u64 isize i8 i16 i32 i64 f32 f64 char str
-                string unit seq seq_fixed_size bytes map unit_struct
-                newtype_struct tuple_struct struct struct_field tuple enum
-                ignored_any
-            }
-        }
-
-        let mut de = MissingFieldDeserializer(field);
-        Ok(try!(de::Deserialize::deserialize(&mut de)))
     }
 }
 
-struct VariantVisitor<'a> {
-    /// Representation of which variant it is.
-    variant: &'a Yaml,
-    /// Representation of the content of the variant.
-    content: &'a Yaml,
+struct EnumVisitor {
+    variant: Yaml,
+    content: Yaml,
 }
 
-impl<'a> VariantVisitor<'a> {
-    fn new(variant: &'a Yaml, content: &'a Yaml) -> Self {
-        VariantVisitor {
+impl EnumVisitor {
+    fn new(variant: Yaml, content: Yaml) -> Self {
+        EnumVisitor {
             variant: variant,
             content: content,
         }
     }
 }
 
-impl<'a> de::VariantVisitor for VariantVisitor<'a> {
+impl de::EnumVisitor for EnumVisitor {
     type Error = Error;
+    type Variant = VariantVisitor;
 
-    fn visit_variant<V>(&mut self) -> Result<V>
-        where V: Deserialize,
+    fn visit_variant_seed<V>(
+        self,
+        seed: V,
+    ) -> Result<(V::Value, VariantVisitor)>
+        where V: DeserializeSeed
     {
-        Deserialize::deserialize(&mut Deserializer::new(self.variant))
-    }
-
-    fn visit_unit(&mut self) -> Result<()> {
-        Ok(())
-    }
-
-    fn visit_newtype<T>(&mut self) -> Result<T>
-        where T: Deserialize,
-    {
-        Deserialize::deserialize(&mut Deserializer::new(self.content))
-    }
-
-    fn visit_tuple<V>(&mut self, _len: usize, visitor: V) -> Result<V::Value>
-        where V: de::Visitor,
-    {
-        de::Deserializer::deserialize(&mut Deserializer::new(self.content),
-                                      visitor)
-    }
-
-    fn visit_struct<V>(
-        &mut self,
-        _fields: &'static [&'static str],
-        visitor: V
-    ) -> Result<V::Value>
-        where V: de::Visitor,
-    {
-        de::Deserializer::deserialize(&mut Deserializer::new(self.content),
-                                      visitor)
+        let variant = try!(seed.deserialize(Deserializer::new(self.variant)));
+        Ok((variant, VariantVisitor::new(self.content)))
     }
 }
 
-impl<'a> de::Deserializer for Deserializer<'a> {
+struct VariantVisitor {
+    content: Yaml,
+}
+
+impl VariantVisitor {
+    fn new(content: Yaml) -> Self {
+        VariantVisitor {
+            content: content,
+        }
+    }
+}
+
+impl de::VariantVisitor for VariantVisitor {
     type Error = Error;
 
-    fn deserialize<V>(&mut self, mut visitor: V) -> Result<V::Value>
-        where V: de::Visitor,
+    fn visit_unit(self) -> Result<()> {
+        Ok(())
+    }
+
+    fn visit_newtype_seed<T>(self, seed: T) -> Result<T::Value>
+        where T: DeserializeSeed
     {
-        match *self.doc {
+        seed.deserialize(Deserializer::new(self.content))
+    }
+
+    fn visit_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
+        where V: de::Visitor
+    {
+        de::Deserializer::deserialize(Deserializer::new(self.content), visitor)
+    }
+
+    fn visit_struct<V>(
+        self,
+        _fields: &'static [&'static str],
+        visitor: V
+    ) -> Result<V::Value>
+        where V: de::Visitor
+    {
+        de::Deserializer::deserialize(Deserializer::new(self.content), visitor)
+    }
+}
+
+impl de::Deserializer for Deserializer {
+    type Error = Error;
+
+    fn deserialize<V>(self, visitor: V) -> Result<V::Value>
+        where V: de::Visitor
+    {
+        match self.doc {
             Yaml::Real(ref s) => {
                 match s.parse() {
                     Ok(f) => visitor.visit_f64(f),
@@ -218,10 +185,10 @@ impl<'a> de::Deserializer for Deserializer<'a> {
                 }
             }
             Yaml::Integer(i) => visitor.visit_i64(i),
-            Yaml::String(ref s) => visitor.visit_str(s),
+            Yaml::String(s) => visitor.visit_string(s),
             Yaml::Boolean(b) => visitor.visit_bool(b),
-            Yaml::Array(ref seq) => visitor.visit_seq(SeqVisitor::new(seq)),
-            Yaml::Hash(ref hash) => visitor.visit_map(MapVisitor::new(hash)),
+            Yaml::Array(seq) => visitor.visit_seq(SeqVisitor::new(seq)),
+            Yaml::Hash(hash) => visitor.visit_map(MapVisitor::new(hash)),
             Yaml::Alias(_) => Err(Error::AliasUnsupported),
             Yaml::Null => visitor.visit_unit(),
             Yaml::BadValue => {
@@ -235,10 +202,10 @@ impl<'a> de::Deserializer for Deserializer<'a> {
     }
 
     /// Parses `null` as None and any other values as `Some(...)`.
-    fn deserialize_option<V>(&mut self, mut visitor: V) -> Result<V::Value>
-        where V: de::Visitor,
+    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
+        where V: de::Visitor
     {
-        match *self.doc {
+        match self.doc {
             Yaml::Null => visitor.visit_none(),
             _ => visitor.visit_some(self),
         }
@@ -246,11 +213,11 @@ impl<'a> de::Deserializer for Deserializer<'a> {
 
     /// Parses a newtype struct as the underlying value.
     fn deserialize_newtype_struct<V>(
-        &mut self,
+        self,
         _name: &str,
-        mut visitor: V
+        visitor: V
     ) -> Result<V::Value>
-        where V: de::Visitor,
+        where V: de::Visitor
     {
         visitor.visit_newtype_struct(self)
     }
@@ -259,48 +226,48 @@ impl<'a> de::Deserializer for Deserializer<'a> {
     /// variant and the value gives the content. A String will also parse correctly
     /// to a unit enum value.
     fn deserialize_enum<V>(
-        &mut self,
+        self,
         name: &str,
         _variants: &'static [&'static str],
-        mut visitor: V
+        visitor: V
     ) -> Result<V::Value>
-        where V: de::EnumVisitor,
+        where V: de::Visitor
     {
-        match *self.doc {
-            Yaml::Hash(ref hash) => {
-                let mut iter = hash.iter();
+        match self.doc {
+            Yaml::Hash(hash) => {
+                let len = hash.len();
+                let mut iter = hash.into_iter();
                 if let (Some(entry), None) = (iter.next(), iter.next()) {
                     let (variant, content) = entry;
-                    visitor.visit(VariantVisitor::new(variant, content))
+                    visitor.visit_enum(EnumVisitor::new(variant, content))
                 } else {
-                    Err(Error::VariantMapWrongSize(String::from(name),
-                                                   hash.len()))
+                    Err(Error::VariantMapWrongSize(String::from(name), len))
                 }
             }
-            ref ystr @ Yaml::String(_) => {
-                visitor.visit(VariantVisitor::new(ystr, &Yaml::Null))
+            ystr @ Yaml::String(_) => {
+                visitor.visit_enum(EnumVisitor::new(ystr, Yaml::Null))
             }
             _ => Err(Error::VariantNotAMapOrString(String::from(name))),
         }
     }
 
     forward_to_deserialize!{
-        bool usize u8 u16 u32 u64 isize i8 i16 i32 i64 f32 f64 char str string
-        unit seq seq_fixed_size bytes map unit_struct tuple_struct struct
+        bool u8 u16 u32 u64 i8 i16 i32 i64 f32 f64 char str string unit seq
+        seq_fixed_size bytes byte_buf map unit_struct tuple_struct struct
         struct_field tuple ignored_any
     }
 }
 
 /// Decodes a YAML value from a `&str`.
 pub fn from_str<T>(s: &str) -> Result<T>
-    where T: Deserialize,
+    where T: Deserialize
 {
     let docs = try!(YamlLoader::load_from_str(s));
     match docs.len() {
         0 => Err(Error::EndOfStream),
         1 => {
-            let doc = &docs[0];
-            Deserialize::deserialize(&mut Deserializer::new(doc))
+            let doc = docs.into_iter().next().unwrap();
+            Deserialize::deserialize(Deserializer::new(doc))
         }
         n => Err(Error::TooManyDocuments(n)),
     }
@@ -308,7 +275,7 @@ pub fn from_str<T>(s: &str) -> Result<T>
 
 pub fn from_iter<I, T>(iter: I) -> Result<T>
     where I: Iterator<Item = io::Result<u8>>,
-          T: Deserialize,
+          T: Deserialize
 {
     let bytes: Vec<u8> = try!(iter.collect());
     from_str(try!(str::from_utf8(&bytes)))
@@ -316,13 +283,13 @@ pub fn from_iter<I, T>(iter: I) -> Result<T>
 
 pub fn from_reader<R, T>(rdr: R) -> Result<T>
     where R: io::Read,
-          T: Deserialize,
+          T: Deserialize
 {
     from_iter(rdr.bytes())
 }
 
 pub fn from_slice<T>(v: &[u8]) -> Result<T>
-    where T: Deserialize,
+    where T: Deserialize
 {
     from_iter(v.iter().map(|byte| Ok(*byte)))
 }

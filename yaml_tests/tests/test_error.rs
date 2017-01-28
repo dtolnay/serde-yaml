@@ -23,7 +23,7 @@ fn test_incorrect_type() {
     let yaml = indoc!("
         ---
         str");
-    let expected = "Invalid type. Expected `Str`";
+    let expected = "invalid type: string \"str\", expected i16";
     test_error::<i16>(yaml, expected);
 }
 
@@ -44,7 +44,7 @@ fn test_missing_field() {
     let yaml = indoc!("
         ---
         v: true");
-    let expected = "Missing field `w`";
+    let expected = "missing field `w`";
     test_error::<Basic>(yaml, expected);
 }
 

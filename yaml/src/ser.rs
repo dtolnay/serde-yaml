@@ -10,372 +10,342 @@
 //!
 //! This module provides YAML serialization with the type `Serializer`.
 
-use std::{fmt, io, mem};
+use std::{fmt, io};
 
-use yaml_rust::{Yaml, YamlEmitter};
-use yaml_rust::yaml;
+use yaml_rust::{yaml, Yaml, YamlEmitter};
 
 use serde::ser;
 
 use super::error::{Error, Result};
 
-/// A structure for serializing a Rust value into a YAML value.
-pub struct Serializer {
-    /// The YAML value to hold the result.
-    doc: Yaml,
-}
-
-impl Serializer {
-    pub fn new() -> Self {
-        Serializer {
-            doc: Yaml::Null,
-        }
-    }
-
-    pub fn take(self) -> Yaml {
-        self.doc
-    }
-}
-
-impl Default for Serializer {
-    fn default() -> Self {
-        Serializer::new()
-    }
-}
+pub struct Serializer;
 
 impl ser::Serializer for Serializer {
+    type Ok = Yaml;
     type Error = Error;
-    type SeqState = yaml::Array;
-    type TupleState = yaml::Array;
-    type TupleStructState = yaml::Array;
-    type TupleVariantState = (&'static str, yaml::Array);
-    type MapState = (Option<yaml::Yaml>, yaml::Hash);
-    type StructState = (Option<yaml::Yaml>, yaml::Hash);
-    type StructVariantState = (&'static str, (Option<yaml::Yaml>, yaml::Hash));
 
-    fn serialize_bool(&mut self, v: bool) -> Result<()> {
-        self.doc = Yaml::Boolean(v);
-        Ok(())
+    type SerializeSeq = SerializeArray;
+    type SerializeTuple = SerializeArray;
+    type SerializeTupleStruct = SerializeArray;
+    type SerializeTupleVariant = SerializeTupleVariant;
+    type SerializeMap = SerializeMap;
+    type SerializeStruct = SerializeStruct;
+    type SerializeStructVariant = SerializeStructVariant;
+
+    fn serialize_bool(self, v: bool) -> Result<Yaml> {
+        Ok(Yaml::Boolean(v))
     }
 
-    fn serialize_isize(&mut self, v: isize) -> Result<()> {
+    fn serialize_i8(self, v: i8) -> Result<Yaml> {
         self.serialize_i64(v as i64)
     }
 
-    fn serialize_i8(&mut self, v: i8) -> Result<()> {
+    fn serialize_i16(self, v: i16) -> Result<Yaml> {
         self.serialize_i64(v as i64)
     }
 
-    fn serialize_i16(&mut self, v: i16) -> Result<()> {
+    fn serialize_i32(self, v: i32) -> Result<Yaml> {
         self.serialize_i64(v as i64)
     }
 
-    fn serialize_i32(&mut self, v: i32) -> Result<()> {
+    fn serialize_i64(self, v: i64) -> Result<Yaml> {
+        Ok(Yaml::Integer(v))
+    }
+
+    fn serialize_u8(self, v: u8) -> Result<Yaml> {
         self.serialize_i64(v as i64)
     }
 
-    fn serialize_i64(&mut self, v: i64) -> Result<()> {
-        self.doc = Yaml::Integer(v);
-        Ok(())
-    }
-
-    fn serialize_usize(&mut self, v: usize) -> Result<()> {
+    fn serialize_u16(self, v: u16) -> Result<Yaml> {
         self.serialize_i64(v as i64)
     }
 
-    fn serialize_u8(&mut self, v: u8) -> Result<()> {
+    fn serialize_u32(self, v: u32) -> Result<Yaml> {
         self.serialize_i64(v as i64)
     }
 
-    fn serialize_u16(&mut self, v: u16) -> Result<()> {
+    fn serialize_u64(self, v: u64) -> Result<Yaml> {
         self.serialize_i64(v as i64)
     }
 
-    fn serialize_u32(&mut self, v: u32) -> Result<()> {
-        self.serialize_i64(v as i64)
+    fn serialize_f32(self, v: f32) -> Result<Yaml> {
+        self.serialize_f64(v as f64)
     }
 
-    fn serialize_u64(&mut self, v: u64) -> Result<()> {
-        self.serialize_i64(v as i64)
+    fn serialize_f64(self, v: f64) -> Result<Yaml> {
+        Ok(Yaml::Real(v.to_string()))
     }
 
-    fn serialize_f32(&mut self, v: f32) -> Result<()> {
-        self.doc = Yaml::Real(v.to_string());
-        Ok(())
+    fn serialize_char(self, value: char) -> Result<Yaml> {
+        Ok(Yaml::String(value.to_string()))
     }
 
-    fn serialize_f64(&mut self, v: f64) -> Result<()> {
-        self.doc = Yaml::Real(v.to_string());
-        Ok(())
+    fn serialize_str(self, value: &str) -> Result<Yaml> {
+        Ok(Yaml::String(value.to_owned()))
     }
 
-    fn serialize_char(&mut self, value: char) -> Result<()> {
-        self.doc = Yaml::String(value.to_string());
-        Ok(())
+    fn serialize_bytes(self, value: &[u8]) -> Result<Yaml> {
+        let vec = value.iter().map(|&b| Yaml::Integer(b as i64)).collect();
+        Ok(Yaml::Array(vec))
     }
 
-    fn serialize_str(&mut self, value: &str) -> Result<()> {
-        self.doc = Yaml::String(String::from(value));
-        Ok(())
+    fn serialize_unit(self) -> Result<Yaml> {
+        Ok(Yaml::Null)
     }
 
-    fn serialize_bytes(&mut self, value: &[u8]) -> Result<()> {
-        let mut state = try!(self.serialize_seq(Some(value.len())));
-        for c in value {
-            try!(self.serialize_seq_elt(&mut state, c));
-        }
-        self.serialize_seq_end(state)
-    }
-
-    fn serialize_unit(&mut self) -> Result<()> {
-        self.doc = Yaml::Null;
-        Ok(())
-    }
-
-    fn serialize_unit_struct(&mut self, _name: &'static str) -> Result<()> {
-        self.doc = Yaml::Null;
-        Ok(())
-    }
-
-    fn serialize_unit_variant(
-        &mut self,
-        _name: &str,
-        _variant_index: usize,
-        variant: &str
-    ) -> Result<()> {
-        self.doc = Yaml::String(String::from(variant));
-        Ok(())
-    }
-
-    fn serialize_newtype_struct<T>(
-        &mut self,
-        _name: &'static str,
-        value: T
-    ) -> Result<()>
-        where T: ser::Serialize,
-    {
-        value.serialize(self)
-    }
-
-    fn serialize_newtype_variant<T>(
-        &mut self,
-        _name: &str,
-        _variant_index: usize,
-        variant: &str,
-        value: T
-    ) -> Result<()>
-        where T: ser::Serialize,
-    {
-        self.doc = singleton_hash(try!(to_yaml(variant)), try!(to_yaml(value)));
-        Ok(())
-    }
-
-    fn serialize_none(&mut self) -> Result<()> {
+    fn serialize_unit_struct(self, _name: &'static str) -> Result<Yaml> {
         self.serialize_unit()
     }
 
-    fn serialize_some<V>(&mut self, value: V) -> Result<()>
-        where V: ser::Serialize,
+    fn serialize_unit_variant(
+        self,
+        _name: &str,
+        _variant_index: usize,
+        variant: &str
+    ) -> Result<Yaml> {
+        Ok(Yaml::String(variant.to_owned()))
+    }
+
+    fn serialize_newtype_struct<T: ?Sized>(
+        self,
+        _name: &'static str,
+        value: &T
+    ) -> Result<Yaml>
+        where T: ser::Serialize
     {
         value.serialize(self)
     }
 
-    fn serialize_seq(&mut self, len: Option<usize>) -> Result<yaml::Array> {
-        Ok(match len {
+    fn serialize_newtype_variant<T: ?Sized>(
+        self,
+        _name: &str,
+        _variant_index: usize,
+        variant: &str,
+        value: &T
+    ) -> Result<Yaml>
+        where T: ser::Serialize
+    {
+        Ok(singleton_hash(try!(to_yaml(variant)), try!(to_yaml(value))))
+    }
+
+    fn serialize_none(self) -> Result<Yaml> {
+        self.serialize_unit()
+    }
+
+    fn serialize_some<V: ?Sized>(self, value: &V) -> Result<Yaml>
+        where V: ser::Serialize
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_seq(self, len: Option<usize>) -> Result<SerializeArray> {
+        let array = match len {
             None => yaml::Array::new(),
             Some(len) => yaml::Array::with_capacity(len),
-        })
+        };
+        Ok(SerializeArray { array: array })
     }
 
-    fn serialize_seq_elt<T>(
-        &mut self,
-        state: &mut yaml::Array,
-        elem: T
-    ) -> Result<()>
-        where T: ser::Serialize,
-    {
-        state.push(try!(to_yaml(elem)));
-        Ok(())
-    }
-
-    fn serialize_seq_end(&mut self, state: yaml::Array) -> Result<()> {
-        self.doc = Yaml::Array(state);
-        Ok(())
-    }
-
-    fn serialize_seq_fixed_size(&mut self, len: usize) -> Result<yaml::Array> {
+    fn serialize_seq_fixed_size(self, len: usize) -> Result<SerializeArray> {
         self.serialize_seq(Some(len))
     }
 
-    fn serialize_tuple(&mut self, len: usize) -> Result<yaml::Array> {
+    fn serialize_tuple(self, len: usize) -> Result<SerializeArray> {
         self.serialize_seq(Some(len))
-    }
-
-    fn serialize_tuple_elt<T>(
-        &mut self,
-        state: &mut yaml::Array,
-        elem: T
-    ) -> Result<()>
-        where T: ser::Serialize,
-    {
-        self.serialize_seq_elt(state, elem)
-    }
-
-    fn serialize_tuple_end(&mut self, state: yaml::Array) -> Result<()> {
-        self.serialize_seq_end(state)
     }
 
     fn serialize_tuple_struct(
-        &mut self,
+        self,
         _name: &'static str,
         len: usize
-    ) -> Result<yaml::Array> {
+    ) -> Result<SerializeArray> {
         self.serialize_seq(Some(len))
     }
 
-    fn serialize_tuple_struct_elt<V>(
-        &mut self,
-        state: &mut yaml::Array,
-        value: V
-    ) -> Result<()>
-        where V: ser::Serialize,
-    {
-        self.serialize_seq_elt(state, value)
-    }
-
-    fn serialize_tuple_struct_end(&mut self, state: yaml::Array) -> Result<()> {
-        self.serialize_seq_end(state)
-    }
-
     fn serialize_tuple_variant(
-        &mut self,
+        self,
         _enum: &'static str,
         _idx: usize,
         variant: &'static str,
         len: usize
-    ) -> Result<(&'static str, yaml::Array)> {
-        let state = try!(self.serialize_seq(Some(len)));
-        Ok((variant, state))
+    ) -> Result<SerializeTupleVariant> {
+        Ok(SerializeTupleVariant { name: variant, array: yaml::Array::with_capacity(len) })
     }
 
-    fn serialize_tuple_variant_elt<V>(
-        &mut self,
-        state: &mut (&'static str, yaml::Array),
-        v: V
-    ) -> Result<()>
-        where V: ser::Serialize,
+    fn serialize_map(self, _len: Option<usize>) -> Result<SerializeMap> {
+        Ok(SerializeMap { hash: yaml::Hash::new(), next_key: None })
+    }
+
+    fn serialize_struct(
+        self,
+        _name: &'static str,
+        _len: usize
+    ) -> Result<SerializeStruct> {
+        Ok(SerializeStruct { hash: yaml::Hash::new() })
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _enum: &'static str,
+        _idx: usize,
+        variant: &'static str,
+        _len: usize
+    ) -> Result<SerializeStructVariant> {
+        Ok(SerializeStructVariant { name: variant, hash: yaml::Hash::new() })
+    }
+}
+
+#[doc(hidden)]
+pub struct SerializeArray {
+    array: yaml::Array,
+}
+
+#[doc(hidden)]
+pub struct SerializeTupleVariant {
+    name: &'static str,
+    array: yaml::Array,
+}
+
+#[doc(hidden)]
+pub struct SerializeMap {
+    hash: yaml::Hash,
+    next_key: Option<yaml::Yaml>,
+}
+
+#[doc(hidden)]
+pub struct SerializeStruct {
+    hash: yaml::Hash,
+}
+
+#[doc(hidden)]
+pub struct SerializeStructVariant {
+    name: &'static str,
+    hash: yaml::Hash,
+}
+
+impl ser::SerializeSeq for SerializeArray {
+    type Ok = yaml::Yaml;
+    type Error = Error;
+
+    fn serialize_element<T: ?Sized>(&mut self, elem: &T) -> Result<()>
+        where T: ser::Serialize
     {
-        self.serialize_seq_elt(&mut state.1, v)
-    }
-
-    fn serialize_tuple_variant_end(
-        &mut self,
-        state: (&'static str, yaml::Array)
-    ) -> Result<()> {
-        try!(self.serialize_seq_end(state.1));
-        self.doc = singleton_hash(try!(to_yaml(state.0)),
-                                  mem::replace(&mut self.doc, Yaml::Null));
+        self.array.push(try!(to_yaml(elem)));
         Ok(())
     }
 
-    fn serialize_map(&mut self, _len: Option<usize>) -> Result<(Option<yaml::Yaml>, yaml::Hash)> {
-        Ok((None, yaml::Hash::new()))
+    fn end(self) -> Result<Yaml> {
+        Ok(Yaml::Array(self.array))
     }
+}
 
-    fn serialize_map_key<T>(
-        &mut self,
-        state: &mut (Option<yaml::Yaml>, yaml::Hash),
-        key: T
-    ) -> Result<()>
+impl ser::SerializeTuple for SerializeArray {
+    type Ok = yaml::Yaml;
+    type Error = Error;
+
+    fn serialize_element<T: ?Sized>(&mut self, elem: &T) -> Result<()>
         where T: ser::Serialize
     {
-        state.0 = Some(try!(to_yaml(key)));
+        ser::SerializeSeq::serialize_element(self, elem)
+    }
+
+    fn end(self) -> Result<Yaml> {
+        ser::SerializeSeq::end(self)
+    }
+}
+
+impl ser::SerializeTupleStruct for SerializeArray {
+    type Ok = yaml::Yaml;
+    type Error = Error;
+
+    fn serialize_field<V: ?Sized>(&mut self, value: &V) -> Result<()>
+        where V: ser::Serialize
+    {
+        ser::SerializeSeq::serialize_element(self, value)
+    }
+
+    fn end(self) -> Result<Yaml> {
+        ser::SerializeSeq::end(self)
+    }
+}
+
+impl ser::SerializeTupleVariant for SerializeTupleVariant {
+    type Ok = yaml::Yaml;
+    type Error = Error;
+
+    fn serialize_field<V: ?Sized>(&mut self, v: &V) -> Result<()>
+        where V: ser::Serialize
+    {
+        self.array.push(try!(to_yaml(v)));
         Ok(())
     }
 
-    fn serialize_map_value<T>(
-        &mut self,
-        state: &mut (Option<yaml::Yaml>, yaml::Hash),
-        value: T
-    ) -> Result<()>
+    fn end(self) -> Result<Yaml> {
+        Ok(singleton_hash(try!(to_yaml(self.name)), Yaml::Array(self.array)))
+    }
+}
+
+impl ser::SerializeMap for SerializeMap {
+    type Ok = yaml::Yaml;
+    type Error = Error;
+
+    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<()>
         where T: ser::Serialize
     {
-        match state.0.take() {
-            Some(key) => state.1.insert(key, try!(to_yaml(value))),
-            None => {
-                return Err(Error::Custom("serialize_map_value called without matching \
-                                          serialize_map_key call".to_owned()));
-            }
+        self.next_key = Some(try!(to_yaml(key)));
+        Ok(())
+    }
+
+    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<()>
+        where T: ser::Serialize
+    {
+        match self.next_key.take() {
+            Some(key) => self.hash.insert(key, try!(to_yaml(value))),
+            None => panic!("serialize_value called before serialize_key"),
         };
         Ok(())
     }
 
-    fn serialize_map_end(&mut self, state: (Option<yaml::Yaml>, yaml::Hash)) -> Result<()> {
-        self.doc = Yaml::Hash(state.1);
+    fn end(self) -> Result<Yaml> {
+        Ok(Yaml::Hash(self.hash))
+    }
+}
+
+impl ser::SerializeStruct for SerializeStruct {
+    type Ok = yaml::Yaml;
+    type Error = Error;
+
+    fn serialize_field<V: ?Sized>(&mut self, key: &'static str, value: &V) -> Result<()>
+        where V: ser::Serialize
+    {
+        self.hash.insert(try!(to_yaml(key)), try!(to_yaml(value)));
         Ok(())
     }
 
-    fn serialize_struct(
-        &mut self,
-        _name: &'static str,
-        len: usize
-    ) -> Result<(Option<yaml::Yaml>, yaml::Hash)> {
-        self.serialize_map(Some(len))
+    fn end(self) -> Result<Yaml> {
+        Ok(Yaml::Hash(self.hash))
     }
+}
 
-    fn serialize_struct_elt<V>(
-        &mut self,
-        state: &mut (Option<yaml::Yaml>, yaml::Hash),
-        key: &'static str,
-        value: V
-    ) -> Result<()>
-        where V: ser::Serialize,
+impl ser::SerializeStructVariant for SerializeStructVariant {
+    type Ok = yaml::Yaml;
+    type Error = Error;
+
+    fn serialize_field<V: ?Sized>(&mut self, field: &'static str, v: &V) -> Result<()>
+        where V: ser::Serialize
     {
-        try!(self.serialize_map_key(state, key));
-        self.serialize_map_value(state, value)
-    }
-
-    fn serialize_struct_end(&mut self, state: (Option<yaml::Yaml>, yaml::Hash)) -> Result<()> {
-        self.serialize_map_end(state)
-    }
-
-    fn serialize_struct_variant(
-        &mut self,
-        _enum: &'static str,
-        _idx: usize,
-        variant: &'static str,
-        len: usize
-    ) -> Result<(&'static str, (Option<yaml::Yaml>, yaml::Hash))> {
-        let state = try!(self.serialize_map(Some(len)));
-        Ok((variant, state))
-    }
-
-    fn serialize_struct_variant_elt<V>(
-        &mut self,
-        state: &mut (&'static str, (Option<yaml::Yaml>, yaml::Hash)),
-        field: &'static str,
-        v: V
-    ) -> Result<()>
-        where V: ser::Serialize,
-    {
-        try!(self.serialize_map_key(&mut state.1, field));
-        self.serialize_map_value(&mut state.1, v)
-    }
-
-    fn serialize_struct_variant_end(
-        &mut self,
-        state: (&'static str, (Option<yaml::Yaml>, yaml::Hash))
-    ) -> Result<()> {
-        try!(self.serialize_map_end(state.1));
-        self.doc = singleton_hash(try!(to_yaml(state.0)),
-                                  mem::replace(&mut self.doc, Yaml::Null));
+        self.hash.insert(try!(to_yaml(field)), try!(to_yaml(v)));
         Ok(())
+    }
+
+    fn end(self) -> Result<Yaml> {
+        Ok(singleton_hash(try!(to_yaml(self.name)), Yaml::Hash(self.hash)))
     }
 }
 
 pub fn to_writer<W, T>(writer: &mut W, value: &T) -> Result<()>
     where W: io::Write,
-          T: ser::Serialize,
+          T: ser::Serialize
 {
     let doc = try!(to_yaml(value));
     let mut writer_adapter = FmtToIoWriter {
@@ -386,7 +356,7 @@ pub fn to_writer<W, T>(writer: &mut W, value: &T) -> Result<()>
 }
 
 pub fn to_vec<T>(value: &T) -> Result<Vec<u8>>
-    where T: ser::Serialize,
+    where T: ser::Serialize
 {
     let mut vec = Vec::with_capacity(128);
     try!(to_writer(&mut vec, value));
@@ -394,7 +364,7 @@ pub fn to_vec<T>(value: &T) -> Result<Vec<u8>>
 }
 
 pub fn to_string<T>(value: &T) -> Result<String>
-    where T: ser::Serialize,
+    where T: ser::Serialize
 {
     Ok(try!(String::from_utf8(try!(to_vec(value)))))
 }
@@ -402,13 +372,13 @@ pub fn to_string<T>(value: &T) -> Result<String>
 /// The yaml-rust library uses `fmt.Write` intead of `io.Write` so this is a
 /// simple adapter.
 struct FmtToIoWriter<'a, W>
-    where W: io::Write + 'a,
+    where W: io::Write + 'a
 {
     writer: &'a mut W,
 }
 
 impl<'a, W> fmt::Write for FmtToIoWriter<'a, W>
-    where W: io::Write + 'a,
+    where W: io::Write + 'a
 {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         if self.writer.write(s.as_bytes()).is_err() {
@@ -419,11 +389,9 @@ impl<'a, W> fmt::Write for FmtToIoWriter<'a, W>
 }
 
 fn to_yaml<T>(elem: T) -> Result<Yaml>
-    where T: ser::Serialize,
+    where T: ser::Serialize
 {
-    let mut ser = Serializer::new();
-    try!(elem.serialize(&mut ser));
-    Ok(ser.take())
+    elem.serialize(Serializer)
 }
 
 fn singleton_hash(k: Yaml, v: Yaml) -> Yaml {

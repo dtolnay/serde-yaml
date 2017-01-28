@@ -4,9 +4,9 @@ version = "0.5.1"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
 
 [dependencies]
-serde = "0.8"
+serde = "0.9"
 serde_yaml = { path = "../yaml" }
-serde_derive = "0.8"
+serde_derive = "0.9"
 unindent = "0.1"
 
 [[test]]
