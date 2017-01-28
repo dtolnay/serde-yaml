@@ -414,7 +414,7 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
                         if v == "~" || v == "null" {
                             false
                         } else {
-                            return Err(de::Error::custom("failed to parse null")); // FIXME
+                            return Err(de::Error::invalid_value(Unexpected::Str(v), &"null"));
                         }
                     } else {
                         true
