@@ -94,3 +94,57 @@ fn test_variant_not_a_map() {
     let expected = "invalid type: sequence, expected string or singleton map at line 2 column 1";
     test_error::<Variant>(yaml, expected);
 }
+
+#[test]
+fn test_bad_bool() {
+    let yaml = indoc!("
+        ---
+        !!bool str");
+    let expected = "invalid value: string \"str\", expected a boolean at line 2 column 8";
+    test_error::<bool>(yaml, expected);
+}
+
+#[test]
+fn test_bad_int() {
+    let yaml = indoc!("
+        ---
+        !!int str");
+    let expected = "invalid value: string \"str\", expected an integer at line 2 column 7";
+    test_error::<i64>(yaml, expected);
+}
+
+#[test]
+fn test_bad_float() {
+    let yaml = indoc!("
+        ---
+        !!float str");
+    let expected = "invalid value: string \"str\", expected a float at line 2 column 9";
+    test_error::<f64>(yaml, expected);
+}
+
+#[test]
+fn test_bad_null() {
+    let yaml = indoc!("
+        ---
+        !!null str");
+    let expected = "invalid value: string \"str\", expected null at line 2 column 8";
+    test_error::<()>(yaml, expected);
+}
+
+#[test]
+fn test_short_tuple() {
+    let yaml = indoc!("
+        ---
+        [0, 0]");
+    let expected = "invalid length 2, expected a tuple of size 3 at line 2 column 1";
+    test_error::<(u8, u8, u8)>(yaml, expected);
+}
+
+#[test]
+fn test_long_tuple() {
+    let yaml = indoc!("
+        ---
+        [0, 0, 0]");
+    let expected = "invalid length 3, expected sequence of 2 elements at line 2 column 1";
+    test_error::<(u8, u8)>(yaml, expected);
+}
