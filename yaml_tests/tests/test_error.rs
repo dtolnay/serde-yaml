@@ -28,6 +28,29 @@ fn test_incorrect_type() {
 }
 
 #[test]
+fn test_incorrect_nested_type() {
+    #[derive(Deserialize, Debug)]
+    struct A {
+        b: Vec<B>,
+    }
+    #[derive(Deserialize, Debug)]
+    enum B {
+        C(C),
+    }
+    #[derive(Deserialize, Debug)]
+    struct C {
+        d: bool,
+    }
+    let yaml = indoc!("
+        ---
+        b:
+          - C:
+              d: fase");
+    let expected = "b[0].C.d: invalid type: string \"fase\", expected a boolean at line 4 column 10";
+    test_error::<A>(yaml, expected);
+}
+
+#[test]
 fn test_empty() {
     let yaml = "";
     let expected = "EOF while parsing a value";
@@ -71,7 +94,7 @@ fn test_two_documents() {
 #[test]
 fn test_variant_map_wrong_size() {
     #[derive(Deserialize, Debug)]
-    enum Variant {
+    enum E {
         V(usize),
     }
     let yaml = indoc!(r#"
@@ -79,20 +102,33 @@ fn test_variant_map_wrong_size() {
         "V": 16
         "other": 32"#);
     let expected = "invalid length 2, expected map containing 1 entry";
-    test_error::<Variant>(yaml, expected);
+    test_error::<E>(yaml, expected);
 }
 
 #[test]
 fn test_variant_not_a_map() {
     #[derive(Deserialize, Debug)]
-    enum Variant {
+    enum E {
         V(usize),
     }
     let yaml = indoc!(r#"
         ---
         - "V""#);
     let expected = "invalid type: sequence, expected string or singleton map at line 2 column 1";
-    test_error::<Variant>(yaml, expected);
+    test_error::<E>(yaml, expected);
+}
+
+#[test]
+fn test_variant_not_string() {
+    #[derive(Deserialize, Debug)]
+    enum E {
+        V(bool),
+    }
+    let yaml = indoc!(r#"
+        ---
+        {}: true"#);
+    let expected = "invalid type: map, expected variant of enum `E` at line 2 column 1";
+    test_error::<E>(yaml, expected);
 }
 
 #[test]

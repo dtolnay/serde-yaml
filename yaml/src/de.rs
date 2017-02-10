@@ -20,8 +20,10 @@ use yaml_rust::scanner::{Marker, TokenType, TScalarStyle};
 
 use serde::de::{self, Deserialize, DeserializeSeed, Expected, Unexpected};
 use serde::de::impls::IgnoredAny as Ignore;
+use serde::de::value::ValueDeserializer;
 
-use super::error::{Error, Result};
+use error::{Error, Result};
+use path::Path;
 
 pub struct Loader {
     events: Vec<(Event, Marker)>,
@@ -72,37 +74,40 @@ struct Deserializer<'a> {
     events: &'a [(Event, Marker)],
     /// Map from alias id to index in events.
     aliases: &'a BTreeMap<usize, usize>,
-    pos: usize,
+    pos: &'a mut usize,
+    path: Path<'a>,
 }
 
 impl<'a> Deserializer<'a> {
     fn peek(&self) -> Result<(&'a Event, Marker)> {
-        match self.events.get(self.pos) {
+        match self.events.get(*self.pos) {
             Some(event) => Ok((&event.0, event.1)),
             None => Err(Error::end_of_stream()),
         }
     }
 
     fn next(&mut self) -> Result<(&'a Event, Marker)> {
-        match self.events.get(self.pos) {
+        match self.events.get(*self.pos) {
             Some(event) => {
-                self.pos += 1;
+                *self.pos += 1;
                 Ok((&event.0, event.1))
             }
             None => Err(Error::end_of_stream()),
         }
     }
 
-    fn jump(&self, id: usize) -> Result<Deserializer<'a>> {
-        match self.aliases.get(&id) {
-            Some(&pos) => {
+    fn jump(&'a self, pos: &'a mut usize) -> Result<Deserializer<'a>> {
+        match self.aliases.get(pos) {
+            Some(&found) => {
+                *pos = found;
                 Ok(Deserializer {
                     events: self.events,
                     aliases: self.aliases,
                     pos: pos,
+                    path: Path::Alias { parent: &self.path },
                 })
             }
-            None => panic!("unresolved alias: {}", id),
+            None => panic!("unresolved alias: {}", *pos),
         }
     }
 
@@ -110,7 +115,10 @@ impl<'a> Deserializer<'a> {
         where V: de::Visitor
     {
         match *self.next()?.0 {
-            Event::Alias(i) => de::Deserializer::deserialize(&mut self.jump(i)?, visitor),
+            Event::Alias(i) => {
+                let mut pos = i;
+                de::Deserializer::deserialize(&mut self.jump(&mut pos)?, visitor)
+            }
             Event::Scalar(ref v, style, ref tag) => {
                 if style != TScalarStyle::Plain {
                     visitor.visit_str(v)
@@ -152,7 +160,7 @@ impl<'a> Deserializer<'a> {
             }
             Event::SequenceStart => {
                 let (value, len) = {
-                    let mut seq = CollectionVisitor { de: self, len: 0 };
+                    let mut seq = SeqVisitor { de: self, len: 0 };
                     let value = visitor.visit_seq(&mut seq)?;
                     (value, seq.len)
                 };
@@ -161,7 +169,7 @@ impl<'a> Deserializer<'a> {
             }
             Event::MappingStart => {
                 let (value, len) = {
-                    let mut map = CollectionVisitor { de: self, len: 0 };
+                    let mut map = MapVisitor { de: &mut *self, len: 0, key: None };
                     let value = visitor.visit_map(&mut map)?;
                     (value, map.len)
                 };
@@ -175,7 +183,7 @@ impl<'a> Deserializer<'a> {
 
     fn end_sequence(&mut self, len: usize) -> Result<()> {
         let total = {
-            let mut seq = CollectionVisitor { de: self, len: len };
+            let mut seq = SeqVisitor { de: self, len: len };
             while de::SeqVisitor::visit::<Ignore>(&mut seq)?.is_some() {}
             seq.len
         };
@@ -199,7 +207,7 @@ impl<'a> Deserializer<'a> {
 
     fn end_mapping(&mut self, len: usize) -> Result<()> {
         let total = {
-            let mut map = CollectionVisitor { de: self, len: len };
+            let mut map = MapVisitor { de: self, len: len, key: None };
             while de::MapVisitor::visit::<Ignore, Ignore>(&mut map)?.is_some() {}
             map.len
         };
@@ -222,12 +230,12 @@ impl<'a> Deserializer<'a> {
     }
 }
 
-struct CollectionVisitor<'a: 'r, 'r> {
+struct SeqVisitor<'a: 'r, 'r> {
     de: &'r mut Deserializer<'a>,
     len: usize,
 }
 
-impl<'a, 'r> de::SeqVisitor for CollectionVisitor<'a, 'r> {
+impl<'a, 'r> de::SeqVisitor for SeqVisitor<'a, 'r> {
     type Error = Error;
 
     fn visit_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
@@ -236,14 +244,26 @@ impl<'a, 'r> de::SeqVisitor for CollectionVisitor<'a, 'r> {
         match *self.de.peek()?.0 {
             Event::SequenceEnd => Ok(None),
             _ => {
+                let mut element_de = Deserializer {
+                    events: self.de.events,
+                    aliases: self.de.aliases,
+                    pos: self.de.pos,
+                    path: Path::Seq { parent: &self.de.path, index: self.len },
+                };
                 self.len += 1;
-                seed.deserialize(&mut *self.de).map(Some)
+                seed.deserialize(&mut element_de).map(Some)
             }
         }
     }
 }
 
-impl<'a, 'r> de::MapVisitor for CollectionVisitor<'a, 'r> {
+struct MapVisitor<'a: 'r, 'r> {
+    de: &'r mut Deserializer<'a>,
+    len: usize,
+    key: Option<&'a str>,
+}
+
+impl<'a, 'r> de::MapVisitor for MapVisitor<'a, 'r> {
     type Error = Error;
 
     fn visit_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
@@ -251,8 +271,14 @@ impl<'a, 'r> de::MapVisitor for CollectionVisitor<'a, 'r> {
     {
         match *self.de.peek()?.0 {
             Event::MappingEnd => Ok(None),
+            Event::Scalar(ref key, _, _) => {
+                self.len += 1;
+                self.key = Some(key);
+                seed.deserialize(&mut *self.de).map(Some)
+            }
             _ => {
                 self.len += 1;
+                self.key = None;
                 seed.deserialize(&mut *self.de).map(Some)
             }
         }
@@ -261,17 +287,28 @@ impl<'a, 'r> de::MapVisitor for CollectionVisitor<'a, 'r> {
     fn visit_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
         where V: DeserializeSeed
     {
-        seed.deserialize(&mut *self.de)
+        let mut value_de = Deserializer {
+            events: self.de.events,
+            aliases: self.de.aliases,
+            pos: self.de.pos,
+            path: if let Some(key) = self.key {
+                Path::Map { parent: &self.de.path, key: key }
+            } else {
+                Path::Unknown { parent: &self.de.path }
+            },
+        };
+        seed.deserialize(&mut value_de)
     }
 }
 
-struct VariantVisitor<'a: 'r, 'r> {
+struct EnumVisitor<'a: 'r, 'r> {
     de: &'r mut Deserializer<'a>,
+    name: &'static str,
 }
 
-impl<'a, 'r> de::EnumVisitor for VariantVisitor<'a, 'r> {
+impl<'a, 'r> de::EnumVisitor for EnumVisitor<'a, 'r> {
     type Error = Error;
-    type Variant = VariantVisitor<'a, 'r>;
+    type Variant = Deserializer<'r>;
 
     fn visit_variant_seed<V>(
         self,
@@ -279,37 +316,69 @@ impl<'a, 'r> de::EnumVisitor for VariantVisitor<'a, 'r> {
     ) -> Result<(V::Value, Self::Variant)>
         where V: DeserializeSeed
     {
-        Ok((seed.deserialize(&mut *self.de)?, self))
+        #[derive(Debug)]
+        enum Nope {}
+
+        struct BadKey {
+            name: &'static str,
+        }
+
+        impl de::Visitor for BadKey {
+            type Value = Nope;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "variant of enum `{}`", self.name)
+            }
+        }
+
+        let variant = match *self.de.next()?.0 {
+            Event::Scalar(ref s, _, _) => &**s,
+            _ => {
+                *self.de.pos -= 1;
+                let bad = BadKey { name: self.name };
+                return Err(de::Deserializer::deserialize(&mut *self.de, bad).unwrap_err())
+            }
+        };
+
+        let str_de = ValueDeserializer::<Error>::into_deserializer(variant);
+        let ret = seed.deserialize(str_de)?;
+        let variant_visitor = Deserializer {
+            events: self.de.events,
+            aliases: self.de.aliases,
+            pos: self.de.pos,
+            path: Path::Map { parent: &self.de.path, key: variant },
+        };
+        Ok((ret, variant_visitor))
     }
 }
 
-impl<'a, 'r> de::VariantVisitor for VariantVisitor<'a, 'r> {
+impl<'a> de::VariantVisitor for Deserializer<'a> {
     type Error = Error;
 
-    fn visit_unit(self) -> Result<()> {
-        Deserialize::deserialize(self.de)
+    fn visit_unit(mut self) -> Result<()> {
+        Deserialize::deserialize(&mut self)
     }
 
-    fn visit_newtype_seed<T>(self, seed: T) -> Result<T::Value>
+    fn visit_newtype_seed<T>(mut self, seed: T) -> Result<T::Value>
         where T: DeserializeSeed
     {
-        seed.deserialize(self.de)
+        seed.deserialize(&mut self)
     }
 
-    fn visit_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
+    fn visit_tuple<V>(mut self, _len: usize, visitor: V) -> Result<V::Value>
         where V: de::Visitor
     {
-        de::Deserializer::deserialize(self.de, visitor)
+        de::Deserializer::deserialize(&mut self, visitor)
     }
 
     fn visit_struct<V>(
-        self,
+        mut self,
         _fields: &'static [&'static str],
         visitor: V
     ) -> Result<V::Value>
         where V: de::Visitor
     {
-        de::Deserializer::deserialize(self.de, visitor)
+        de::Deserializer::deserialize(&mut self, visitor)
     }
 }
 
@@ -406,7 +475,7 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
         let marker = self.peek()?.1;
         // The de::Error impl creates errors with unknown line and column. Fill
         // in the position here by looking at the current index in the input.
-        self.visit(visitor).map_err(|err| err.fix_marker(marker))
+        self.visit(visitor).map_err(|err| err.fix_marker(marker, self.path))
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
@@ -414,8 +483,8 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     {
         let (next, marker) = self.peek()?;
         if let Event::Scalar(ref v, _, _) = *next {
-            self.pos += 1;
-            visitor.visit_str(v).map_err(|err: Error| err.fix_marker(marker))
+            *self.pos += 1;
+            visitor.visit_str(v).map_err(|err: Error| err.fix_marker(marker, self.path))
         } else {
             self.deserialize(visitor)
         }
@@ -433,8 +502,9 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
     {
         let is_some = match *self.peek()?.0 {
             Event::Alias(i) => {
-                self.pos += 1;
-                return self.jump(i)?.deserialize_option(visitor);
+                *self.pos += 1;
+                let mut pos = i;
+                return self.jump(&mut pos)?.deserialize_option(visitor);
             }
             Event::Scalar(ref v, style, ref tag) => {
                 if style != TScalarStyle::Plain {
@@ -460,7 +530,7 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
         if is_some {
             visitor.visit_some(self)
         } else {
-            self.pos += 1;
+            *self.pos += 1;
             visitor.visit_none()
         }
     }
@@ -490,21 +560,22 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
         let (next, marker) = self.peek()?;
         match *next {
             Event::Alias(i) => {
-                self.pos += 1;
-                return self.jump(i)?.deserialize_enum(name, variants, visitor);
+                *self.pos += 1;
+                let mut pos = i;
+                return self.jump(&mut pos)?.deserialize_enum(name, variants, visitor);
             }
             Event::Scalar(_, _, _) => {
                 visitor.visit_enum(UnitVariantVisitor { de: self })
             }
             Event::MappingStart => {
-                self.pos += 1;
-                let value = visitor.visit_enum(VariantVisitor { de: self })?;
+                *self.pos += 1;
+                let value = visitor.visit_enum(EnumVisitor { de: self, name: name })?;
                 self.end_mapping(1)?;
                 Ok(value)
             }
             Event::SequenceStart => {
                 let err = de::Error::invalid_type(Unexpected::Seq, &"string or singleton map");
-                Err(Error::fix_marker(err, marker))
+                Err(Error::fix_marker(err, marker, self.path))
             }
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
@@ -539,13 +610,14 @@ pub fn from_str<T>(s: &str) -> Result<T>
     if loader.events.is_empty() {
         Err(Error::end_of_stream())
     } else {
-        let mut deserializer = Deserializer {
+        let mut pos = 0;
+        let t = Deserialize::deserialize(&mut Deserializer {
             events: &loader.events,
             aliases: &loader.aliases,
-            pos: 0,
-        };
-        let t = Deserialize::deserialize(&mut deserializer)?;
-        if deserializer.pos == loader.events.len() {
+            pos: &mut pos,
+            path: Path::Root,
+        })?;
+        if pos == loader.events.len() {
             Ok(t)
         } else {
             Err(Error::more_than_one_document())
