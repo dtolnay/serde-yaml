@@ -18,6 +18,8 @@ use yaml_rust::scanner::{self, Marker, ScanError};
 
 use serde::{de, ser};
 
+use path::Path;
+
 /// This type represents all possible errors that can occur when serializing or
 /// deserializing YAML data.
 pub struct Error(Box<ErrorImpl>);
@@ -29,7 +31,7 @@ pub type Result<T> = result::Result<T, Error>;
 /// deserializing a value using YAML.
 #[derive(Debug)]
 pub enum ErrorImpl {
-    Message(String, Option<Marker>),
+    Message(String, Option<Pos>),
 
     Emit(emitter::EmitError),
     Scan(scanner::ScanError),
@@ -39,6 +41,12 @@ pub enum ErrorImpl {
 
     EndOfStream,
     MoreThanOneDocument,
+}
+
+#[derive(Debug)]
+pub struct Pos {
+    marker: Marker,
+    path: String,
 }
 
 impl Error {
@@ -56,9 +64,12 @@ impl Error {
 
     // Not public API. Should be pub(crate).
     #[doc(hidden)]
-    pub fn fix_marker(mut self, marker: Marker) -> Self {
+    pub fn fix_marker(mut self, marker: Marker, path: Path) -> Self {
         if let ErrorImpl::Message(_, ref mut none @ None) = *self.0.as_mut() {
-            *none = Some(marker);
+            *none = Some(Pos {
+                marker: marker,
+                path: path.to_string(),
+            });
         }
         self
     }
@@ -95,8 +106,12 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self.0 {
             ErrorImpl::Message(ref msg, None) => write!(f, "{}", msg),
-            ErrorImpl::Message(ref msg, Some(marker)) => {
-                write!(f, "{}", ScanError::new(marker, msg))
+            ErrorImpl::Message(ref msg, Some(Pos { marker, ref path })) => {
+                if path == "." {
+                    write!(f, "{}", ScanError::new(marker, msg))
+                } else {
+                    write!(f, "{}: {}", path, ScanError::new(marker, msg))
+                }
             }
             ErrorImpl::Emit(ref err) => write!(f, "{:?}", err),
             ErrorImpl::Scan(ref err) => err.fmt(f),
@@ -116,10 +131,10 @@ impl fmt::Display for Error {
 impl fmt::Debug for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match *self.0 {
-            ErrorImpl::Message(ref msg, ref marker) => {
+            ErrorImpl::Message(ref msg, ref pos) => {
                 formatter.debug_tuple("Message")
                     .field(msg)
-                    .field(marker)
+                    .field(pos)
                     .finish()
             }
             ErrorImpl::Emit(ref emit) => {
