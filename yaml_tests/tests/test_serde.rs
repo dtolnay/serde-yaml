@@ -32,6 +32,33 @@ fn test_int() {
 }
 
 #[test]
+fn test_int_max_u64() {
+    let thing = ::std::u64::MAX;
+    let yaml = indoc!("
+        ---
+        18446744073709551615");
+    test_serde(thing, yaml);
+}
+
+#[test]
+fn test_int_min_i64() {
+    let thing = ::std::i64::MIN;
+    let yaml = indoc!("
+        ---
+        -9223372036854775808");
+    test_serde(thing, yaml);
+}
+
+#[test]
+fn test_int_max_i64() {
+    let thing = ::std::i64::MAX;
+    let yaml = indoc!("
+        ---
+        9223372036854775807");
+    test_serde(thing, yaml);
+}
+
+#[test]
 fn test_float() {
     let thing = 25.6;
     let yaml = indoc!("

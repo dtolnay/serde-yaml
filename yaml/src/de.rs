@@ -443,19 +443,31 @@ fn visit_untagged_str<V>(visitor: V, v: &str) -> Result<V::Value>
         return visitor.visit_bool(false);
     }
     if v.starts_with("0x") {
+        if let Ok(n) = u64::from_str_radix(&v[2..], 16) {
+            return visitor.visit_u64(n);
+        }
         if let Ok(n) = i64::from_str_radix(&v[2..], 16) {
             return visitor.visit_i64(n);
         }
     }
     if v.starts_with("0o") {
+        if let Ok(n) = u64::from_str_radix(&v[2..], 8) {
+            return visitor.visit_u64(n);
+        }
         if let Ok(n) = i64::from_str_radix(&v[2..], 8) {
             return visitor.visit_i64(n);
         }
     }
     if v.starts_with('+') {
+        if let Ok(n) = v.parse() {
+            return visitor.visit_u64(n);
+        }
         if let Ok(n) = v[1..].parse() {
             return visitor.visit_i64(n);
         }
+    }
+    if let Ok(n) = v.parse() {
+        return visitor.visit_u64(n);
     }
     if let Ok(n) = v.parse() {
         return visitor.visit_i64(n);
