@@ -52,39 +52,47 @@ pub struct Mapping {
 }
 
 impl Mapping {
+    #[inline]
     pub fn new() -> Self { Self::default() }
 
+    #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Mapping {
             map: LinkedHashMap::with_capacity(capacity),
         }
     }
 
+    #[inline]
     pub fn len(&self) -> usize { self.map.len() }
 
+    #[inline]
     pub fn insert(&mut self, k: Value, v: Value) -> Option<Value> { self.map.insert(k, v) }
 }
 
 impl<'a> Index<&'a Value> for Mapping {
     type Output = Value;
+    #[inline]
     fn index(&self, index: &'a Value) -> &Value {
         self.map.index(index)
     }
 }
 
 impl<'a> IndexMut<&'a Value> for Mapping {
+    #[inline]
     fn index_mut(&mut self, index: &'a Value) -> &mut Value {
         self.map.index_mut(index)
     }
 }
 
 impl Extend<(Value, Value)> for Mapping {
+    #[inline]
     fn extend<I: IntoIterator<Item=(Value, Value)>>(&mut self, iter: I) {
         self.map.extend(iter);
     }
 }
 
 impl FromIterator<(Value, Value)> for Mapping {
+    #[inline]
     fn from_iter<I: IntoIterator<Item=(Value, Value)>>(iter: I) -> Self {
         Mapping {
             map: LinkedHashMap::from_iter(iter)
@@ -95,21 +103,21 @@ impl FromIterator<(Value, Value)> for Mapping {
 impl<'a> IntoIterator for &'a Mapping {
     type Item = (&'a Value, &'a Value);
     type IntoIter = ::linked_hash_map::Iter<'a, Value, Value>;
-
+    #[inline]
     fn into_iter(self) -> Self::IntoIter { self.map.iter() }
 }
 
 impl<'a> IntoIterator for &'a mut Mapping {
     type Item = (&'a Value, &'a mut Value);
     type IntoIter = ::linked_hash_map::IterMut<'a, Value, Value>;
-
+    #[inline]
     fn into_iter(self) -> Self::IntoIter { self.map.iter_mut() }
 }
 
 impl IntoIterator for Mapping {
     type Item = (Value, Value);
     type IntoIter = ::linked_hash_map::IntoIter<Value, Value>;
-
+    #[inline]
     fn into_iter(self) -> Self::IntoIter { self.map.into_iter() }
 }
 
