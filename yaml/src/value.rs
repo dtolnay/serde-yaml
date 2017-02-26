@@ -113,6 +113,40 @@ impl IntoIterator for Mapping {
     fn into_iter(self) -> Self::IntoIter { self.map.into_iter() }
 }
 
+impl Deserialize for Mapping {
+    fn deserialize<D: Deserializer>(deserializer: D) -> Result<Self, D::Error> {
+        struct Visitor;
+
+        impl serde::de::Visitor for Visitor {
+            type Value = Mapping;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a YAML mapping")
+            }
+
+            #[inline]
+            fn visit_unit<E>(self) -> Result<Self::Value, E>
+                where E: serde::de::Error
+            {
+                Ok(Mapping::new())
+            }
+
+            #[inline]
+            fn visit_map<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
+                where V: serde::de::MapVisitor
+            {
+                let mut values = Mapping::with_capacity(visitor.size_hint().0);
+                while let Some((k, v)) = try!(visitor.visit()) {
+                    values.insert(k, v);
+                }
+                Ok(values)
+            }
+        }
+
+        deserializer.deserialize_map(Visitor)
+    }
+}
+
 /// Convert a `T` into `serde_yaml::Value` which is an enum that can represent
 /// any valid YAML data.
 ///
