@@ -113,6 +113,19 @@ impl IntoIterator for Mapping {
     fn into_iter(self) -> Self::IntoIter { self.map.into_iter() }
 }
 
+impl Serialize for Mapping {
+    #[inline]
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap;
+        let mut map_serializer = try!(serializer.serialize_map(Some(self.len())));
+        for (k, v) in self {
+            try!(map_serializer.serialize_key(k));
+            try!(map_serializer.serialize_value(v));
+        }
+        map_serializer.end()
+    }
+}
+
 impl Deserialize for Mapping {
     fn deserialize<D: Deserializer>(deserializer: D) -> Result<Self, D::Error> {
         struct Visitor;
