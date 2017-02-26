@@ -8,7 +8,9 @@
 
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::iter::FromIterator;
 use std::mem;
+use std::ops::{Index, IndexMut};
 use std::vec;
 
 use linked_hash_map::LinkedHashMap;
@@ -42,8 +44,74 @@ pub enum Value {
 
 /// A YAML sequence in which the elements are `serde_yaml::Value`.
 pub type Sequence = Vec<Value>;
+
 /// A YAML mapping in which the keys and values are both `serde_yaml::Value`.
-pub type Mapping = LinkedHashMap<Value, Value>;
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq, PartialOrd)]
+pub struct Mapping {
+    map: LinkedHashMap<Value, Value>,
+}
+
+impl Mapping {
+    pub fn new() -> Self { Self::default() }
+
+    pub fn with_capacity(capacity: usize) -> Self {
+        Mapping {
+            map: LinkedHashMap::with_capacity(capacity),
+        }
+    }
+
+    pub fn len(&self) -> usize { self.map.len() }
+
+    pub fn insert(&mut self, k: Value, v: Value) -> Option<Value> { self.map.insert(k, v) }
+}
+
+impl<'a> Index<&'a Value> for Mapping {
+    type Output = Value;
+    fn index(&self, index: &'a Value) -> &Value {
+        self.map.index(index)
+    }
+}
+
+impl<'a> IndexMut<&'a Value> for Mapping {
+    fn index_mut(&mut self, index: &'a Value) -> &mut Value {
+        self.map.index_mut(index)
+    }
+}
+
+impl Extend<(Value, Value)> for Mapping {
+    fn extend<I: IntoIterator<Item=(Value, Value)>>(&mut self, iter: I) {
+        self.map.extend(iter);
+    }
+}
+
+impl FromIterator<(Value, Value)> for Mapping {
+    fn from_iter<I: IntoIterator<Item=(Value, Value)>>(iter: I) -> Self {
+        Mapping {
+            map: LinkedHashMap::from_iter(iter)
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a Mapping {
+    type Item = (&'a Value, &'a Value);
+    type IntoIter = ::linked_hash_map::Iter<'a, Value, Value>;
+
+    fn into_iter(self) -> Self::IntoIter { self.map.iter() }
+}
+
+impl<'a> IntoIterator for &'a mut Mapping {
+    type Item = (&'a Value, &'a mut Value);
+    type IntoIter = ::linked_hash_map::IterMut<'a, Value, Value>;
+
+    fn into_iter(self) -> Self::IntoIter { self.map.iter_mut() }
+}
+
+impl IntoIterator for Mapping {
+    type Item = (Value, Value);
+    type IntoIter = ::linked_hash_map::IntoIter<Value, Value>;
+
+    fn into_iter(self) -> Self::IntoIter { self.map.into_iter() }
+}
 
 /// Convert a `T` into `serde_yaml::Value` which is an enum that can represent
 /// any valid YAML data.
@@ -307,7 +375,7 @@ impl Deserialize for Value {
             fn visit_map<V>(self, mut visitor: V) -> Result<Value, V::Error>
                 where V: serde::de::MapVisitor
             {
-                let mut values = LinkedHashMap::with_capacity(visitor.size_hint().0);
+                let mut values = Mapping::with_capacity(visitor.size_hint().0);
 
                 while let Some((key, value)) = visitor.visit()? {
                     values.insert(key, value);
