@@ -13,7 +13,7 @@ use std::mem;
 use std::ops::{Index, IndexMut};
 use std::vec;
 
-use linked_hash_map::LinkedHashMap;
+use linked_hash_map::{self, LinkedHashMap};
 use serde::{self, Serialize, Deserialize, Deserializer};
 use serde::de::{Unexpected, Visitor};
 use yaml_rust::Yaml;
@@ -96,10 +96,10 @@ impl Mapping {
     pub fn clear(&mut self) { self.map.clear() }
 
     #[inline]
-    pub fn iter(&self) -> ::linked_hash_map::Iter<Value, Value> { self.map.iter() }
+    pub fn iter(&self) -> linked_hash_map::Iter<Value, Value> { self.map.iter() }
 
     #[inline]
-    pub fn iter_mut(&mut self) -> ::linked_hash_map::IterMut<Value, Value> { self.map.iter_mut() }
+    pub fn iter_mut(&mut self) -> linked_hash_map::IterMut<Value, Value> { self.map.iter_mut() }
 }
 
 impl<'a> Index<&'a Value> for Mapping {
@@ -135,21 +135,21 @@ impl FromIterator<(Value, Value)> for Mapping {
 
 impl<'a> IntoIterator for &'a Mapping {
     type Item = (&'a Value, &'a Value);
-    type IntoIter = ::linked_hash_map::Iter<'a, Value, Value>;
+    type IntoIter = linked_hash_map::Iter<'a, Value, Value>;
     #[inline]
     fn into_iter(self) -> Self::IntoIter { self.map.iter() }
 }
 
 impl<'a> IntoIterator for &'a mut Mapping {
     type Item = (&'a Value, &'a mut Value);
-    type IntoIter = ::linked_hash_map::IterMut<'a, Value, Value>;
+    type IntoIter = linked_hash_map::IterMut<'a, Value, Value>;
     #[inline]
     fn into_iter(self) -> Self::IntoIter { self.map.iter_mut() }
 }
 
 impl IntoIterator for Mapping {
     type Item = (Value, Value);
-    type IntoIter = ::linked_hash_map::IntoIter<Value, Value>;
+    type IntoIter = linked_hash_map::IntoIter<Value, Value>;
     #[inline]
     fn into_iter(self) -> Self::IntoIter { self.map.into_iter() }
 }
