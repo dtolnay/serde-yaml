@@ -103,25 +103,78 @@ impl FromIterator<(Value, Value)> for Mapping {
     }
 }
 
+macro_rules! delegate_iterator {
+    (($name:ident $($generics:tt)*) => $item:ty) => {
+        impl $($generics)* Iterator for $name $($generics)* {
+            type Item = $item;
+            #[inline]
+            fn next(&mut self) -> Option<Self::Item> {
+                self.iter.next()
+            }
+            #[inline]
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                self.iter.size_hint()
+            }
+        }
+
+        impl $($generics)* ExactSizeIterator for $name $($generics)* {
+            #[inline]
+            fn len(&self) -> usize {
+                self.iter.len()
+            }
+        }
+    }
+}
+
+pub struct Iter<'a> {
+    iter: linked_hash_map::Iter<'a, Value, Value>,
+}
+
+delegate_iterator!((Iter<'a>) => (&'a Value, &'a Value));
+
 impl<'a> IntoIterator for &'a Mapping {
     type Item = (&'a Value, &'a Value);
-    type IntoIter = linked_hash_map::Iter<'a, Value, Value>;
+    type IntoIter = Iter<'a>;
     #[inline]
-    fn into_iter(self) -> Self::IntoIter { self.map.iter() }
+    fn into_iter(self) -> Self::IntoIter {
+		Iter {
+			iter: self.map.iter(),
+		}
+	}
 }
+
+pub struct IterMut<'a> {
+    iter: linked_hash_map::IterMut<'a, Value, Value>,
+}
+
+delegate_iterator!((IterMut<'a>) => (&'a Value, &'a mut Value));
 
 impl<'a> IntoIterator for &'a mut Mapping {
     type Item = (&'a Value, &'a mut Value);
-    type IntoIter = linked_hash_map::IterMut<'a, Value, Value>;
+    type IntoIter = IterMut<'a>;
     #[inline]
-    fn into_iter(self) -> Self::IntoIter { self.map.iter_mut() }
+    fn into_iter(self) -> Self::IntoIter {
+        IterMut {
+            iter: self.map.iter_mut(),
+        }
+    }
 }
+
+pub struct IntoIter {
+    iter: linked_hash_map::IntoIter<Value, Value>,
+}
+
+delegate_iterator!((IntoIter) => (Value, Value));
 
 impl IntoIterator for Mapping {
     type Item = (Value, Value);
-    type IntoIter = linked_hash_map::IntoIter<Value, Value>;
+    type IntoIter = IntoIter;
     #[inline]
-    fn into_iter(self) -> Self::IntoIter { self.map.into_iter() }
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter {
+            iter: self.map.into_iter(),
+        }
+    }
 }
 
 impl Serialize for Mapping {
