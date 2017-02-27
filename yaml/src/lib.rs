@@ -17,11 +17,13 @@ extern crate yaml_rust;
 
 pub use self::de::{from_iter, from_reader, from_slice, from_str};
 pub use self::ser::{to_string, to_vec, to_writer};
-pub use self::value::{Mapping, Sequence, Value, from_value, to_value};
+pub use self::value::{Sequence, Value, from_value, to_value};
 pub use self::error::{Error, Result};
+pub use self::mapping::Mapping;
 
 mod de;
 mod ser;
 mod value;
 mod error;
 mod path;
+mod mapping;
