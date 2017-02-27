@@ -63,10 +63,43 @@ impl Mapping {
     }
 
     #[inline]
-    pub fn len(&self) -> usize { self.map.len() }
+    pub fn reserve(&mut self, additional: usize) { self.map.reserve(additional) }
+
+    #[inline]
+    pub fn shrink_to_fit(&mut self) { self.map.shrink_to_fit() }
 
     #[inline]
     pub fn insert(&mut self, k: Value, v: Value) -> Option<Value> { self.map.insert(k, v) }
+
+    #[inline]
+    pub fn contains_key(&self, k: &Value) -> bool { self.map.contains_key(k) }
+
+    #[inline]
+    pub fn get(&self, k: &Value) -> Option<&Value> { self.map.get(k) }
+
+    #[inline]
+    pub fn get_mut(&mut self, k: &Value) -> Option<&mut Value> { self.map.get_mut(k) }
+
+    #[inline]
+    pub fn remove(&mut self, k: &Value) -> Option<Value> { self.map.remove(k) }
+
+    #[inline]
+    pub fn capacity(&self) -> usize { self.map.capacity() }
+
+    #[inline]
+    pub fn len(&self) -> usize { self.map.len() }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool { self.map.is_empty() }
+
+    #[inline]
+    pub fn clear(&mut self) { self.map.clear() }
+
+    #[inline]
+    pub fn iter(&self) -> ::linked_hash_map::Iter<Value, Value> { self.map.iter() }
+
+    #[inline]
+    pub fn iter_mut(&mut self) -> ::linked_hash_map::IterMut<Value, Value> { self.map.iter_mut() }
 }
 
 impl<'a> Index<&'a Value> for Mapping {
