@@ -23,53 +23,79 @@ pub struct Mapping {
 
 impl Mapping {
     #[inline]
-    pub fn new() -> Self { Self::default() }
-
-    #[inline]
-    pub fn with_capacity(capacity: usize) -> Self {
-        Mapping {
-            map: LinkedHashMap::with_capacity(capacity),
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 
     #[inline]
-    pub fn reserve(&mut self, additional: usize) { self.map.reserve(additional) }
+    pub fn with_capacity(capacity: usize) -> Self {
+        Mapping { map: LinkedHashMap::with_capacity(capacity) }
+    }
 
     #[inline]
-    pub fn shrink_to_fit(&mut self) { self.map.shrink_to_fit() }
+    pub fn reserve(&mut self, additional: usize) {
+        self.map.reserve(additional)
+    }
 
     #[inline]
-    pub fn insert(&mut self, k: Value, v: Value) -> Option<Value> { self.map.insert(k, v) }
+    pub fn shrink_to_fit(&mut self) {
+        self.map.shrink_to_fit()
+    }
 
     #[inline]
-    pub fn contains_key(&self, k: &Value) -> bool { self.map.contains_key(k) }
+    pub fn insert(&mut self, k: Value, v: Value) -> Option<Value> {
+        self.map.insert(k, v)
+    }
 
     #[inline]
-    pub fn get(&self, k: &Value) -> Option<&Value> { self.map.get(k) }
+    pub fn contains_key(&self, k: &Value) -> bool {
+        self.map.contains_key(k)
+    }
 
     #[inline]
-    pub fn get_mut(&mut self, k: &Value) -> Option<&mut Value> { self.map.get_mut(k) }
+    pub fn get(&self, k: &Value) -> Option<&Value> {
+        self.map.get(k)
+    }
 
     #[inline]
-    pub fn remove(&mut self, k: &Value) -> Option<Value> { self.map.remove(k) }
+    pub fn get_mut(&mut self, k: &Value) -> Option<&mut Value> {
+        self.map.get_mut(k)
+    }
 
     #[inline]
-    pub fn capacity(&self) -> usize { self.map.capacity() }
+    pub fn remove(&mut self, k: &Value) -> Option<Value> {
+        self.map.remove(k)
+    }
 
     #[inline]
-    pub fn len(&self) -> usize { self.map.len() }
+    pub fn capacity(&self) -> usize {
+        self.map.capacity()
+    }
 
     #[inline]
-    pub fn is_empty(&self) -> bool { self.map.is_empty() }
+    pub fn len(&self) -> usize {
+        self.map.len()
+    }
 
     #[inline]
-    pub fn clear(&mut self) { self.map.clear() }
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
+    }
 
     #[inline]
-    pub fn iter(&self) -> Iter { Iter { iter: self.map.iter() } }
+    pub fn clear(&mut self) {
+        self.map.clear()
+    }
 
     #[inline]
-    pub fn iter_mut(&mut self) -> IterMut { IterMut { iter: self.map.iter_mut() } }
+    pub fn iter(&self) -> Iter {
+        Iter { iter: self.map.iter() }
+    }
+
+    #[inline]
+    pub fn iter_mut(&mut self) -> IterMut {
+        IterMut { iter: self.map.iter_mut() }
+    }
 }
 
 impl<'a> Index<&'a Value> for Mapping {
@@ -89,17 +115,15 @@ impl<'a> IndexMut<&'a Value> for Mapping {
 
 impl Extend<(Value, Value)> for Mapping {
     #[inline]
-    fn extend<I: IntoIterator<Item=(Value, Value)>>(&mut self, iter: I) {
+    fn extend<I: IntoIterator<Item = (Value, Value)>>(&mut self, iter: I) {
         self.map.extend(iter);
     }
 }
 
 impl FromIterator<(Value, Value)> for Mapping {
     #[inline]
-    fn from_iter<I: IntoIterator<Item=(Value, Value)>>(iter: I) -> Self {
-        Mapping {
-            map: LinkedHashMap::from_iter(iter)
-        }
+    fn from_iter<I: IntoIterator<Item = (Value, Value)>>(iter: I) -> Self {
+        Mapping { map: LinkedHashMap::from_iter(iter) }
     }
 }
 
@@ -137,10 +161,8 @@ impl<'a> IntoIterator for &'a Mapping {
     type IntoIter = Iter<'a>;
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-		Iter {
-			iter: self.map.iter(),
-		}
-	}
+        Iter { iter: self.map.iter() }
+    }
 }
 
 pub struct IterMut<'a> {
@@ -154,9 +176,7 @@ impl<'a> IntoIterator for &'a mut Mapping {
     type IntoIter = IterMut<'a>;
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        IterMut {
-            iter: self.map.iter_mut(),
-        }
+        IterMut { iter: self.map.iter_mut() }
     }
 }
 
@@ -171,9 +191,7 @@ impl IntoIterator for Mapping {
     type IntoIter = IntoIter;
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        IntoIter {
-            iter: self.map.into_iter(),
-        }
+        IntoIter { iter: self.map.into_iter() }
     }
 }
 

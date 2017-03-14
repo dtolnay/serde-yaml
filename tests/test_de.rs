@@ -19,7 +19,7 @@ use std::fmt::Debug;
 use std::collections::BTreeMap;
 
 fn test_de<T>(yaml: &str, expected: &T)
-    where T: serde::Deserialize + PartialEq + Debug,
+    where T: serde::Deserialize + PartialEq + Debug
 {
     let deserialized: T = serde_yaml::from_str(yaml).unwrap();
     assert_eq!(*expected, deserialized);
@@ -155,9 +155,7 @@ fn test_number_as_string() {
     let yaml = unindent("
         ---
         value: 123456789012345678901234567890");
-    let expected = Num {
-        value: "123456789012345678901234567890".to_owned(),
-    };
+    let expected = Num { value: "123456789012345678901234567890".to_owned() };
     test_de(&yaml, &expected);
 }
 
@@ -173,15 +171,11 @@ fn test_de_mapping() {
           a: 'foo'
           b: 'bar'");
 
-    let mut expected = Data {
-        substructure: serde_yaml::Mapping::new(),
-    };
-    expected.substructure.insert(
-        serde_yaml::Value::String("a".to_owned()),
-        serde_yaml::Value::String("foo".to_owned()));
-    expected.substructure.insert(
-        serde_yaml::Value::String("b".to_owned()),
-        serde_yaml::Value::String("bar".to_owned()));
+    let mut expected = Data { substructure: serde_yaml::Mapping::new() };
+    expected.substructure.insert(serde_yaml::Value::String("a".to_owned()),
+                                 serde_yaml::Value::String("foo".to_owned()));
+    expected.substructure.insert(serde_yaml::Value::String("b".to_owned()),
+                                 serde_yaml::Value::String("bar".to_owned()));
 
     test_de(&yaml, &expected);
 }

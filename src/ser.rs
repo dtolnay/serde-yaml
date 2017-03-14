@@ -97,32 +97,26 @@ impl ser::Serializer for Serializer {
         self.serialize_unit()
     }
 
-    fn serialize_unit_variant(
-        self,
-        _name: &str,
-        _variant_index: usize,
-        variant: &str
-    ) -> Result<Yaml> {
+    fn serialize_unit_variant(self,
+                              _name: &str,
+                              _variant_index: usize,
+                              variant: &str)
+                              -> Result<Yaml> {
         Ok(Yaml::String(variant.to_owned()))
     }
 
-    fn serialize_newtype_struct<T: ?Sized>(
-        self,
-        _name: &'static str,
-        value: &T
-    ) -> Result<Yaml>
+    fn serialize_newtype_struct<T: ?Sized>(self, _name: &'static str, value: &T) -> Result<Yaml>
         where T: ser::Serialize
     {
         value.serialize(self)
     }
 
-    fn serialize_newtype_variant<T: ?Sized>(
-        self,
-        _name: &str,
-        _variant_index: usize,
-        variant: &str,
-        value: &T
-    ) -> Result<Yaml>
+    fn serialize_newtype_variant<T: ?Sized>(self,
+                                            _name: &str,
+                                            _variant_index: usize,
+                                            variant: &str,
+                                            value: &T)
+                                            -> Result<Yaml>
         where T: ser::Serialize
     {
         Ok(singleton_hash(to_yaml(variant)?, to_yaml(value)?))
@@ -154,44 +148,43 @@ impl ser::Serializer for Serializer {
         self.serialize_seq(Some(len))
     }
 
-    fn serialize_tuple_struct(
-        self,
-        _name: &'static str,
-        len: usize
-    ) -> Result<SerializeArray> {
+    fn serialize_tuple_struct(self, _name: &'static str, len: usize) -> Result<SerializeArray> {
         self.serialize_seq(Some(len))
     }
 
-    fn serialize_tuple_variant(
-        self,
-        _enum: &'static str,
-        _idx: usize,
-        variant: &'static str,
-        len: usize
-    ) -> Result<SerializeTupleVariant> {
-        Ok(SerializeTupleVariant { name: variant, array: yaml::Array::with_capacity(len) })
+    fn serialize_tuple_variant(self,
+                               _enum: &'static str,
+                               _idx: usize,
+                               variant: &'static str,
+                               len: usize)
+                               -> Result<SerializeTupleVariant> {
+        Ok(SerializeTupleVariant {
+               name: variant,
+               array: yaml::Array::with_capacity(len),
+           })
     }
 
     fn serialize_map(self, _len: Option<usize>) -> Result<SerializeMap> {
-        Ok(SerializeMap { hash: yaml::Hash::new(), next_key: None })
+        Ok(SerializeMap {
+               hash: yaml::Hash::new(),
+               next_key: None,
+           })
     }
 
-    fn serialize_struct(
-        self,
-        _name: &'static str,
-        _len: usize
-    ) -> Result<SerializeStruct> {
+    fn serialize_struct(self, _name: &'static str, _len: usize) -> Result<SerializeStruct> {
         Ok(SerializeStruct { hash: yaml::Hash::new() })
     }
 
-    fn serialize_struct_variant(
-        self,
-        _enum: &'static str,
-        _idx: usize,
-        variant: &'static str,
-        _len: usize
-    ) -> Result<SerializeStructVariant> {
-        Ok(SerializeStructVariant { name: variant, hash: yaml::Hash::new() })
+    fn serialize_struct_variant(self,
+                                _enum: &'static str,
+                                _idx: usize,
+                                variant: &'static str,
+                                _len: usize)
+                                -> Result<SerializeStructVariant> {
+        Ok(SerializeStructVariant {
+               name: variant,
+               hash: yaml::Hash::new(),
+           })
     }
 }
 
@@ -360,9 +353,7 @@ pub fn to_writer<W: ?Sized, T: ?Sized>(writer: &mut W, value: &T) -> Result<()>
           T: ser::Serialize
 {
     let doc = to_yaml(value)?;
-    let mut writer_adapter = FmtToIoWriter {
-        writer: writer,
-    };
+    let mut writer_adapter = FmtToIoWriter { writer: writer };
     YamlEmitter::new(&mut writer_adapter).dump(&doc)?;
     Ok(())
 }

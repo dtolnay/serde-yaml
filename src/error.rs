@@ -67,9 +67,9 @@ impl Error {
     pub fn fix_marker(mut self, marker: Marker, path: Path) -> Self {
         if let ErrorImpl::Message(_, ref mut none @ None) = *self.0.as_mut() {
             *none = Some(Pos {
-                marker: marker,
-                path: path.to_string(),
-            });
+                             marker: marker,
+                             path: path.to_string(),
+                         });
         }
         self
     }
@@ -85,9 +85,7 @@ impl error::Error for Error {
             ErrorImpl::Utf8(ref err) => err.description(),
             ErrorImpl::FromUtf8(ref err) => err.description(),
             ErrorImpl::EndOfStream => "EOF while parsing a value",
-            ErrorImpl::MoreThanOneDocument => {
-                "deserializing from YAML containing more than one document is not supported"
-            }
+            ErrorImpl::MoreThanOneDocument => "deserializing from YAML containing more than one document is not supported",
         }
     }
 
@@ -113,12 +111,8 @@ impl Display for Error {
                     write!(f, "{}: {}", path, ScanError::new(marker, msg))
                 }
             }
-            ErrorImpl::Emit(emitter::EmitError::FmtError(_)) => {
-                f.write_str("yaml-rust fmt error")
-            }
-            ErrorImpl::Emit(emitter::EmitError::BadHashmapKey) => {
-                f.write_str("bad hash map key")
-            }
+            ErrorImpl::Emit(emitter::EmitError::FmtError(_)) => f.write_str("yaml-rust fmt error"),
+            ErrorImpl::Emit(emitter::EmitError::BadHashmapKey) => f.write_str("bad hash map key"),
             ErrorImpl::Scan(ref err) => Display::fmt(err, f),
             ErrorImpl::Io(ref err) => Display::fmt(err, f),
             ErrorImpl::Utf8(ref err) => Display::fmt(err, f),
@@ -142,39 +136,15 @@ impl Debug for Error {
                     .field(pos)
                     .finish()
             }
-            ErrorImpl::Emit(ref emit) => {
-                formatter.debug_tuple("Emit")
-                    .field(emit)
-                    .finish()
-            }
-            ErrorImpl::Scan(ref scan) => {
-                formatter.debug_tuple("Scan")
-                    .field(scan)
-                    .finish()
-            }
-            ErrorImpl::Io(ref io) => {
-                formatter.debug_tuple("Io")
-                    .field(io)
-                    .finish()
-            }
-            ErrorImpl::Utf8(ref utf8) => {
-                formatter.debug_tuple("Utf8")
-                    .field(utf8)
-                    .finish()
-            }
+            ErrorImpl::Emit(ref emit) => formatter.debug_tuple("Emit").field(emit).finish(),
+            ErrorImpl::Scan(ref scan) => formatter.debug_tuple("Scan").field(scan).finish(),
+            ErrorImpl::Io(ref io) => formatter.debug_tuple("Io").field(io).finish(),
+            ErrorImpl::Utf8(ref utf8) => formatter.debug_tuple("Utf8").field(utf8).finish(),
             ErrorImpl::FromUtf8(ref from_utf8) => {
-                formatter.debug_tuple("FromUtf8")
-                    .field(from_utf8)
-                    .finish()
+                formatter.debug_tuple("FromUtf8").field(from_utf8).finish()
             }
-            ErrorImpl::EndOfStream => {
-                formatter.debug_tuple("EndOfStream")
-                    .finish()
-            }
-            ErrorImpl::MoreThanOneDocument => {
-                formatter.debug_tuple("MoreThanOneDocument")
-                    .finish()
-            }
+            ErrorImpl::EndOfStream => formatter.debug_tuple("EndOfStream").finish(),
+            ErrorImpl::MoreThanOneDocument => formatter.debug_tuple("MoreThanOneDocument").finish(),
         }
     }
 }

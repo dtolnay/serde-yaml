@@ -19,7 +19,7 @@ use std::fmt::Debug;
 use std::collections::BTreeMap;
 
 fn test_serde<T>(thing: &T, yaml: &str)
-    where T: serde::Serialize + serde::Deserialize + PartialEq + Debug,
+    where T: serde::Serialize + serde::Deserialize + PartialEq + Debug
 {
     let serialized = serde_yaml::to_string(&thing).unwrap();
     assert_eq!(yaml, serialized);
@@ -119,10 +119,7 @@ fn test_basic_struct() {
 
 #[test]
 fn test_nested_vec() {
-    let thing = vec![
-        vec![1, 2, 3],
-        vec![4, 5, 6],
-    ];
+    let thing = vec![vec![1, 2, 3], vec![4, 5, 6]];
     let yaml = unindent("
         ---
         - 
@@ -146,11 +143,7 @@ fn test_nested_struct() {
     struct Inner {
         v: u16,
     }
-    let thing = Outer {
-        inner: Inner {
-            v: 512,
-        },
-    };
+    let thing = Outer { inner: Inner { v: 512 } };
     let yaml = unindent(r#"
         ---
         inner: 
@@ -201,9 +194,7 @@ fn test_newtype_struct() {
     }
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct NewType(OriginalType);
-    let thing = NewType(OriginalType {
-        v: 1,
-    });
+    let thing = NewType(OriginalType { v: 1 });
     let yaml = unindent(r#"
         ---
         v: 1"#);
@@ -243,11 +234,7 @@ fn test_tuple_variant() {
 fn test_struct_variant() {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     enum Variant {
-        Color {
-            r: u8,
-            g: u8,
-            b: u8,
-        },
+        Color { r: u8, g: u8, b: u8 },
     }
     let thing = Variant::Color {
         r: 32,
@@ -274,14 +261,12 @@ fn test_value() {
     }
     let thing = GenericInstructions {
         typ: "primary".to_string(),
-        config: Value::Sequence(vec![
-            Value::Null,
-            Value::Bool(true),
-            Value::I64(65535),
-            Value::F64(0.54321),
-            Value::String("s".into()),
-            Value::Mapping(Mapping::new()),
-        ]),
+        config: Value::Sequence(vec![Value::Null,
+                                     Value::Bool(true),
+                                     Value::I64(65535),
+                                     Value::F64(0.54321),
+                                     Value::String("s".into()),
+                                     Value::Mapping(Mapping::new())]),
     };
     let yaml = unindent(r#"
         ---
@@ -304,13 +289,11 @@ fn test_mapping() {
         pub substructure: Mapping,
     }
 
-    let mut thing = Data {
-        substructure: Mapping::new(),
-    };
-    thing.substructure.insert(
-        Value::String("a".to_owned()), Value::String("foo".to_owned()));
-    thing.substructure.insert(
-        Value::String("b".to_owned()), Value::String("bar".to_owned()));
+    let mut thing = Data { substructure: Mapping::new() };
+    thing.substructure.insert(Value::String("a".to_owned()),
+                              Value::String("foo".to_owned()));
+    thing.substructure.insert(Value::String("b".to_owned()),
+                              Value::String("bar".to_owned()));
 
     let yaml = unindent("
         ---

@@ -86,11 +86,7 @@ pub fn from_value<T>(value: Value) -> Result<T, Error>
 
 impl Value {
     pub fn is_null(&self) -> bool {
-        if let Value::Null = *self {
-            true
-        } else {
-            false
-        }
+        if let Value::Null = *self { true } else { false }
     }
 
     pub fn is_bool(&self) -> bool {
@@ -186,15 +182,9 @@ impl From<Yaml> for Value {
             Yaml::Integer(i) => Value::I64(i),
             Yaml::String(s) => Value::String(s),
             Yaml::Boolean(b) => Value::Bool(b),
-            Yaml::Array(array) =>  {
-                Value::Sequence(array.into_iter()
-                                     .map(Into::into)
-                                     .collect())
-            }
+            Yaml::Array(array) => Value::Sequence(array.into_iter().map(Into::into).collect()),
             Yaml::Hash(hash) => {
-                Value::Mapping(hash.into_iter()
-                                   .map(|(k, v)| (k.into(), v.into()))
-                                   .collect())
+                Value::Mapping(hash.into_iter().map(|(k, v)| (k.into(), v.into())).collect())
             }
             Yaml::Alias(_) => panic!("alias unsupported"),
             Yaml::Null => Value::Null,
@@ -290,10 +280,7 @@ impl Deserialize for Value {
                 Ok(Value::Null)
             }
 
-            fn visit_some<D>(
-                self,
-                deserializer: D
-            ) -> Result<Value, D::Error>
+            fn visit_some<D>(self, deserializer: D) -> Result<Value, D::Error>
                 where D: serde::Deserializer
             {
                 Deserialize::deserialize(deserializer)
@@ -333,9 +320,7 @@ impl PartialEq for Value {
             (&Value::F64(a), &Value::F64(b)) => {
                 if a.is_nan() && b.is_nan() {
                     // compare NaN for bitwise equality
-                    let (a, b): (i64, i64) = unsafe {
-                        (mem::transmute(a), mem::transmute(b))
-                    };
+                    let (a, b): (i64, i64) = unsafe { (mem::transmute(a), mem::transmute(b)) };
                     a == b
                 } else {
                     a == b
@@ -373,7 +358,7 @@ impl Deserializer for Value {
 
     #[inline]
     fn deserialize<V>(self, visitor: V) -> Result<V::Value, Error>
-        where V: Visitor,
+        where V: Visitor
     {
         match self {
             Value::Null => visitor.visit_unit(),
@@ -407,11 +392,8 @@ impl Deserializer for Value {
     }
 
     #[inline]
-    fn deserialize_option<V>(
-        self,
-        visitor: V
-    ) -> Result<V::Value, Error>
-        where V: Visitor,
+    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Error>
+        where V: Visitor
     {
         match self {
             Value::Null => visitor.visit_none(),
@@ -420,13 +402,12 @@ impl Deserializer for Value {
     }
 
     #[inline]
-    fn deserialize_enum<V>(
-        self,
-        _name: &str,
-        _variants: &'static [&'static str],
-        visitor: V
-    ) -> Result<V::Value, Error>
-        where V: Visitor,
+    fn deserialize_enum<V>(self,
+                           _name: &str,
+                           _variants: &'static [&'static str],
+                           visitor: V)
+                           -> Result<V::Value, Error>
+        where V: Visitor
     {
         let (variant, value) = match self {
             Value::Mapping(value) => {
@@ -434,12 +415,14 @@ impl Deserializer for Value {
                 let (variant, value) = match iter.next() {
                     Some(v) => v,
                     None => {
-                        return Err(serde::de::Error::invalid_value(Unexpected::Map, &"map with a single key"));
+                        return Err(serde::de::Error::invalid_value(Unexpected::Map,
+                                                                   &"map with a single key"));
                     }
                 };
                 // enums are encoded in json as maps with a single key:value pair
                 if iter.next().is_some() {
-                    return Err(serde::de::Error::invalid_value(Unexpected::Map, &"map with a single key"));
+                    return Err(serde::de::Error::invalid_value(Unexpected::Map,
+                                                               &"map with a single key"));
                 }
                 (variant, Some(value))
             }
@@ -450,18 +433,17 @@ impl Deserializer for Value {
         };
 
         visitor.visit_enum(EnumDeserializer {
-            variant: variant,
-            value: value,
-        })
+                               variant: variant,
+                               value: value,
+                           })
     }
 
     #[inline]
-    fn deserialize_newtype_struct<V>(
-        self,
-        _name: &'static str,
-        visitor: V
-    ) -> Result<V::Value, Self::Error>
-        where V: Visitor,
+    fn deserialize_newtype_struct<V>(self,
+                                     _name: &'static str,
+                                     visitor: V)
+                                     -> Result<V::Value, Self::Error>
+        where V: Visitor
     {
         visitor.visit_newtype_struct(self)
     }
@@ -483,7 +465,7 @@ impl serde::de::EnumVisitor for EnumDeserializer {
     type Variant = VariantDeserializer;
 
     fn visit_variant_seed<V>(self, seed: V) -> Result<(V::Value, VariantDeserializer), Error>
-        where V: serde::de::DeserializeSeed,
+        where V: serde::de::DeserializeSeed
     {
         let visitor = VariantDeserializer { value: self.value };
         seed.deserialize(self.variant).map(|v| (v, visitor))
@@ -505,43 +487,44 @@ impl serde::de::VariantVisitor for VariantDeserializer {
     }
 
     fn visit_newtype_seed<T>(self, seed: T) -> Result<T::Value, Error>
-        where T: serde::de::DeserializeSeed,
+        where T: serde::de::DeserializeSeed
     {
         match self.value {
             Some(value) => seed.deserialize(value),
-            None => Err(serde::de::Error::invalid_type(Unexpected::UnitVariant, &"newtype variant")),
+            None => {
+                Err(serde::de::Error::invalid_type(Unexpected::UnitVariant, &"newtype variant"))
+            }
         }
     }
 
-    fn visit_tuple<V>(
-        self,
-        _len: usize,
-        visitor: V
-    ) -> Result<V::Value, Error>
-        where V: Visitor,
+    fn visit_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value, Error>
+        where V: Visitor
     {
         match self.value {
             Some(Value::Sequence(v)) => {
                 serde::de::Deserializer::deserialize(SeqDeserializer::new(v), visitor)
             }
-            Some(other) => Err(serde::de::Error::invalid_type(other.unexpected(), &"tuple variant")),
-            None => Err(serde::de::Error::invalid_type(Unexpected::UnitVariant, &"tuple variant"))
+            Some(other) => {
+                Err(serde::de::Error::invalid_type(other.unexpected(), &"tuple variant"))
+            }
+            None => Err(serde::de::Error::invalid_type(Unexpected::UnitVariant, &"tuple variant")),
         }
     }
 
-    fn visit_struct<V>(
-        self,
-        _fields: &'static [&'static str],
-        visitor: V
-    ) -> Result<V::Value, Error>
-        where V: Visitor,
+    fn visit_struct<V>(self,
+                       _fields: &'static [&'static str],
+                       visitor: V)
+                       -> Result<V::Value, Error>
+        where V: Visitor
     {
         match self.value {
             Some(Value::Mapping(v)) => {
                 serde::de::Deserializer::deserialize(MapDeserializer::new(v), visitor)
             }
-            Some(other) => Err(serde::de::Error::invalid_type(other.unexpected(), &"struct variant")),
-            _ => Err(serde::de::Error::invalid_type(Unexpected::UnitVariant, &"struct variant"))
+            Some(other) => {
+                Err(serde::de::Error::invalid_type(other.unexpected(), &"struct variant"))
+            }
+            _ => Err(serde::de::Error::invalid_type(Unexpected::UnitVariant, &"struct variant")),
         }
     }
 }
@@ -552,9 +535,7 @@ struct SeqDeserializer {
 
 impl SeqDeserializer {
     fn new(vec: Vec<Value>) -> Self {
-        SeqDeserializer {
-            iter: vec.into_iter(),
-        }
+        SeqDeserializer { iter: vec.into_iter() }
     }
 }
 
@@ -563,7 +544,7 @@ impl serde::de::Deserializer for SeqDeserializer {
 
     #[inline]
     fn deserialize<V>(mut self, visitor: V) -> Result<V::Value, Error>
-        where V: Visitor,
+        where V: Visitor
     {
         let len = self.iter.len();
         if len == 0 {
@@ -590,7 +571,7 @@ impl serde::de::SeqVisitor for SeqDeserializer {
     type Error = Error;
 
     fn visit_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Error>
-        where T: serde::de::DeserializeSeed,
+        where T: serde::de::DeserializeSeed
     {
         match self.iter.next() {
             Some(value) => seed.deserialize(value).map(Some),
@@ -621,7 +602,7 @@ impl serde::de::MapVisitor for MapDeserializer {
     type Error = Error;
 
     fn visit_key_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Error>
-        where T: serde::de::DeserializeSeed,
+        where T: serde::de::DeserializeSeed
     {
         match self.iter.next() {
             Some((key, value)) => {
@@ -633,7 +614,7 @@ impl serde::de::MapVisitor for MapDeserializer {
     }
 
     fn visit_value_seed<T>(&mut self, seed: T) -> Result<T::Value, Error>
-        where T: serde::de::DeserializeSeed,
+        where T: serde::de::DeserializeSeed
     {
         match self.value.take() {
             Some(value) => seed.deserialize(value),
@@ -651,7 +632,7 @@ impl serde::de::Deserializer for MapDeserializer {
 
     #[inline]
     fn deserialize<V>(self, visitor: V) -> Result<V::Value, Error>
-        where V: Visitor,
+        where V: Visitor
     {
         visitor.visit_map(self)
     }
