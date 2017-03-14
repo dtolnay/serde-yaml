@@ -289,3 +289,28 @@ fn test_value() {
           - {}"#);
     test_serde(thing, yaml);
 }
+
+#[test]
+fn test_mapping() {
+    use serde_yaml::{Mapping, Value};
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    struct Data {
+        pub substructure: Mapping,
+    }
+
+    let mut thing = Data {
+        substructure: Mapping::new(),
+    };
+    thing.substructure.insert(
+        Value::String("a".to_owned()), Value::String("foo".to_owned()));
+    thing.substructure.insert(
+        Value::String("b".to_owned()), Value::String("bar".to_owned()));
+
+    let yaml = indoc!("
+        ---
+        substructure: 
+          a: foo
+          b: bar");
+
+    test_serde(thing, yaml);
+}

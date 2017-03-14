@@ -11,12 +11,12 @@ use std::hash::{Hash, Hasher};
 use std::mem;
 use std::vec;
 
-use linked_hash_map::LinkedHashMap;
 use serde::{self, Serialize, Deserialize, Deserializer};
 use serde::de::{Unexpected, Visitor};
 use yaml_rust::Yaml;
 
 use error::Error;
+use mapping::Mapping;
 use ser::Serializer;
 
 /// Represents any valid YAML value.
@@ -42,8 +42,6 @@ pub enum Value {
 
 /// A YAML sequence in which the elements are `serde_yaml::Value`.
 pub type Sequence = Vec<Value>;
-/// A YAML mapping in which the keys and values are both `serde_yaml::Value`.
-pub type Mapping = LinkedHashMap<Value, Value>;
 
 /// Convert a `T` into `serde_yaml::Value` which is an enum that can represent
 /// any valid YAML data.
@@ -307,7 +305,7 @@ impl Deserialize for Value {
             fn visit_map<V>(self, mut visitor: V) -> Result<Value, V::Error>
                 where V: serde::de::MapVisitor
             {
-                let mut values = LinkedHashMap::with_capacity(visitor.size_hint().0);
+                let mut values = Mapping::with_capacity(visitor.size_hint().0);
 
                 while let Some((key, value)) = visitor.visit()? {
                     values.insert(key, value);

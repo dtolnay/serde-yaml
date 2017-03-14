@@ -154,3 +154,28 @@ fn test_number_as_string() {
     };
     test_de(yaml, expected);
 }
+
+#[test]
+fn test_de_mapping() {
+    #[derive(Debug, Deserialize, PartialEq)]
+    struct Data {
+        pub substructure: serde_yaml::Mapping,
+    }
+    let yaml = indoc!("
+        ---
+        substructure:
+          a: 'foo'
+          b: 'bar'");
+
+    let mut expected = Data {
+        substructure: serde_yaml::Mapping::new(),
+    };
+    expected.substructure.insert(
+        serde_yaml::Value::String("a".to_owned()),
+        serde_yaml::Value::String("foo".to_owned()));
+    expected.substructure.insert(
+        serde_yaml::Value::String("b".to_owned()),
+        serde_yaml::Value::String("bar".to_owned()));
+
+    test_de(yaml, expected);
+}
