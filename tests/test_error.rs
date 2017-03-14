@@ -58,9 +58,8 @@ fn test_incorrect_nested_type() {
 
 #[test]
 fn test_empty() {
-    let yaml = "";
     let expected = "EOF while parsing a value";
-    test_error::<String>(&yaml, expected);
+    test_error::<String>("", expected);
 }
 
 #[test]
