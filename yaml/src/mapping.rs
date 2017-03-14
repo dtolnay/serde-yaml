@@ -66,10 +66,10 @@ impl Mapping {
     pub fn clear(&mut self) { self.map.clear() }
 
     #[inline]
-    pub fn iter(&self) -> linked_hash_map::Iter<Value, Value> { self.map.iter() }
+    pub fn iter(&self) -> Iter { Iter { iter: self.map.iter() } }
 
     #[inline]
-    pub fn iter_mut(&mut self) -> linked_hash_map::IterMut<Value, Value> { self.map.iter_mut() }
+    pub fn iter_mut(&mut self) -> IterMut { IterMut { iter: self.map.iter_mut() } }
 }
 
 impl<'a> Index<&'a Value> for Mapping {
