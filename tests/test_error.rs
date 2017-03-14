@@ -6,8 +6,14 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use serde;
-use serde_yaml;
+#[macro_use]
+extern crate serde_derive;
+
+extern crate serde;
+extern crate serde_yaml;
+
+extern crate unindent;
+use unindent::unindent;
 
 use std::fmt::Debug;
 
@@ -20,11 +26,11 @@ fn test_error<T>(yaml: &str, expected: &str)
 
 #[test]
 fn test_incorrect_type() {
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         str");
     let expected = "invalid type: string \"str\", expected i16 at line 2 column 1";
-    test_error::<i16>(yaml, expected);
+    test_error::<i16>(&yaml, expected);
 }
 
 #[test]
@@ -41,20 +47,20 @@ fn test_incorrect_nested_type() {
     struct C {
         d: bool,
     }
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         b:
           - C:
               d: fase");
     let expected = "b[0].C.d: invalid type: string \"fase\", expected a boolean at line 4 column 10";
-    test_error::<A>(yaml, expected);
+    test_error::<A>(&yaml, expected);
 }
 
 #[test]
 fn test_empty() {
     let yaml = "";
     let expected = "EOF while parsing a value";
-    test_error::<String>(yaml, expected);
+    test_error::<String>(&yaml, expected);
 }
 
 #[test]
@@ -64,31 +70,31 @@ fn test_missing_field() {
         v: bool,
         w: bool,
     }
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         v: true");
     let expected = "missing field `w` at line 2 column 2";
-    test_error::<Basic>(yaml, expected);
+    test_error::<Basic>(&yaml, expected);
 }
 
 #[test]
 fn test_unknown_anchor() {
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         *some");
     let expected = "while parsing node, found unknown anchor at line 2 column 1";
-    test_error::<String>(yaml, expected);
+    test_error::<String>(&yaml, expected);
 }
 
 #[test]
 fn test_two_documents() {
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         0
         ---
         1");
     let expected = "deserializing from YAML containing more than one document is not supported";
-    test_error::<usize>(yaml, expected);
+    test_error::<usize>(&yaml, expected);
 }
 
 #[test]
@@ -97,12 +103,12 @@ fn test_variant_map_wrong_size() {
     enum E {
         V(usize),
     }
-    let yaml = indoc!(r#"
+    let yaml = unindent(r#"
         ---
         "V": 16
         "other": 32"#);
     let expected = "invalid length 2, expected map containing 1 entry";
-    test_error::<E>(yaml, expected);
+    test_error::<E>(&yaml, expected);
 }
 
 #[test]
@@ -111,11 +117,11 @@ fn test_variant_not_a_map() {
     enum E {
         V(usize),
     }
-    let yaml = indoc!(r#"
+    let yaml = unindent(r#"
         ---
         - "V""#);
     let expected = "invalid type: sequence, expected string or singleton map at line 2 column 1";
-    test_error::<E>(yaml, expected);
+    test_error::<E>(&yaml, expected);
 }
 
 #[test]
@@ -124,63 +130,63 @@ fn test_variant_not_string() {
     enum E {
         V(bool),
     }
-    let yaml = indoc!(r#"
+    let yaml = unindent(r#"
         ---
         {}: true"#);
     let expected = "invalid type: map, expected variant of enum `E` at line 2 column 1";
-    test_error::<E>(yaml, expected);
+    test_error::<E>(&yaml, expected);
 }
 
 #[test]
 fn test_bad_bool() {
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         !!bool str");
     let expected = "invalid value: string \"str\", expected a boolean at line 2 column 8";
-    test_error::<bool>(yaml, expected);
+    test_error::<bool>(&yaml, expected);
 }
 
 #[test]
 fn test_bad_int() {
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         !!int str");
     let expected = "invalid value: string \"str\", expected an integer at line 2 column 7";
-    test_error::<i64>(yaml, expected);
+    test_error::<i64>(&yaml, expected);
 }
 
 #[test]
 fn test_bad_float() {
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         !!float str");
     let expected = "invalid value: string \"str\", expected a float at line 2 column 9";
-    test_error::<f64>(yaml, expected);
+    test_error::<f64>(&yaml, expected);
 }
 
 #[test]
 fn test_bad_null() {
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         !!null str");
     let expected = "invalid value: string \"str\", expected null at line 2 column 8";
-    test_error::<()>(yaml, expected);
+    test_error::<()>(&yaml, expected);
 }
 
 #[test]
 fn test_short_tuple() {
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         [0, 0]");
     let expected = "invalid length 2, expected a tuple of size 3 at line 2 column 1";
-    test_error::<(u8, u8, u8)>(yaml, expected);
+    test_error::<(u8, u8, u8)>(&yaml, expected);
 }
 
 #[test]
 fn test_long_tuple() {
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         [0, 0, 0]");
     let expected = "invalid length 3, expected sequence of 2 elements at line 2 column 1";
-    test_error::<(u8, u8)>(yaml, expected);
+    test_error::<(u8, u8)>(&yaml, expected);
 }

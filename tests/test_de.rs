@@ -6,8 +6,14 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use serde;
-use serde_yaml;
+#[macro_use]
+extern crate serde_derive;
+
+extern crate serde;
+extern crate serde_yaml;
+
+extern crate unindent;
+use unindent::unindent;
 
 use std::fmt::Debug;
 use std::collections::BTreeMap;
@@ -21,7 +27,7 @@ fn test_de<T>(yaml: &str, expected: &T)
 
 #[test]
 fn test_alias() {
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         first:
           &alias
@@ -35,7 +41,7 @@ fn test_alias() {
         expected.insert(String::from("second"), 1);
         expected.insert(String::from("third"), 3);
     }
-    test_de(yaml, &expected);
+    test_de(&yaml, &expected);
 }
 
 #[test]
@@ -46,7 +52,7 @@ fn test_option() {
         b: Option<String>,
         c: Option<bool>,
     }
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         b:
         c: true");
@@ -55,7 +61,7 @@ fn test_option() {
         b: None,
         c: Some(true),
     };
-    test_de(yaml, &expected);
+    test_de(&yaml, &expected);
 }
 
 #[test]
@@ -69,7 +75,7 @@ fn test_option_alias() {
         e: Option<String>,
         f: Option<bool>,
     }
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         none_f:
           &none_f
@@ -105,7 +111,7 @@ fn test_option_alias() {
         e: Some("x".to_owned()),
         f: Some(true),
     };
-    test_de(yaml, &expected);
+    test_de(&yaml, &expected);
 }
 
 #[test]
@@ -120,7 +126,7 @@ fn test_enum_alias() {
         a: E,
         b: E,
     }
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         aref:
           &aref
@@ -137,7 +143,7 @@ fn test_enum_alias() {
         a: E::A,
         b: E::B(1, 2),
     };
-    test_de(yaml, &expected);
+    test_de(&yaml, &expected);
 }
 
 #[test]
@@ -146,13 +152,13 @@ fn test_number_as_string() {
     struct Num {
         value: String,
     }
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         value: 123456789012345678901234567890");
     let expected = Num {
         value: "123456789012345678901234567890".to_owned(),
     };
-    test_de(yaml, &expected);
+    test_de(&yaml, &expected);
 }
 
 #[test]
@@ -161,7 +167,7 @@ fn test_de_mapping() {
     struct Data {
         pub substructure: serde_yaml::Mapping,
     }
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         substructure:
           a: 'foo'
@@ -177,5 +183,5 @@ fn test_de_mapping() {
         serde_yaml::Value::String("b".to_owned()),
         serde_yaml::Value::String("bar".to_owned()));
 
-    test_de(yaml, &expected);
+    test_de(&yaml, &expected);
 }

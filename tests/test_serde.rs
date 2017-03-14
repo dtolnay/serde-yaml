@@ -6,8 +6,14 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use serde;
-use serde_yaml;
+#[macro_use]
+extern crate serde_derive;
+
+extern crate serde;
+extern crate serde_yaml;
+
+extern crate unindent;
+use unindent::unindent;
 
 use std::fmt::Debug;
 use std::collections::BTreeMap;
@@ -25,57 +31,57 @@ fn test_serde<T>(thing: &T, yaml: &str)
 #[test]
 fn test_int() {
     let thing = 256;
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         256");
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
 fn test_int_max_u64() {
     let thing = ::std::u64::MAX;
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         18446744073709551615");
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
 fn test_int_min_i64() {
     let thing = ::std::i64::MIN;
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         -9223372036854775808");
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
 fn test_int_max_i64() {
     let thing = ::std::i64::MAX;
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         9223372036854775807");
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
 fn test_float() {
     let thing = 25.6;
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         25.6");
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
 fn test_vec() {
     let thing = vec![1, 2, 3];
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         - 1
         - 2
         - 3");
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
@@ -83,11 +89,11 @@ fn test_map() {
     let mut thing = BTreeMap::new();
     thing.insert(String::from("x"), 1);
     thing.insert(String::from("y"), 2);
-    let yaml = indoc!(r#"
+    let yaml = unindent(r#"
         ---
         x: 1
         y: 2"#);
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
@@ -103,12 +109,12 @@ fn test_basic_struct() {
         y: String::from("hi\tquoted"),
         z: true,
     };
-    let yaml = indoc!(r#"
+    let yaml = unindent(r#"
         ---
         x: -4
         y: "hi\tquoted"
         z: true"#);
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
@@ -117,7 +123,7 @@ fn test_nested_vec() {
         vec![1, 2, 3],
         vec![4, 5, 6],
     ];
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         - 
           - 1
@@ -127,7 +133,7 @@ fn test_nested_vec() {
           - 4
           - 5
           - 6");
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
@@ -145,32 +151,32 @@ fn test_nested_struct() {
             v: 512,
         },
     };
-    let yaml = indoc!(r#"
+    let yaml = unindent(r#"
         ---
         inner: 
           v: 512"#);
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
 fn test_option() {
     let thing = vec![Some(1), None, Some(3)];
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         - 1
         - ~
         - 3");
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
 fn test_unit() {
     let thing = vec![(), ()];
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         - ~
         - ~");
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
@@ -181,10 +187,10 @@ fn test_unit_variant() {
         Second,
     }
     let thing = Variant::First;
-    let yaml = indoc!(r#"
+    let yaml = unindent(r#"
         ---
         First"#);
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
@@ -198,10 +204,10 @@ fn test_newtype_struct() {
     let thing = NewType(OriginalType {
         v: 1,
     });
-    let yaml = indoc!(r#"
+    let yaml = unindent(r#"
         ---
         v: 1"#);
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
@@ -211,10 +217,10 @@ fn test_newtype_variant() {
         Size(usize),
     }
     let thing = Variant::Size(127);
-    let yaml = indoc!(r#"
+    let yaml = unindent(r#"
         ---
         Size: 127"#);
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
@@ -224,13 +230,13 @@ fn test_tuple_variant() {
         Rgb(u8, u8, u8),
     }
     let thing = Variant::Rgb(32, 64, 96);
-    let yaml = indoc!(r#"
+    let yaml = unindent(r#"
         ---
         Rgb: 
           - 32
           - 64
           - 96"#);
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
@@ -248,13 +254,13 @@ fn test_struct_variant() {
         g: 64,
         b: 96,
     };
-    let yaml = indoc!(r#"
+    let yaml = unindent(r#"
         ---
         Color: 
           r: 32
           g: 64
           b: 96"#);
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
@@ -277,7 +283,7 @@ fn test_value() {
             Value::Mapping(Mapping::new()),
         ]),
     };
-    let yaml = indoc!(r#"
+    let yaml = unindent(r#"
         ---
         type: primary
         config: 
@@ -287,7 +293,7 @@ fn test_value() {
           - 0.54321
           - s
           - {}"#);
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
 
 #[test]
@@ -306,11 +312,11 @@ fn test_mapping() {
     thing.substructure.insert(
         Value::String("b".to_owned()), Value::String("bar".to_owned()));
 
-    let yaml = indoc!("
+    let yaml = unindent("
         ---
         substructure: 
           a: foo
           b: bar");
 
-    test_serde(&thing, yaml);
+    test_serde(&thing, &yaml);
 }
