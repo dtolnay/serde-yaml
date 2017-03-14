@@ -6,11 +6,22 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![cfg_attr(feature="clippy", feature(plugin))]
-#![cfg_attr(feature="clippy", plugin(clippy))]
-#![cfg_attr(feature="clippy", deny(clippy))] // turn warnings into errors
+#![cfg_attr(feature = "cargo-clippy", deny(clippy, clippy_pedantic))]
+// Whitelisted clippy_pedantic lints
+#![cfg_attr(feature = "cargo-clippy", allow(
+// private Deserializer::next
+    should_implement_trait,
+// things are often more readable this way
+    single_match_else,
+    stutter,
+// not practical
+    missing_docs_in_private_items,
+// not stable
+    empty_enum,
+))]
 
 extern crate linked_hash_map;
+extern crate num_traits;
 #[macro_use]
 extern crate serde;
 extern crate yaml_rust;

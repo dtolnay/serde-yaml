@@ -1,6 +1,6 @@
 sudo: false
-
 language: rust
+cache: cargo
 
 rust:
   - stable
@@ -8,20 +8,8 @@ rust:
   - nightly
 
 matrix:
-  allow_failures:
+  include:
     - rust: nightly
-  fast_finish: true
+      env: CLIPPY=true
 
-before_script:
-  - pip install 'travis-cargo<0.2' --user
-  - export PATH=$HOME/.local/bin:$PATH
-
-script:
-  - (cd yaml && travis-cargo --skip nightly build)
-  - (cd yaml && travis-cargo --only nightly build -- --features clippy)
-  - (cd yaml && travis-cargo test)
-  - (cd yaml_tests && travis-cargo --only nightly test)
-
-env:
-  global:
-    - TRAVIS_CARGO_NIGHTLY_FEATURE=""
+script: ./travis.sh

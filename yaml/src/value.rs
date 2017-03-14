@@ -11,6 +11,7 @@ use std::hash::{Hash, Hasher};
 use std::mem;
 use std::vec;
 
+use num_traits::NumCast;
 use serde::{self, Serialize, Deserialize, Deserializer};
 use serde::de::{Unexpected, Visitor};
 use yaml_rust::Yaml;
@@ -54,6 +55,7 @@ pub type Sequence = Vec<Value>;
 /// let val = serde_yaml::to_value("s").unwrap();
 /// assert_eq!(val, Value::String("s".to_owned()));
 /// ```
+#[cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
 pub fn to_value<T>(value: T) -> Result<Value, Error>
     where T: Serialize
 {
@@ -252,7 +254,10 @@ impl Deserialize for Value {
             fn visit_u64<E>(self, u: u64) -> Result<Value, E>
                 where E: serde::de::Error
             {
-                Ok(Value::I64(u as i64))
+                match NumCast::from(u) {
+                    Some(i) => Ok(Value::I64(i)),
+                    None => Ok(Value::String(u.to_string())),
+                }
             }
 
             fn visit_f64<E>(self, f: f64) -> Result<Value, E>

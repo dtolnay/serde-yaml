@@ -574,7 +574,7 @@ impl<'a, 'r> de::Deserializer for &'r mut Deserializer<'a> {
             Event::Alias(i) => {
                 *self.pos += 1;
                 let mut pos = i;
-                return self.jump(&mut pos)?.deserialize_enum(name, variants, visitor);
+                self.jump(&mut pos)?.deserialize_enum(name, variants, visitor)
             }
             Event::Scalar(_, _, _) => {
                 visitor.visit_enum(UnitVariantVisitor { de: self })

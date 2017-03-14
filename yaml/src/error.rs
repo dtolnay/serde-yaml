@@ -7,7 +7,7 @@
 // except according to those terms.
 
 use std::error;
-use std::fmt::{self, Display};
+use std::fmt::{self, Display, Debug};
 use std::io;
 use std::result;
 use std::str;
@@ -102,10 +102,10 @@ impl error::Error for Error {
     }
 }
 
-impl fmt::Display for Error {
+impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self.0 {
-            ErrorImpl::Message(ref msg, None) => write!(f, "{}", msg),
+            ErrorImpl::Message(ref msg, None) => Display::fmt(msg, f),
             ErrorImpl::Message(ref msg, Some(Pos { marker, ref path })) => {
                 if path == "." {
                     write!(f, "{}", ScanError::new(marker, msg))
@@ -113,14 +113,19 @@ impl fmt::Display for Error {
                     write!(f, "{}: {}", path, ScanError::new(marker, msg))
                 }
             }
-            ErrorImpl::Emit(ref err) => write!(f, "{:?}", err),
-            ErrorImpl::Scan(ref err) => err.fmt(f),
-            ErrorImpl::Io(ref err) => err.fmt(f),
-            ErrorImpl::Utf8(ref err) => err.fmt(f),
-            ErrorImpl::FromUtf8(ref err) => err.fmt(f),
-            ErrorImpl::EndOfStream => write!(f, "EOF while parsing a value"),
+            ErrorImpl::Emit(emitter::EmitError::FmtError(_)) => {
+                f.write_str("yaml-rust fmt error")
+            }
+            ErrorImpl::Emit(emitter::EmitError::BadHashmapKey) => {
+                f.write_str("bad hash map key")
+            }
+            ErrorImpl::Scan(ref err) => Display::fmt(err, f),
+            ErrorImpl::Io(ref err) => Display::fmt(err, f),
+            ErrorImpl::Utf8(ref err) => Display::fmt(err, f),
+            ErrorImpl::FromUtf8(ref err) => Display::fmt(err, f),
+            ErrorImpl::EndOfStream => f.write_str("EOF while parsing a value"),
             ErrorImpl::MoreThanOneDocument => {
-                write!(f, "deserializing from YAML containing more than one document is not supported")
+                f.write_str("deserializing from YAML containing more than one document is not supported")
             }
         }
     }
@@ -128,7 +133,7 @@ impl fmt::Display for Error {
 
 // Remove two layers of verbosity from the debug representation. Humans often
 // end up seeing this representation because it is what unwrap() shows.
-impl fmt::Debug for Error {
+impl Debug for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match *self.0 {
             ErrorImpl::Message(ref msg, ref pos) => {
