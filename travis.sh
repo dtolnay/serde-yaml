@@ -23,18 +23,11 @@ if [ -n "${CLIPPY}" ]; then
         exit
     fi
 
-    cd "$DIR/yaml"
-    cargo clippy -- -Dclippy
-
-    cd "$DIR/yaml_tests"
     cargo clippy -- -Dclippy
 else
     for CHANNEL in nightly beta stable; do
         cargo clean
-        cd "$DIR/yaml"
         channel build
-        channel test
-        cd "$DIR/yaml_tests"
         channel test
     done
 fi
