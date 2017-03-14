@@ -12,11 +12,11 @@ use serde_yaml;
 use std::fmt::Debug;
 use std::collections::BTreeMap;
 
-fn test_de<T>(yaml: &str, expected: T)
+fn test_de<T>(yaml: &str, expected: &T)
     where T: serde::Deserialize + PartialEq + Debug,
 {
     let deserialized: T = serde_yaml::from_str(yaml).unwrap();
-    assert_eq!(expected, deserialized);
+    assert_eq!(*expected, deserialized);
 }
 
 #[test]
@@ -35,7 +35,7 @@ fn test_alias() {
         expected.insert(String::from("second"), 1);
         expected.insert(String::from("third"), 3);
     }
-    test_de(yaml, expected);
+    test_de(yaml, &expected);
 }
 
 #[test]
@@ -55,7 +55,7 @@ fn test_option() {
         b: None,
         c: Some(true),
     };
-    test_de(yaml, expected);
+    test_de(yaml, &expected);
 }
 
 #[test]
@@ -105,7 +105,7 @@ fn test_option_alias() {
         e: Some("x".to_owned()),
         f: Some(true),
     };
-    test_de(yaml, expected);
+    test_de(yaml, &expected);
 }
 
 #[test]
@@ -137,7 +137,7 @@ fn test_enum_alias() {
         a: E::A,
         b: E::B(1, 2),
     };
-    test_de(yaml, expected);
+    test_de(yaml, &expected);
 }
 
 #[test]
@@ -152,7 +152,7 @@ fn test_number_as_string() {
     let expected = Num {
         value: "123456789012345678901234567890".to_owned(),
     };
-    test_de(yaml, expected);
+    test_de(yaml, &expected);
 }
 
 #[test]
@@ -177,5 +177,5 @@ fn test_de_mapping() {
         serde_yaml::Value::String("b".to_owned()),
         serde_yaml::Value::String("bar".to_owned()));
 
-    test_de(yaml, expected);
+    test_de(yaml, &expected);
 }
