@@ -18,7 +18,7 @@ use unindent::unindent;
 use std::fmt::Debug;
 
 fn test_error<T>(yaml: &str, expected: &str)
-    where T: serde::Deserialize + Debug
+    where T: serde::de::DeserializeOwned + Debug
 {
     let result = serde_yaml::from_str::<T>(yaml);
     assert_eq!(expected, format!("{}", result.unwrap_err()));
