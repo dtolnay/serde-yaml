@@ -59,7 +59,7 @@ pub type Sequence = Vec<Value>;
 pub fn to_value<T>(value: T) -> Result<Value, Error>
     where T: Serialize
 {
-    value.serialize(Serializer).map(Into::into)
+    value.serialize(Serializer).map(yaml_to_value)
 }
 
 /// Interpret a `serde_yaml::Value` as an instance of type `T`.
@@ -170,26 +170,24 @@ impl Value {
     }
 }
 
-impl From<Yaml> for Value {
-    fn from(yaml: Yaml) -> Self {
-        match yaml {
-            Yaml::Real(f) => {
-                match f.parse() {
-                    Ok(f) => Value::F64(f),
-                    Err(_) => Value::String(f),
-                }
+fn yaml_to_value(yaml: Yaml) -> Value {
+    match yaml {
+        Yaml::Real(f) => {
+            match f.parse() {
+                Ok(f) => Value::F64(f),
+                Err(_) => Value::String(f),
             }
-            Yaml::Integer(i) => Value::I64(i),
-            Yaml::String(s) => Value::String(s),
-            Yaml::Boolean(b) => Value::Bool(b),
-            Yaml::Array(array) => Value::Sequence(array.into_iter().map(Into::into).collect()),
-            Yaml::Hash(hash) => {
-                Value::Mapping(hash.into_iter().map(|(k, v)| (k.into(), v.into())).collect())
-            }
-            Yaml::Alias(_) => panic!("alias unsupported"),
-            Yaml::Null => Value::Null,
-            Yaml::BadValue => panic!("bad value"),
         }
+        Yaml::Integer(i) => Value::I64(i),
+        Yaml::String(s) => Value::String(s),
+        Yaml::Boolean(b) => Value::Bool(b),
+        Yaml::Array(array) => Value::Sequence(array.into_iter().map(yaml_to_value).collect()),
+        Yaml::Hash(hash) => {
+            Value::Mapping(hash.into_iter().map(|(k, v)| (yaml_to_value(k), yaml_to_value(v))).collect())
+        }
+        Yaml::Alias(_) => panic!("alias unsupported"),
+        Yaml::Null => Value::Null,
+        Yaml::BadValue => panic!("bad value"),
     }
 }
 
