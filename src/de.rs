@@ -650,23 +650,6 @@ pub fn from_str<T>(s: &str) -> Result<T>
     }
 }
 
-/// Deserialize an instance of type `T` from an iterator over bytes of YAML.
-///
-/// This conversion can fail if the structure of the Value does not match the
-/// structure expected by `T`, for example if `T` is a struct type but the Value
-/// contains something other than a YAML map. It can also fail if the structure
-/// is correct but `T`'s implementation of `Deserialize` decides that something
-/// is wrong with the data, for example required struct fields are missing from
-/// the YAML map or some number is too big to fit in the expected primitive
-/// type.
-pub fn from_iter<I, T>(iter: I) -> Result<T>
-    where I: Iterator<Item = io::Result<u8>>,
-          T: DeserializeOwned
-{
-    let bytes = iter.collect::<io::Result<Vec<u8>>>().map_err(Error::io)?;
-    from_str(str::from_utf8(&bytes).map_err(Error::str_utf8)?)
-}
-
 /// Deserialize an instance of type `T` from an IO stream of YAML.
 ///
 /// This conversion can fail if the structure of the Value does not match the
@@ -680,7 +663,8 @@ pub fn from_reader<R, T>(rdr: R) -> Result<T>
     where R: io::Read,
           T: DeserializeOwned
 {
-    from_iter(rdr.bytes())
+    let bytes = rdr.bytes().collect::<io::Result<Vec<u8>>>().map_err(Error::io)?;
+    from_str(str::from_utf8(&bytes).map_err(Error::str_utf8)?)
 }
 
 /// Deserialize an instance of type `T` from bytes of YAML text.
@@ -695,5 +679,5 @@ pub fn from_reader<R, T>(rdr: R) -> Result<T>
 pub fn from_slice<T>(v: &[u8]) -> Result<T>
     where T: DeserializeOwned
 {
-    from_iter(v.iter().map(|byte| Ok(*byte)))
+    from_str(str::from_utf8(v).map_err(Error::str_utf8)?)
 }
