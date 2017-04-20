@@ -199,10 +199,9 @@ impl Serialize for Mapping {
     #[inline]
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeMap;
-        let mut map_serializer = try!(serializer.serialize_map(Some(self.len())));
+        let mut map_serializer = serializer.serialize_map(Some(self.len()))?;
         for (k, v) in self {
-            try!(map_serializer.serialize_key(k));
-            try!(map_serializer.serialize_value(v));
+            map_serializer.serialize_entry(k, v)?;
         }
         map_serializer.end()
     }
@@ -233,7 +232,7 @@ impl<'de> Deserialize<'de> for Mapping {
                 where V: serde::de::MapAccess<'de>
             {
                 let mut values = Mapping::new();
-                while let Some((k, v)) = try!(visitor.next_entry()) {
+                while let Some((k, v)) = visitor.next_entry()? {
                     values.insert(k, v);
                 }
                 Ok(values)
