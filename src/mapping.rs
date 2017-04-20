@@ -208,11 +208,13 @@ impl Serialize for Mapping {
     }
 }
 
-impl Deserialize for Mapping {
-    fn deserialize<D: Deserializer>(deserializer: D) -> Result<Self, D::Error> {
+impl<'de> Deserialize<'de> for Mapping {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where D: Deserializer<'de>
+    {
         struct Visitor;
 
-        impl serde::de::Visitor for Visitor {
+        impl<'de> serde::de::Visitor<'de> for Visitor {
             type Value = Mapping;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -228,10 +230,10 @@ impl Deserialize for Mapping {
 
             #[inline]
             fn visit_map<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
-                where V: serde::de::MapVisitor
+                where V: serde::de::MapAccess<'de>
             {
-                let mut values = Mapping::with_capacity(visitor.size_hint().0);
-                while let Some((k, v)) = try!(visitor.visit()) {
+                let mut values = Mapping::new();
+                while let Some((k, v)) = try!(visitor.next_entry()) {
                     values.insert(k, v);
                 }
                 Ok(values)

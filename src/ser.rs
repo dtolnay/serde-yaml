@@ -99,7 +99,7 @@ impl ser::Serializer for Serializer {
 
     fn serialize_unit_variant(self,
                               _name: &str,
-                              _variant_index: usize,
+                              _variant_index: u32,
                               variant: &str)
                               -> Result<Yaml> {
         Ok(Yaml::String(variant.to_owned()))
@@ -113,7 +113,7 @@ impl ser::Serializer for Serializer {
 
     fn serialize_newtype_variant<T: ?Sized>(self,
                                             _name: &str,
-                                            _variant_index: usize,
+                                            _variant_index: u32,
                                             variant: &str,
                                             value: &T)
                                             -> Result<Yaml>
@@ -140,10 +140,6 @@ impl ser::Serializer for Serializer {
         Ok(SerializeArray { array: array })
     }
 
-    fn serialize_seq_fixed_size(self, len: usize) -> Result<SerializeArray> {
-        self.serialize_seq(Some(len))
-    }
-
     fn serialize_tuple(self, len: usize) -> Result<SerializeArray> {
         self.serialize_seq(Some(len))
     }
@@ -154,7 +150,7 @@ impl ser::Serializer for Serializer {
 
     fn serialize_tuple_variant(self,
                                _enum: &'static str,
-                               _idx: usize,
+                               _idx: u32,
                                variant: &'static str,
                                len: usize)
                                -> Result<SerializeTupleVariant> {
@@ -177,7 +173,7 @@ impl ser::Serializer for Serializer {
 
     fn serialize_struct_variant(self,
                                 _enum: &'static str,
-                                _idx: usize,
+                                _idx: u32,
                                 variant: &'static str,
                                 _len: usize)
                                 -> Result<SerializeStructVariant> {

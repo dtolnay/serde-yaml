@@ -19,7 +19,7 @@ use std::fmt::Debug;
 use std::collections::BTreeMap;
 
 fn test_serde<T>(thing: &T, yaml: &str)
-    where T: serde::Serialize + serde::Deserialize + PartialEq + Debug
+    where T: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug
 {
     let serialized = serde_yaml::to_string(&thing).unwrap();
     assert_eq!(yaml, serialized);
