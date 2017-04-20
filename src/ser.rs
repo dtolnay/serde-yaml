@@ -350,7 +350,7 @@ pub fn to_writer<W: ?Sized, T: ?Sized>(writer: &mut W, value: &T) -> Result<()>
 {
     let doc = to_yaml(value)?;
     let mut writer_adapter = FmtToIoWriter { writer: writer };
-    YamlEmitter::new(&mut writer_adapter).dump(&doc)?;
+    YamlEmitter::new(&mut writer_adapter).dump(&doc).map_err(Error::emitter)?;
     Ok(())
 }
 
@@ -373,7 +373,7 @@ pub fn to_vec<T: ?Sized>(value: &T) -> Result<Vec<u8>>
 pub fn to_string<T: ?Sized>(value: &T) -> Result<String>
     where T: ser::Serialize
 {
-    Ok(String::from_utf8(to_vec(value)?)?)
+    Ok(String::from_utf8(to_vec(value)?).map_err(Error::string_utf8)?)
 }
 
 /// The yaml-rust library uses `fmt::Write` intead of `io::Write` so this is a

@@ -631,7 +631,7 @@ pub fn from_str<T>(s: &str) -> Result<T>
         events: Vec::new(),
         aliases: BTreeMap::new(),
     };
-    parser.load(&mut loader, true)?;
+    parser.load(&mut loader, true).map_err(Error::scanner)?;
     if loader.events.is_empty() {
         Err(Error::end_of_stream())
     } else {
@@ -663,8 +663,8 @@ pub fn from_iter<I, T>(iter: I) -> Result<T>
     where I: Iterator<Item = io::Result<u8>>,
           T: DeserializeOwned
 {
-    let bytes: Vec<u8> = try!(iter.collect());
-    from_str(str::from_utf8(&bytes)?)
+    let bytes = iter.collect::<io::Result<Vec<u8>>>().map_err(Error::io)?;
+    from_str(str::from_utf8(&bytes).map_err(Error::str_utf8)?)
 }
 
 /// Deserialize an instance of type `T` from an IO stream of YAML.

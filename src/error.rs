@@ -64,6 +64,36 @@ impl Error {
 
     // Not public API. Should be pub(crate).
     #[doc(hidden)]
+    pub fn io(err: io::Error) -> Error {
+        Error(Box::new(ErrorImpl::Io(err)))
+    }
+
+    // Not public API. Should be pub(crate).
+    #[doc(hidden)]
+    pub fn emitter(err: emitter::EmitError) -> Error {
+        Error(Box::new(ErrorImpl::Emit(err)))
+    }
+
+    // Not public API. Should be pub(crate).
+    #[doc(hidden)]
+    pub fn scanner(err: scanner::ScanError) -> Error {
+        Error(Box::new(ErrorImpl::Scan(err)))
+    }
+
+    // Not public API. Should be pub(crate).
+    #[doc(hidden)]
+    pub fn str_utf8(err: str::Utf8Error) -> Error {
+        Error(Box::new(ErrorImpl::Utf8(err)))
+    }
+
+    // Not public API. Should be pub(crate).
+    #[doc(hidden)]
+    pub fn string_utf8(err: string::FromUtf8Error) -> Error {
+        Error(Box::new(ErrorImpl::FromUtf8(err)))
+    }
+
+    // Not public API. Should be pub(crate).
+    #[doc(hidden)]
     pub fn fix_marker(mut self, marker: Marker, path: Path) -> Self {
         if let ErrorImpl::Message(_, ref mut none @ None) = *self.0.as_mut() {
             *none = Some(Pos {
@@ -146,36 +176,6 @@ impl Debug for Error {
             ErrorImpl::EndOfStream => formatter.debug_tuple("EndOfStream").finish(),
             ErrorImpl::MoreThanOneDocument => formatter.debug_tuple("MoreThanOneDocument").finish(),
         }
-    }
-}
-
-impl From<emitter::EmitError> for Error {
-    fn from(err: emitter::EmitError) -> Error {
-        Error(Box::new(ErrorImpl::Emit(err)))
-    }
-}
-
-impl From<scanner::ScanError> for Error {
-    fn from(err: scanner::ScanError) -> Error {
-        Error(Box::new(ErrorImpl::Scan(err)))
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Error {
-        Error(Box::new(ErrorImpl::Io(err)))
-    }
-}
-
-impl From<str::Utf8Error> for Error {
-    fn from(err: str::Utf8Error) -> Error {
-        Error(Box::new(ErrorImpl::Utf8(err)))
-    }
-}
-
-impl From<string::FromUtf8Error> for Error {
-    fn from(err: string::FromUtf8Error) -> Error {
-        Error(Box::new(ErrorImpl::FromUtf8(err)))
     }
 }
 
