@@ -659,12 +659,14 @@ pub fn from_str<T>(s: &str) -> Result<T>
 /// is wrong with the data, for example required struct fields are missing from
 /// the YAML map or some number is too big to fit in the expected primitive
 /// type.
-pub fn from_reader<R, T>(rdr: R) -> Result<T>
+pub fn from_reader<R, T>(mut rdr: R) -> Result<T>
     where R: io::Read,
           T: DeserializeOwned
 {
-    let bytes = rdr.bytes().collect::<io::Result<Vec<u8>>>().map_err(Error::io)?;
-    from_str(str::from_utf8(&bytes).map_err(Error::str_utf8)?)
+    let mut bytes = Vec::new();
+    rdr.read_to_end(&mut bytes).map_err(Error::io)?;
+    let s = str::from_utf8(&bytes).map_err(Error::str_utf8)?;
+    from_str(s)
 }
 
 /// Deserialize an instance of type `T` from bytes of YAML text.
@@ -679,5 +681,6 @@ pub fn from_reader<R, T>(rdr: R) -> Result<T>
 pub fn from_slice<T>(v: &[u8]) -> Result<T>
     where T: DeserializeOwned
 {
-    from_str(str::from_utf8(v).map_err(Error::str_utf8)?)
+    let s = str::from_utf8(v).map_err(Error::str_utf8)?;
+    from_str(s)
 }
