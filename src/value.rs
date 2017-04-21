@@ -981,7 +981,6 @@ impl Value {
         }
     }
 }
-<<<<<<< HEAD
 
 // - - -
 //
@@ -1257,10 +1256,6 @@ where
         index.index_or_insert(self)
     }
 }
-
-// - - -
-||||||| merged common ancestors
-=======
 
 // - - -
 //
@@ -1570,4 +1565,3 @@ impl<T: Into<Value>, U: Into<Value>> FromIterator<(T, U)> for Value {
         Value::Mapping(map)
     }
 }
->>>>>>> origin/pr/57
