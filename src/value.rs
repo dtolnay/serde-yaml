@@ -506,6 +506,22 @@ fn yaml_to_value(yaml: Yaml) -> Value {
     }
 }
 
+impl From<Value> for Yaml {
+    fn from(yaml: Value) -> Self {
+        match yaml {
+            Value::F64(f) => Yaml::Real(format!("{}", f)),
+            Value::I64(i) => Yaml::Integer(i),
+            Value::String(s) => Yaml::String(s),
+            Value::Bool(s) => Yaml::Boolean(s),
+            Value::Sequence(seq) => Yaml::Array(seq.into_iter().map(Into::into).collect()),
+            Value::Mapping(map) => {
+                Yaml::Hash(map.into_iter().map(|(k, v)| (k.into(), v.into())).collect())
+            }
+            Value::Null => Yaml::Null,
+        }
+    }
+}
+
 impl Serialize for Value {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: serde::Serializer
