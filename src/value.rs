@@ -5,6 +5,7 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+#![deny(unsafe_code, missing_docs)]
 
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -85,14 +86,80 @@ pub fn from_value<T>(value: Value) -> Result<T, Error>
 }
 
 impl Value {
+    /// Returns true if the `Value` is a Null. Returns false otherwise.
+    ///
+    /// For any Value on which `is_null` returns true, `as_null` is guaranteed
+    /// to return `Some(())`.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("null").unwrap();
+    /// assert!(v.is_null());
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("false").unwrap();
+    /// assert!(!v.is_null());
+    /// ```
     pub fn is_null(&self) -> bool {
         if let Value::Null = *self { true } else { false }
     }
 
+    /// If the `Value` is a Null, returns (). Returns None otherwise.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("null").unwrap();
+    /// assert_eq!(v.as_null(), Some(()));
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("false").unwrap();
+    /// assert_eq!(v.as_null(), None);
+    /// ```
+    pub fn as_null(&self) -> Option<()> {
+        match *self {
+            Value::Null => Some(()),
+            _ => None,
+        }
+    }
+
+    /// Returns true if the `Value` is a Boolean. Returns false otherwise.
+    ///
+    /// For any Value on which `is_boolean` returns true, `as_bool` is
+    /// guaranteed to return the boolean value.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("true").unwrap();
+    /// assert!(v.is_bool());
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("42").unwrap();
+    /// assert!(!v.is_bool());
+    /// ```
     pub fn is_bool(&self) -> bool {
         self.as_bool().is_some()
     }
 
+    /// If the `Value` is a Boolean, returns the associated bool. Returns None
+    /// otherwise.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("true").unwrap();
+    /// assert_eq!(v.as_bool(), Some(true));
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("42").unwrap();
+    /// assert_eq!(v.as_bool(), None);
+    /// ```
     pub fn as_bool(&self) -> Option<bool> {
         match *self {
             Value::Bool(b) => Some(b),
@@ -100,10 +167,41 @@ impl Value {
         }
     }
 
+    /// Returns true if the `Value` is an integer between `i64::MIN` and
+    /// `i64::MAX`.
+    ///
+    /// For any Value on which `is_i64` returns true, `as_i64` is guaranteed to
+    /// return the integer value.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("1337").unwrap();
+    /// assert!(v.is_i64());
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("null").unwrap();
+    /// assert!(!v.is_i64());
+    /// ```
     pub fn is_i64(&self) -> bool {
         self.as_i64().is_some()
     }
 
+    /// If the `Value` is an integer, represent it as i64 if possible. Returns
+    /// None otherwise.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("1337").unwrap();
+    /// assert_eq!(v.as_i64(), Some(1337));
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("false").unwrap();
+    /// assert_eq!(v.as_i64(), None);
+    /// ```
     pub fn as_i64(&self) -> Option<i64> {
         match *self {
             Value::I64(i) => Some(i),
@@ -111,10 +209,43 @@ impl Value {
         }
     }
 
+    /// Returns true if the `Value` is a number that can be represented by f64.
+    ///
+    /// For any Value on which `is_f64` returns true, `as_f64` is guaranteed to
+    /// return the floating point value.
+    ///
+    /// Currently this function returns true if and only if both `is_i64` and
+    /// `is_u64` return false but this is not a guarantee in the future.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("256.01").unwrap();
+    /// assert!(v.is_f64());
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("true").unwrap();
+    /// assert!(!v.is_f64());
+    /// ```
     pub fn is_f64(&self) -> bool {
         self.as_f64().is_some()
     }
 
+    /// If the `Value` is a number, represent it as f64 if possible. Returns
+    /// None otherwise.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("13.37").unwrap();
+    /// assert_eq!(v.as_f64(), Some(13.37));
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("false").unwrap();
+    /// assert_eq!(v.as_f64(), None);
+    /// ```
     pub fn as_f64(&self) -> Option<f64> {
         match *self {
             Value::F64(i) => Some(i),
@@ -122,10 +253,40 @@ impl Value {
         }
     }
 
+    /// Returns true if the `Value` is a String. Returns false otherwise.
+    ///
+    /// For any Value on which `is_string` returns true, `as_str` is guaranteed
+    /// to return the string slice.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("'lorem ipsum'").unwrap();
+    /// assert!(v.is_string());
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("42").unwrap();
+    /// assert!(!v.is_string());
+    /// ```
     pub fn is_string(&self) -> bool {
         self.as_str().is_some()
     }
 
+    /// If the `Value` is a String, returns the associated str. Returns None
+    /// otherwise.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("'lorem ipsum'").unwrap();
+    /// assert_eq!(v.as_str(), Some("lorem ipsum"));
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("false").unwrap();
+    /// assert_eq!(v.as_str(), None);
+    /// ```
     pub fn as_str(&self) -> Option<&str> {
         match *self {
             Value::String(ref s) => Some(s),
@@ -133,10 +294,37 @@ impl Value {
         }
     }
 
+    /// Returns true if the `Value` is a sequence. Returns false otherwise.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("[1, 2, 3]").unwrap();
+    /// assert!(v.is_sequence());
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("true").unwrap();
+    /// assert!(!v.is_sequence());
+    /// ```
     pub fn is_sequence(&self) -> bool {
         self.as_sequence().is_some()
     }
 
+    /// If the `Value` is a sequence, return a reference to it if possible.
+    /// Returns None otherwise.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("[1, 2]").unwrap();
+    /// assert_eq!(v.as_sequence(), Some(&vec![Value::I64(1), Value::I64(2)]));
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("false").unwrap();
+    /// assert_eq!(v.as_sequence(), None);
+    /// ```
     pub fn as_sequence(&self) -> Option<&Sequence> {
         match *self {
             Value::Sequence(ref seq) => Some(seq),
@@ -144,6 +332,22 @@ impl Value {
         }
     }
 
+    /// If the `Value` is a sequence, return a mutable reference to it if
+    /// possible. Returns None otherwise.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let mut v: Value = serde_yaml::from_str("[1]").unwrap();
+    /// let s = v.as_sequence_mut().unwrap();
+    /// s.push(Value::I64(2));
+    /// assert_eq!(s, &vec![Value::I64(1), Value::I64(2)]);
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let mut v: Value = serde_yaml::from_str("false").unwrap();
+    /// assert_eq!(v.as_sequence_mut(), None);
+    /// ```
     pub fn as_sequence_mut(&mut self) -> Option<&mut Sequence> {
         match *self {
             Value::Sequence(ref mut seq) => Some(seq),
@@ -151,10 +355,41 @@ impl Value {
         }
     }
 
+    /// Returns true if the `Value` is a mapping. Returns false otherwise.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("a: 42").unwrap();
+    /// assert!(v.is_mapping());
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("true").unwrap();
+    /// assert!(!v.is_mapping());
+    /// ```
     pub fn is_mapping(&self) -> bool {
         self.as_mapping().is_some()
     }
 
+    /// If the `Value` is a mapping, return a reference to it if possible.
+    /// Returns None otherwise.
+    ///
+    /// ```rust
+    /// # use serde_yaml::{Value, Mapping};
+    /// let v: Value = serde_yaml::from_str("a: 42").unwrap();
+    ///
+    /// let mut expected = Mapping::new();
+    /// expected.insert(Value::String("a".into()),Value::I64(42));
+    ///
+    /// assert_eq!(v.as_mapping(), Some(&expected));
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("false").unwrap();
+    /// assert_eq!(v.as_mapping(), None);
+    /// ```
     pub fn as_mapping(&self) -> Option<&Mapping> {
         match *self {
             Value::Mapping(ref map) => Some(map),
@@ -162,6 +397,27 @@ impl Value {
         }
     }
 
+    /// If the `Value` is a mapping, return a reference to it if possible.
+    /// Returns None otherwise.
+    ///
+    /// ```rust
+    /// # use serde_yaml::{Value, Mapping};
+    /// let mut v: Value = serde_yaml::from_str("a: 42").unwrap();
+    /// let m = v.as_mapping_mut().unwrap();
+    /// m.insert(Value::String("b".into()),Value::I64(21));
+    ///
+    /// let mut expected = Mapping::new();
+    /// expected.insert(Value::String("a".into()),Value::I64(42));
+    /// expected.insert(Value::String("b".into()),Value::I64(21));
+    ///
+    /// assert_eq!(m, &expected);
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::{Value, Mapping};
+    /// let mut v: Value = serde_yaml::from_str("false").unwrap();
+    /// assert_eq!(v.as_mapping_mut(), None);
+    /// ```
     pub fn as_mapping_mut(&mut self) -> Option<&mut Mapping> {
         match *self {
             Value::Mapping(ref mut map) => Some(map),
@@ -314,6 +570,7 @@ impl<'de> Deserialize<'de> for Value {
 }
 
 impl PartialEq for Value {
+    #[allow(unsafe_code)]
     fn eq(&self, other: &Value) -> bool {
         match (self, other) {
             (&Value::Null, &Value::Null) => true,
