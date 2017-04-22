@@ -18,6 +18,7 @@ use num_traits::NumCast;
 use super::Value;
 use mapping::Mapping;
 use error::Error;
+use value::number::Number;
 
 impl<'de> Deserialize<'de> for Value {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -41,14 +42,14 @@ impl<'de> Deserialize<'de> for Value {
             fn visit_i64<E>(self, i: i64) -> Result<Value, E>
                 where E: SError,
             {
-                Ok(Value::I64(i))
+                Ok(Value::Number(Number::from(i)))
             }
 
             fn visit_u64<E>(self, u: u64) -> Result<Value, E>
                 where E: SError,
             {
                 match NumCast::from(u) {
-                    Some(i) => Ok(Value::I64(i)),
+                    Some(i) => Ok(Value::Number(Number::from(i))),
                     None => Ok(Value::String(u.to_string())),
                 }
             }
@@ -56,7 +57,7 @@ impl<'de> Deserialize<'de> for Value {
             fn visit_f64<E>(self, f: f64) -> Result<Value, E>
                 where E: SError,
             {
-                Ok(Value::F64(f))
+                Ok(Value::Number(Number::from_f64(f).unwrap()))
             }
 
             fn visit_str<E>(self, s: &str) -> Result<Value, E>
@@ -128,8 +129,17 @@ impl<'de> Deserializer<'de> for Value {
         match self {
             Value::Null => visitor.visit_unit(),
             Value::Bool(v) => visitor.visit_bool(v),
-            Value::I64(i) => visitor.visit_i64(i),
-            Value::F64(f) => visitor.visit_f64(f),
+            Value::Number(ref n) => {
+                if let Some(u) = n.as_u64() {
+                    panic!("add u64")
+                } else if let Some(i) = n.as_i64() {
+                    visitor.visit_i64(i)
+                } else if let Some(f) = n.as_f64() {
+                    visitor.visit_f64(f)
+                } else {
+                    panic!("unexpected number")
+                }
+            }
             Value::String(v) => visitor.visit_string(v),
             Value::Sequence(v) => {
                 let len = v.len();
@@ -420,8 +430,17 @@ impl Value {
         match *self {
             Value::Null => Unexpected::Unit,
             Value::Bool(b) => Unexpected::Bool(b),
-            Value::I64(i) => Unexpected::Signed(i),
-            Value::F64(f) => Unexpected::Float(f),
+            Value::Number(ref n) => {
+                if let Some(u) = n.as_u64() {
+                    Unexpected::Unsigned(u)
+                } else if let Some(i) = n.as_i64() {
+                    Unexpected::Signed(i)
+                } else if let Some(f) = n.as_f64() {
+                    Unexpected::Float(f)
+                } else {
+                    panic!("unexpected number")
+                }
+            }
             Value::String(ref s) => Unexpected::Str(s),
             Value::Sequence(_) => Unexpected::Seq,
             Value::Mapping(_) => Unexpected::Map,

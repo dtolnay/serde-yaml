@@ -21,6 +21,7 @@ use mapping::Mapping;
 use ser::Serializer;
 
 use self::index::Index;
+use self::number::Number;
 
 /// Represents any valid YAML value.
 #[derive(Clone, PartialOrd, Debug)]
@@ -29,10 +30,8 @@ pub enum Value {
     Null,
     /// Represents a YAML boolean.
     Bool(bool),
-    /// Represents a YAML integer value.
-    I64(i64),
-    /// Represents a YAML floating-point value.
-    F64(f64),
+    /// Represents a YAML numerical value
+    Number(Number),
     /// Represents a YAML string.
     String(String),
     /// Represents a YAML sequence in which the elements are
@@ -263,7 +262,7 @@ impl Value {
     /// ```
     pub fn as_i64(&self) -> Option<i64> {
         match *self {
-            Value::I64(i) => Some(i),
+            Value::Number(i) => i.as_i64(),
             _ => None,
         }
     }
@@ -307,7 +306,7 @@ impl Value {
     /// ```
     pub fn as_f64(&self) -> Option<f64> {
         match *self {
-            Value::F64(i) => Some(i),
+            Value::Number(i) => i.as_f64(),
             _ => None,
         }
     }
@@ -489,11 +488,11 @@ fn yaml_to_value(yaml: Yaml) -> Value {
     match yaml {
         Yaml::Real(f) => {
             match f.parse() {
-                Ok(f) => Value::F64(f),
+                Ok(f) => Value::Number(Number::from_f64(f).unwrap()),
                 Err(_) => Value::String(f),
             }
         }
-        Yaml::Integer(i) => Value::I64(i),
+        Yaml::Integer(i) => Value::Number(Number::from(i)),
         Yaml::String(s) => Value::String(s),
         Yaml::Boolean(b) => Value::Bool(b),
         Yaml::Array(sequence) => Value::Sequence(sequence.into_iter().map(yaml_to_value).collect()),
@@ -513,14 +512,10 @@ impl Hash for Value {
         match *self {
             Value::Null => 0.hash(state),
             Value::Bool(b) => (1, b).hash(state),
-            Value::I64(i) => (2, i).hash(state),
-            Value::F64(_) => {
-                // you should feel bad for using f64 as a map key
-                3.hash(state);
-            }
-            Value::String(ref s) => (4, s).hash(state),
-            Value::Sequence(ref seq) => (5, seq).hash(state),
-            Value::Mapping(ref map) => (6, map).hash(state),
+            Value::Number(i) => (2, i).hash(state),
+            Value::String(ref s) => (3, s).hash(state),
+            Value::Sequence(ref seq) => (4, seq).hash(state),
+            Value::Mapping(ref map) => (5, map).hash(state),
         }
     }
 }
@@ -528,6 +523,7 @@ impl Hash for Value {
 mod index;
 mod partial_eq;
 mod from;
+mod number;
 
 mod ser;
 mod de;
