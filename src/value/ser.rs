@@ -17,7 +17,7 @@ impl Serialize for Value {
                 } else if let Some(f) = n.as_f64() {
                     serializer.serialize_f64(f)
                 } else {
-                    panic!("unexpected number")
+                    unreachable!("unexpected number")
                 }
             }
             Value::String(ref s) => serializer.serialize_str(s),

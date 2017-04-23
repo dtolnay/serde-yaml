@@ -133,7 +133,7 @@ impl<'de> Deserializer<'de> for Value {
                 } else if let Some(f) = n.as_f64() {
                     visitor.visit_f64(f)
                 } else {
-                    panic!("unexpected number")
+                    unreachable!("unexpected number")
                 }
             }
             Value::String(v) => visitor.visit_string(v),
@@ -434,7 +434,7 @@ impl Value {
                 } else if let Some(f) = n.as_f64() {
                     Unexpected::Float(f)
                 } else {
-                    panic!("unexpected number")
+                    unreachable!("unexpected number")
                 }
             }
             Value::String(ref s) => Unexpected::Str(s),
