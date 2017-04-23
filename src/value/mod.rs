@@ -329,7 +329,10 @@ impl Value {
     /// assert!(!v.is_f64());
     /// ```
     pub fn is_f64(&self) -> bool {
-        self.as_f64().is_some()
+        match *self {
+            Value::Number(ref n) => n.is_f64(),
+            _ => false,
+        }
     }
 
     /// If the `Value` is a number, represent it as f64 if possible. Returns
