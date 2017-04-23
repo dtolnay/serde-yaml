@@ -5,36 +5,21 @@ use value::number::Number;
 // Implement a bunch of conversion to make it easier to create YAML values
 // on the fly.
 
-macro_rules! from_signed_integer {
+macro_rules! from_integer {
     ($($ty:ident)*) => {
         $(
             impl From<$ty> for Value {
                 fn from(n: $ty) -> Self {
-                    Value::Number(Number::from(n as i64))
+                    Value::Number(Number::from(n))
                 }
             }
         )*
     };
 }
 
-macro_rules! from_unsigned_integer {
-    ($($ty:ident)*) => {
-        $(
-            impl From<$ty> for Value {
-                fn from(n: $ty) -> Self {
-                    Value::Number(Number::from(n as u64))
-                }
-            }
-        )*
-    };
-}
-
-from_signed_integer! {
+from_integer! {
     i8 i16 i32 i64 isize
-}
-
-from_unsigned_integer! {
-    u8 u16 u32 usize
+    u8 u16 u32 u64 usize
 }
 
 impl From<f32> for Value {
