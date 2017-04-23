@@ -5,6 +5,7 @@ use num_traits::NumCast;
 use serde::de::{self, Visitor};
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use std::fmt::{self, Debug, Display};
+use std::hash::{Hash, Hasher};
 use std::i64;
 
 /// Represents a YAML number, whether integer or floating point.
@@ -397,7 +398,9 @@ macro_rules! from_unsigned {
 from_signed!(i8 i16 i32 i64 isize);
 from_unsigned!(u8 u16 u32 u64 usize);
 
-use std::hash::{Hash, Hasher};
+// This is fine, because we don't _really_ implement hash for floats
+// all other hash functions should work as expected
+#[cfg_attr(feature = "cargo-clippy", allow(derive_hash_xor_eq))]
 impl Hash for Number {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self.n {
