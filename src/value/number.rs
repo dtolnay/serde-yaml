@@ -39,9 +39,14 @@ impl Number {
     /// #
     /// # use std::i64;
     /// #
+    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// # fn main() {
     /// let big = i64::MAX as u64 + 10;
-    /// let v = json!({ "a": 64, "b": big, "c": 256.0 });
+    /// let v = yaml(r#"
+    /// a: 64
+    /// b: 9223372036854775817
+    /// c: 256.0
+    /// "#);
     ///
     /// assert!(v["a"].is_i64());
     ///
@@ -70,8 +75,13 @@ impl Number {
     /// # #[macro_use]
     /// # extern crate serde_yaml;
     /// #
+    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// # fn main() {
-    /// let v = json!({ "a": 64, "b": -64, "c": 256.0 });
+    /// let v = yaml(r#"
+    /// a: 64
+    /// b: -64
+    /// c: 256.0
+    /// "#);
     ///
     /// assert!(v["a"].is_u64());
     ///
@@ -102,8 +112,14 @@ impl Number {
     /// # #[macro_use]
     /// # extern crate serde_yaml;
     /// #
+    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// # fn main() {
-    /// let v = json!({ "a": 256.0, "b": 64, "c": -64 });
+    /// let v = yaml(r#"
+    /// ---
+    /// a: 256.0
+    /// b: 64
+    /// c: -64
+    /// "#);
     ///
     /// assert!(v["a"].is_f64());
     ///
@@ -129,9 +145,15 @@ impl Number {
     /// #
     /// # use std::i64;
     /// #
+    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// # fn main() {
     /// let big = i64::MAX as u64 + 10;
-    /// let v = json!({ "a": 64, "b": big, "c": 256.0 });
+    /// let v = yaml(r#"
+    /// ---
+    /// a: 64
+    /// b: 9223372036854775817
+    /// c: 256.0
+    /// "#);
     ///
     /// assert_eq!(v["a"].as_i64(), Some(64));
     /// assert_eq!(v["b"].as_i64(), None);
@@ -154,8 +176,14 @@ impl Number {
     /// # #[macro_use]
     /// # extern crate serde_yaml;
     /// #
+    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// # fn main() {
-    /// let v = json!({ "a": 64, "b": -64, "c": 256.0 });
+    /// let v = yaml(r#"
+    /// ---
+    /// a: 64
+    /// b: -64
+    /// c: 256.0 
+    /// "#);
     ///
     /// assert_eq!(v["a"].as_u64(), Some(64));
     /// assert_eq!(v["b"].as_u64(), None);
@@ -178,7 +206,13 @@ impl Number {
     /// # extern crate serde_yaml;
     /// #
     /// # fn main() {
-    /// let v = json!({ "a": 256.0, "b": 64, "c": -64 });
+    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
+    /// let v = yaml(r#"
+    /// ---
+    /// a: 256.0
+    /// b: 64
+    /// c: -64
+    /// "#);
     ///
     /// assert_eq!(v["a"].as_f64(), Some(256.0));
     /// assert_eq!(v["b"].as_f64(), Some(64.0));
@@ -360,3 +394,17 @@ macro_rules! from_unsigned {
 
 from_signed!(i8 i16 i32 i64 isize);
 from_unsigned!(u8 u16 u32 u64 usize);
+
+use std::hash::{Hash, Hasher};
+impl Hash for Number {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self.n {
+            N::Float(_) => {
+                // you should feel bad for using f64 as a map key
+                3.hash(state)
+            }
+            N::PosInt(u) => u.hash(state),
+            N::NegInt(i) => i.hash(state),
+        }
+    }
+}

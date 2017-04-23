@@ -252,7 +252,8 @@ fn test_struct_variant() {
 
 #[test]
 fn test_value() {
-    use serde_yaml::{Mapping, Value};
+    use serde_yaml::{Mapping, Value, Number};
+
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct GenericInstructions {
         #[serde(rename="type")]
@@ -263,8 +264,8 @@ fn test_value() {
         typ: "primary".to_string(),
         config: Value::Sequence(vec![Value::Null,
                                      Value::Bool(true),
-                                     Value::I64(65535),
-                                     Value::F64(0.54321),
+                                     Value::Number(Number::from(65535)),
+                                     Value::Number(Number::from_f64(0.54321).unwrap()),
                                      Value::String("s".into()),
                                      Value::Mapping(Mapping::new())]),
     };

@@ -13,7 +13,6 @@ use serde::de::{
     VariantAccess,
     Visitor,
 };
-use num_traits::NumCast;
 
 use super::Value;
 use mapping::Mapping;
@@ -48,10 +47,7 @@ impl<'de> Deserialize<'de> for Value {
             fn visit_u64<E>(self, u: u64) -> Result<Value, E>
                 where E: SError,
             {
-                match NumCast::from(u) {
-                    Some(i) => Ok(Value::Number(Number::from(i))),
-                    None => Ok(Value::String(u.to_string())),
-                }
+                Ok(Value::Number(Number::from(u)))
             }
 
             fn visit_f64<E>(self, f: f64) -> Result<Value, E>
@@ -131,7 +127,7 @@ impl<'de> Deserializer<'de> for Value {
             Value::Bool(v) => visitor.visit_bool(v),
             Value::Number(ref n) => {
                 if let Some(u) = n.as_u64() {
-                    panic!("add u64")
+                    visitor.visit_u64(u)
                 } else if let Some(i) = n.as_i64() {
                     visitor.visit_i64(i)
                 } else if let Some(f) = n.as_f64() {

@@ -21,7 +21,7 @@ use mapping::Mapping;
 use ser::Serializer;
 
 use self::index::Index;
-use self::number::Number;
+pub use self::number::Number;
 
 /// Represents any valid YAML value.
 #[derive(Clone, PartialOrd, Debug)]
@@ -97,13 +97,13 @@ impl Value {
     ///
     /// ```rust
     /// # extern crate serde_yaml;
-    /// # use serde_yaml::Value;
+    /// # use serde_yaml::{Value, Number};
     /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// # fn main() {
     /// let object: Value = yaml(r#"{ A: 65, B: 66, C: 67 }"#);
     /// let x = object.get("A").unwrap();
-    /// assert_eq!(x, &Value::I64(65));
+    /// assert_eq!(x, &Value::Number(Number::from(65)));
     ///
     /// let sequence: Value = yaml(r#"[ "A", "B", "C" ]"#);
     /// let x = sequence.get(2).unwrap();
@@ -119,7 +119,7 @@ impl Value {
     ///
     /// ```rust
     /// # extern crate serde_yaml;
-    /// # use serde_yaml::Value;
+    /// # use serde_yaml::{Value, Number};
     /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// # fn main() {
@@ -136,7 +136,7 @@ impl Value {
     /// assert_eq!(object["D"], Value::Null);
     /// assert_eq!(object[0]["x"]["y"]["z"], Value::Null);
     ///
-    /// assert_eq!(object[Value::I64(42)], Value::Bool(true));
+    /// assert_eq!(object[Value::Number(Number::from(42))], Value::Bool(true));
     /// assert_eq!(object[42], Value::Bool(true));
     /// # }
     /// ```
@@ -262,7 +262,49 @@ impl Value {
     /// ```
     pub fn as_i64(&self) -> Option<i64> {
         match *self {
-            Value::Number(i) => i.as_i64(),
+            Value::Number(ref i) => i.as_i64(),
+            _ => None,
+        }
+    }
+
+    /// Returns true if the `Value` is an integer between `u64::MIN` and
+    /// `u64::MAX`.
+    ///
+    /// For any Value on which `is_u64` returns true, `as_u64` is guaranteed to
+    /// return the integer value.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("1337").unwrap();
+    /// assert!(v.is_u64());
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("null").unwrap();
+    /// assert!(!v.is_u64());
+    /// ```
+    pub fn is_u64(&self) -> bool {
+        self.as_u64().is_some()
+    }
+
+    /// If the `Value` is an integer, represent it as i64 if possible. Returns
+    /// None otherwise.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("1337").unwrap();
+    /// assert_eq!(v.as_u64(), Some(1337));
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("false").unwrap();
+    /// assert_eq!(v.as_u64(), None);
+    /// ```
+    pub fn as_u64(&self) -> Option<u64> {
+        match *self {
+            Value::Number(ref i) => i.as_u64(),
             _ => None,
         }
     }
@@ -306,7 +348,7 @@ impl Value {
     /// ```
     pub fn as_f64(&self) -> Option<f64> {
         match *self {
-            Value::Number(i) => i.as_f64(),
+            Value::Number(ref i) => i.as_f64(),
             _ => None,
         }
     }
@@ -373,9 +415,9 @@ impl Value {
     /// Returns None otherwise.
     ///
     /// ```rust
-    /// # use serde_yaml::Value;
+    /// # use serde_yaml::{Value, Number};
     /// let v: Value = serde_yaml::from_str("[1, 2]").unwrap();
-    /// assert_eq!(v.as_sequence(), Some(&vec![Value::I64(1), Value::I64(2)]));
+    /// assert_eq!(v.as_sequence(), Some(&vec![Value::Number(Number::from(1)), Value::Number(Number::from(2))]));
     /// ```
     ///
     /// ```rust
@@ -394,11 +436,11 @@ impl Value {
     /// possible. Returns None otherwise.
     ///
     /// ```rust
-    /// # use serde_yaml::Value;
+    /// # use serde_yaml::{Value, Number};
     /// let mut v: Value = serde_yaml::from_str("[1]").unwrap();
     /// let s = v.as_sequence_mut().unwrap();
-    /// s.push(Value::I64(2));
-    /// assert_eq!(s, &vec![Value::I64(1), Value::I64(2)]);
+    /// s.push(Value::Number(Number::from(2)));
+    /// assert_eq!(s, &vec![Value::Number(Number::from(1)), Value::Number(Number::from(2))]);
     /// ```
     ///
     /// ```rust
@@ -434,11 +476,11 @@ impl Value {
     /// Returns None otherwise.
     ///
     /// ```rust
-    /// # use serde_yaml::{Value, Mapping};
+    /// # use serde_yaml::{Value, Mapping, Number};
     /// let v: Value = serde_yaml::from_str("a: 42").unwrap();
     ///
     /// let mut expected = Mapping::new();
-    /// expected.insert(Value::String("a".into()),Value::I64(42));
+    /// expected.insert(Value::String("a".into()),Value::Number(Number::from(42)));
     ///
     /// assert_eq!(v.as_mapping(), Some(&expected));
     /// ```
@@ -459,14 +501,14 @@ impl Value {
     /// Returns None otherwise.
     ///
     /// ```rust
-    /// # use serde_yaml::{Value, Mapping};
+    /// # use serde_yaml::{Value, Mapping, Number};
     /// let mut v: Value = serde_yaml::from_str("a: 42").unwrap();
     /// let m = v.as_mapping_mut().unwrap();
-    /// m.insert(Value::String("b".into()),Value::I64(21));
+    /// m.insert(Value::String("b".into()),Value::Number(Number::from(21)));
     ///
     /// let mut expected = Mapping::new();
-    /// expected.insert(Value::String("a".into()),Value::I64(42));
-    /// expected.insert(Value::String("b".into()),Value::I64(21));
+    /// expected.insert(Value::String("a".into()),Value::Number(Number::from(42)));
+    /// expected.insert(Value::String("b".into()),Value::Number(Number::from(21)));
     ///
     /// assert_eq!(m, &expected);
     /// ```
@@ -512,7 +554,7 @@ impl Hash for Value {
         match *self {
             Value::Null => 0.hash(state),
             Value::Bool(b) => (1, b).hash(state),
-            Value::Number(i) => (2, i).hash(state),
+            Value::Number(ref i) => (2, i).hash(state),
             Value::String(ref s) => (3, s).hash(state),
             Value::Sequence(ref seq) => (4, seq).hash(state),
             Value::Mapping(ref map) => (5, map).hash(state),

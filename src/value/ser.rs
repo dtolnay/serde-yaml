@@ -11,7 +11,7 @@ impl Serialize for Value {
             Value::Bool(b) => serializer.serialize_bool(b),
             Value::Number(ref n) => {
                 if let Some(u) = n.as_u64() {
-                    panic!("implement u64")
+                    serializer.serialize_u64(u)
                 } else if let Some(i) = n.as_i64() {
                     serializer.serialize_i64(i)
                 } else if let Some(f) = n.as_f64() {
