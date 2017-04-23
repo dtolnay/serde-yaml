@@ -58,6 +58,7 @@ impl Number {
     /// # }
     /// ```
     #[inline]
+    #[allow(cast_sign_loss)]
     pub fn is_i64(&self) -> bool {
         match self.n {
             N::PosInt(v) => v <= i64::MAX as u64,
@@ -367,6 +368,7 @@ macro_rules! from_signed {
         $(
             impl From<$signed_ty> for Number {
                 #[inline]
+                #[allow(cast_sign_loss)] 
                 fn from(i: $signed_ty) -> Self {
                     if i < 0 {
                         Number { n: N::NegInt(i as i64) }
