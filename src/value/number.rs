@@ -7,7 +7,7 @@ use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use std::fmt::{self, Debug, Display};
 use std::i64;
 
-/// Represents a JSON number, whether integer or floating point.
+/// Represents a YAML number, whether integer or floating point.
 #[derive(Clone, PartialEq, PartialOrd)]
 pub struct Number {
     n: N,
@@ -154,7 +154,7 @@ impl Number {
     /// b: 9223372036854775817
     /// c: 256.0
     /// "#);
-    ///
+    /// 
     /// assert_eq!(v["a"].as_i64(), Some(64));
     /// assert_eq!(v["b"].as_i64(), None);
     /// assert_eq!(v["c"].as_i64(), None);
@@ -310,7 +310,7 @@ impl<'de> Deserialize<'de> for Number {
             where
                 E: de::Error,
             {
-                Number::from_f64(value).ok_or_else(|| de::Error::custom("not a JSON number"))
+                Number::from_f64(value).ok_or_else(|| de::Error::custom("not a YAML number"))
             }
         }
 
