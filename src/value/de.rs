@@ -53,7 +53,7 @@ impl<'de> Deserialize<'de> for Value {
             fn visit_f64<E>(self, f: f64) -> Result<Value, E>
                 where E: SError,
             {
-                Ok(Value::Number(Number::from_f64(f).unwrap()))
+                Ok(Value::Number(Number::from_f64(f).expect("wrapping an existing float")))
             }
 
             fn visit_str<E>(self, s: &str) -> Result<Value, E>
