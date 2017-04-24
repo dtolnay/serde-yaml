@@ -59,7 +59,7 @@ impl Number {
     /// # }
     /// ```
     #[inline]
-    #[allow(cast_sign_loss)]
+    #[cfg_attr(feature = "cargo-clippy", allow(cast_sign_loss))]
     pub fn is_i64(&self) -> bool {
         match self.n {
             N::PosInt(v) => v <= i64::MAX as u64,
@@ -156,7 +156,7 @@ impl Number {
     /// b: 9223372036854775817
     /// c: 256.0
     /// "#);
-    /// 
+    ///
     /// assert_eq!(v["a"].as_i64(), Some(64));
     /// assert_eq!(v["b"].as_i64(), None);
     /// assert_eq!(v["c"].as_i64(), None);
@@ -184,7 +184,7 @@ impl Number {
     /// ---
     /// a: 64
     /// b: -64
-    /// c: 256.0 
+    /// c: 256.0
     /// "#);
     ///
     /// assert_eq!(v["a"].as_u64(), Some(64));
@@ -369,7 +369,7 @@ macro_rules! from_signed {
         $(
             impl From<$signed_ty> for Number {
                 #[inline]
-                #[allow(cast_sign_loss)] 
+                #[cfg_attr(feature = "cargo-clippy", allow(cast_sign_loss))]
                 fn from(i: $signed_ty) -> Self {
                     if i < 0 {
                         Number { n: N::NegInt(i as i64) }
