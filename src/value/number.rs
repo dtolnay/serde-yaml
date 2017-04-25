@@ -221,6 +221,13 @@ impl Number {
     /// assert_eq!(v["c"].as_f64(), Some(-64.0));
     /// # }
     /// ```
+    /// ```rust
+    /// # use std::f64;
+    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
+    /// assert_eq!(yaml("inf").as_f64(), Some(f64::INFINITY));
+    /// assert_eq!(yaml("-inf").as_f64(), Some(f64::NEG_INFINITY));
+    /// assert!(yaml("NaN").as_f64().unwrap().is_nan());
+    /// ```
     #[inline]
     pub fn as_f64(&self) -> Option<f64> {
         match self.n {
@@ -230,7 +237,7 @@ impl Number {
         }
     }
 
-    /// Converts a finite `f64` to a `Number`. Infinite or NaN values are not JSON
+    /// Converts a finite `f64` to a `Number`. Infinite or NaN values are YAML
     /// numbers.
     ///
     /// ```rust
@@ -240,14 +247,69 @@ impl Number {
     /// #
     /// assert!(Number::from_f64(256.0).is_some());
     ///
-    /// assert!(Number::from_f64(f64::NAN).is_none());
+    /// //NAN is a number in YAML
+    /// assert!(Number::from_f64(f64::NAN).is_some());
+    ///
+    /// //Infinity is a number in YAML
+    /// assert!(Number::from_f64(f64::INFINITY).is_some());
+    ///
+    /// //Neg Infinity is a number in YAML
+    /// assert!(Number::from_f64(f64::NEG_INFINITY).is_some());
     /// ```
     #[inline]
     pub fn from_f64(f: f64) -> Option<Number> {
-        if f.is_finite() {
-            Some(Number { n: N::Float(f) })
-        } else {
-            None
+        Some(Number { n: N::Float(f) })
+    }
+
+    /// Checks to see if a number is finite or not
+    ///
+    /// ```rust
+    /// # use std::f64;
+    /// #
+    /// # use serde_yaml::Number;
+    /// #
+    /// assert!(Number::from_f64(256.0).unwrap().is_finite());
+    ///
+    /// //NAN is a number in YAML
+    /// assert!(!Number::from_f64(f64::NAN).unwrap().is_finite());
+    ///
+    /// //Infinity is a number in YAML
+    /// assert!(!Number::from_f64(f64::INFINITY).unwrap().is_finite());
+    ///
+    /// //Neg Infinity is a number in YAML
+    /// assert!(!Number::from_f64(f64::NEG_INFINITY).unwrap().is_finite());
+    /// ```
+    #[inline]
+    pub fn is_finite(&self) -> bool {
+        match self.n {
+            N::PosInt(_) | N::NegInt(_) => true,
+            N::Float(f) => f.is_finite(),
+        }
+    }
+
+    /// Checks to see if a number is a number
+    ///
+    /// ```rust
+    /// # use std::f64;
+    /// #
+    /// # use serde_yaml::Number;
+    /// #
+    /// assert!(!Number::from_f64(256.0).unwrap().is_nan());
+    ///
+    /// //NAN is a number in YAML
+    /// assert!(Number::from_f64(f64::NAN).unwrap().is_nan());
+    ///
+    /// //Infinity is a number in YAML
+    /// assert!(!Number::from_f64(f64::INFINITY).unwrap().is_nan());
+    ///
+    /// //Neg Infinity is a number in YAML
+    /// assert!(!Number::from_f64(f64::NEG_INFINITY).unwrap().is_nan());
+    /// ```
+    #[inline]
+    pub fn is_nan(&self) -> bool {
+        match self.n {
+            N::PosInt(_) | N::NegInt(_) => false,
+            N::Float(f) => f.is_nan(),
         }
     }
 }
