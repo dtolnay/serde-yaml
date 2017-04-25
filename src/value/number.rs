@@ -278,6 +278,9 @@ impl Number {
     ///
     /// //Neg Infinity is a number in YAML
     /// assert!(!Number::from_f64(f64::NEG_INFINITY).unwrap().is_finite());
+    ///
+    /// //Ints are finite
+    /// assert!(Number::from(1).is_finite());
     /// ```
     #[inline]
     pub fn is_finite(&self) -> bool {
@@ -304,6 +307,9 @@ impl Number {
     ///
     /// //Neg Infinity is a number in YAML
     /// assert!(!Number::from_f64(f64::NEG_INFINITY).unwrap().is_nan());
+    ///
+    /// //Ints are numbers
+    /// assert!(!Number::from(1).is_nan());
     /// ```
     #[inline]
     pub fn is_nan(&self) -> bool {
