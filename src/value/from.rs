@@ -58,7 +58,7 @@ impl From<f64> for Value {
     /// # }
     /// ```
     fn from(f: f64) -> Self {
-        Value::Number(Number::from_f64(f).expect("should always be a float"))
+        Value::Number(Number::from_f64(f))
     }
 }
 

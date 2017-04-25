@@ -221,6 +221,7 @@ impl Number {
     /// assert_eq!(v["c"].as_f64(), Some(-64.0));
     /// # }
     /// ```
+    ///
     /// ```rust
     /// # use std::f64;
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
@@ -245,20 +246,17 @@ impl Number {
     /// #
     /// # use serde_yaml::Number;
     /// #
-    /// assert!(Number::from_f64(256.0).is_some());
+    /// assert!(Number::from_f64(256.0).is_finite());
     ///
-    /// //NAN is a number in YAML
-    /// assert!(Number::from_f64(f64::NAN).is_some());
+    /// assert!(Number::from_f64(f64::NAN).is_nan());
     ///
-    /// //Infinity is a number in YAML
-    /// assert!(Number::from_f64(f64::INFINITY).is_some());
+    /// assert!(!Number::from_f64(f64::INFINITY).is_finite());
     ///
-    /// //Neg Infinity is a number in YAML
-    /// assert!(Number::from_f64(f64::NEG_INFINITY).is_some());
+    /// assert!(!Number::from_f64(f64::NEG_INFINITY).is_finite());
     /// ```
     #[inline]
-    pub fn from_f64(f: f64) -> Option<Number> {
-        Some(Number { n: N::Float(f) })
+    pub fn from_f64(f: f64) -> Number {
+        Number { n: N::Float(f) }
     }
 
     /// Checks to see if a number is finite or not
@@ -268,18 +266,14 @@ impl Number {
     /// #
     /// # use serde_yaml::Number;
     /// #
-    /// assert!(Number::from_f64(256.0).unwrap().is_finite());
+    /// assert!(Number::from_f64(256.0).is_finite());
     ///
-    /// //NAN is a number in YAML
-    /// assert!(!Number::from_f64(f64::NAN).unwrap().is_finite());
+    /// assert!(!Number::from_f64(f64::NAN).is_finite());
     ///
-    /// //Infinity is a number in YAML
-    /// assert!(!Number::from_f64(f64::INFINITY).unwrap().is_finite());
+    /// assert!(!Number::from_f64(f64::INFINITY).is_finite());
     ///
-    /// //Neg Infinity is a number in YAML
-    /// assert!(!Number::from_f64(f64::NEG_INFINITY).unwrap().is_finite());
+    /// assert!(!Number::from_f64(f64::NEG_INFINITY).is_finite());
     ///
-    /// //Ints are finite
     /// assert!(Number::from(1).is_finite());
     /// ```
     #[inline]
@@ -297,18 +291,14 @@ impl Number {
     /// #
     /// # use serde_yaml::Number;
     /// #
-    /// assert!(!Number::from_f64(256.0).unwrap().is_nan());
+    /// assert!(!Number::from_f64(256.0).is_nan());
     ///
-    /// //NAN is a number in YAML
-    /// assert!(Number::from_f64(f64::NAN).unwrap().is_nan());
+    /// assert!(Number::from_f64(f64::NAN).is_nan());
     ///
-    /// //Infinity is a number in YAML
-    /// assert!(!Number::from_f64(f64::INFINITY).unwrap().is_nan());
+    /// assert!(!Number::from_f64(f64::INFINITY).is_nan());
     ///
-    /// //Neg Infinity is a number in YAML
-    /// assert!(!Number::from_f64(f64::NEG_INFINITY).unwrap().is_nan());
+    /// assert!(!Number::from_f64(f64::NEG_INFINITY).is_nan());
     ///
-    /// //Ints are numbers
     /// assert!(!Number::from(1).is_nan());
     /// ```
     #[inline]
@@ -380,7 +370,7 @@ impl<'de> Deserialize<'de> for Number {
             where
                 E: de::Error,
             {
-                Number::from_f64(value).ok_or_else(|| de::Error::custom("not a YAML number"))
+                Ok(Number::from_f64(value))
             }
         }
 

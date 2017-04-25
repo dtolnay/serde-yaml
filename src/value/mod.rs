@@ -533,7 +533,7 @@ fn yaml_to_value(yaml: Yaml) -> Value {
     match yaml {
         Yaml::Real(f) => {
             match f.parse() {
-                Ok(f) => Value::Number(Number::from_f64(f).expect("wrapping a known float")),
+                Ok(f) => Value::Number(Number::from_f64(f)),
                 Err(_) => Value::String(f),
             }
         }

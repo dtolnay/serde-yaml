@@ -41,7 +41,7 @@ impl<'de> Deserialize<'de> for Value {
             fn visit_i64<E>(self, i: i64) -> Result<Value, E>
                 where E: SError,
             {
-                Ok(Value::Number(Number::from(i)))
+                Ok(Value::Number(i.into()))
             }
 
             fn visit_u64<E>(self, u: u64) -> Result<Value, E>
@@ -53,7 +53,7 @@ impl<'de> Deserialize<'de> for Value {
             fn visit_f64<E>(self, f: f64) -> Result<Value, E>
                 where E: SError,
             {
-                Ok(Value::Number(Number::from_f64(f).expect("wrapping an existing float")))
+                Ok(Value::Number(Number::from_f64(f)))
             }
 
             fn visit_str<E>(self, s: &str) -> Result<Value, E>
