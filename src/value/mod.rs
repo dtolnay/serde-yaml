@@ -22,7 +22,7 @@ use mapping::Mapping;
 use ser::Serializer;
 
 use self::index::Index;
-pub use self::number::Number;
+pub use number::Number;
 
 /// Represents any valid YAML value.
 #[derive(Clone, PartialOrd, Debug)]
@@ -588,7 +588,6 @@ impl Hash for Value {
 mod index;
 mod partial_eq;
 mod from;
-mod number;
 
 mod ser;
 mod de;
