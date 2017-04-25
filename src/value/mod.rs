@@ -5,6 +5,7 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+
 #![deny(unsafe_code, missing_docs)]
 
 use std::hash::{Hash, Hasher};
@@ -30,7 +31,7 @@ pub enum Value {
     Null,
     /// Represents a YAML boolean.
     Bool(bool),
-    /// Represents a YAML numerical value
+    /// Represents a YAML numerical value, whether integer or floating point.
     Number(Number),
     /// Represents a YAML string.
     String(String),
@@ -97,13 +98,13 @@ impl Value {
     ///
     /// ```rust
     /// # extern crate serde_yaml;
-    /// # use serde_yaml::{Value, Number};
+    /// # use serde_yaml::Value;
     /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// # fn main() {
     /// let object: Value = yaml(r#"{ A: 65, B: 66, C: 67 }"#);
     /// let x = object.get("A").unwrap();
-    /// assert_eq!(x, &Value::Number(Number::from(65)));
+    /// assert_eq!(x, 65);
     ///
     /// let sequence: Value = yaml(r#"[ "A", "B", "C" ]"#);
     /// let x = sequence.get(2).unwrap();
@@ -119,7 +120,7 @@ impl Value {
     ///
     /// ```rust
     /// # extern crate serde_yaml;
-    /// # use serde_yaml::{Value, Number};
+    /// # use serde_yaml::Value;
     /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// # fn main() {
@@ -136,7 +137,6 @@ impl Value {
     /// assert_eq!(object["D"], Value::Null);
     /// assert_eq!(object[0]["x"]["y"]["z"], Value::Null);
     ///
-    /// assert_eq!(object[Value::Number(Number::from(42))], Value::Bool(true));
     /// assert_eq!(object[42], Value::Bool(true));
     /// # }
     /// ```
@@ -225,6 +225,26 @@ impl Value {
         }
     }
 
+    /// Returns true if the `Value` is a Number. Returns false otherwise.
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("5").unwrap();
+    /// assert!(v.is_number());
+    /// ```
+    ///
+    /// ```rust
+    /// # use serde_yaml::Value;
+    /// let v: Value = serde_yaml::from_str("true").unwrap();
+    /// assert!(!v.is_number());
+    /// ```
+    pub fn is_number(&self) -> bool {
+        match *self {
+            Value::Number(_) => true,
+            _ => false,
+        }
+    }
+
     /// Returns true if the `Value` is an integer between `i64::MIN` and
     /// `i64::MAX`.
     ///
@@ -262,7 +282,7 @@ impl Value {
     /// ```
     pub fn as_i64(&self) -> Option<i64> {
         match *self {
-            Value::Number(ref i) => i.as_i64(),
+            Value::Number(ref n) => n.as_i64(),
             _ => None,
         }
     }
@@ -304,7 +324,7 @@ impl Value {
     /// ```
     pub fn as_u64(&self) -> Option<u64> {
         match *self {
-            Value::Number(ref i) => i.as_u64(),
+            Value::Number(ref n) => n.as_u64(),
             _ => None,
         }
     }
@@ -532,12 +552,12 @@ impl Value {
 fn yaml_to_value(yaml: Yaml) -> Value {
     match yaml {
         Yaml::Real(f) => {
-            match f.parse() {
-                Ok(f) => Value::Number(Number::from_f64(f)),
+            match f.parse::<f64>() {
+                Ok(f) => Value::Number(f.into()),
                 Err(_) => Value::String(f),
             }
         }
-        Yaml::Integer(i) => Value::Number(Number::from(i)),
+        Yaml::Integer(i) => Value::Number(i.into()),
         Yaml::String(s) => Value::String(s),
         Yaml::Boolean(b) => Value::Bool(b),
         Yaml::Array(sequence) => Value::Sequence(sequence.into_iter().map(yaml_to_value).collect()),

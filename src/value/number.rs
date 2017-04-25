@@ -1,8 +1,14 @@
-// Copied from serde_json
+// Copyright 2017 Serde YAML Developers
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
 
 use error::Error;
 use num_traits::NumCast;
-use serde::de::{self, Visitor};
+use serde::de::{Visitor, Unexpected};
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use std::fmt::{self, Debug, Display};
 use std::hash::{Hash, Hasher};
@@ -22,10 +28,9 @@ enum N {
     PosInt(u64),
     /// Always less than zero.
     NegInt(i64),
-    /// Always finite.
+    /// May be infinite or NaN.
     Float(f64),
 }
-
 
 impl Number {
     /// Returns true if the `Number` is an integer between `i64::MIN` and
@@ -196,8 +201,7 @@ impl Number {
     pub fn as_u64(&self) -> Option<u64> {
         match self.n {
             N::PosInt(n) => Some(n),
-            N::NegInt(n) => NumCast::from(n),
-            N::Float(_) => None,
+            N::NegInt(_) | N::Float(_) => None,
         }
     }
 
@@ -238,66 +242,20 @@ impl Number {
         }
     }
 
-    /// Converts a finite `f64` to a `Number`. Infinite or NaN values are YAML
-    /// numbers.
+    /// Returns true if this value is NaN and false otherwise.
     ///
     /// ```rust
     /// # use std::f64;
     /// #
     /// # use serde_yaml::Number;
     /// #
-    /// assert!(Number::from_f64(256.0).is_finite());
+    /// assert!(!Number::from(256.0).is_nan());
     ///
-    /// assert!(Number::from_f64(f64::NAN).is_nan());
+    /// assert!(Number::from(f64::NAN).is_nan());
     ///
-    /// assert!(!Number::from_f64(f64::INFINITY).is_finite());
+    /// assert!(!Number::from(f64::INFINITY).is_nan());
     ///
-    /// assert!(!Number::from_f64(f64::NEG_INFINITY).is_finite());
-    /// ```
-    #[inline]
-    pub fn from_f64(f: f64) -> Number {
-        Number { n: N::Float(f) }
-    }
-
-    /// Checks to see if a number is finite or not
-    ///
-    /// ```rust
-    /// # use std::f64;
-    /// #
-    /// # use serde_yaml::Number;
-    /// #
-    /// assert!(Number::from_f64(256.0).is_finite());
-    ///
-    /// assert!(!Number::from_f64(f64::NAN).is_finite());
-    ///
-    /// assert!(!Number::from_f64(f64::INFINITY).is_finite());
-    ///
-    /// assert!(!Number::from_f64(f64::NEG_INFINITY).is_finite());
-    ///
-    /// assert!(Number::from(1).is_finite());
-    /// ```
-    #[inline]
-    pub fn is_finite(&self) -> bool {
-        match self.n {
-            N::PosInt(_) | N::NegInt(_) => true,
-            N::Float(f) => f.is_finite(),
-        }
-    }
-
-    /// Checks to see if a number is a number
-    ///
-    /// ```rust
-    /// # use std::f64;
-    /// #
-    /// # use serde_yaml::Number;
-    /// #
-    /// assert!(!Number::from_f64(256.0).is_nan());
-    ///
-    /// assert!(Number::from_f64(f64::NAN).is_nan());
-    ///
-    /// assert!(!Number::from_f64(f64::INFINITY).is_nan());
-    ///
-    /// assert!(!Number::from_f64(f64::NEG_INFINITY).is_nan());
+    /// assert!(!Number::from(f64::NEG_INFINITY).is_nan());
     ///
     /// assert!(!Number::from(1).is_nan());
     /// ```
@@ -308,6 +266,57 @@ impl Number {
             N::Float(f) => f.is_nan(),
         }
     }
+
+    /// Returns true if this value is positive infinity or negative infinity and
+    /// false otherwise.
+    ///
+    /// ```rust
+    /// # use std::f64;
+    /// #
+    /// # use serde_yaml::Number;
+    /// #
+    /// assert!(!Number::from(256.0).is_infinite());
+    ///
+    /// assert!(!Number::from(f64::NAN).is_infinite());
+    ///
+    /// assert!(Number::from(f64::INFINITY).is_infinite());
+    ///
+    /// assert!(Number::from(f64::NEG_INFINITY).is_infinite());
+    ///
+    /// assert!(!Number::from(1).is_infinite());
+    /// ```
+    #[inline]
+    pub fn is_infinite(&self) -> bool {
+        match self.n {
+            N::PosInt(_) | N::NegInt(_) => false,
+            N::Float(f) => f.is_infinite(),
+        }
+    }
+
+    /// Returns true if this number is neither infinite nor NaN.
+    ///
+    /// ```rust
+    /// # use std::f64;
+    /// #
+    /// # use serde_yaml::Number;
+    /// #
+    /// assert!(Number::from(256.0).is_finite());
+    ///
+    /// assert!(!Number::from(f64::NAN).is_finite());
+    ///
+    /// assert!(!Number::from(f64::INFINITY).is_finite());
+    ///
+    /// assert!(!Number::from(f64::NEG_INFINITY).is_finite());
+    ///
+    /// assert!(Number::from(1).is_finite());
+    /// ```
+    #[inline]
+    pub fn is_finite(&self) -> bool {
+        match self.n {
+            N::PosInt(_) | N::NegInt(_) => true,
+            N::Float(f) => f.is_finite(),
+        }
+    }
 }
 
 impl fmt::Display for Number {
@@ -315,6 +324,14 @@ impl fmt::Display for Number {
         match self.n {
             N::PosInt(i) => Display::fmt(&i, formatter),
             N::NegInt(i) => Display::fmt(&i, formatter),
+            N::Float(f) if f.is_nan() => formatter.write_str(".nan"),
+            N::Float(f) if f.is_infinite() => {
+                if f.is_sign_negative() {
+                    formatter.write_str("-.inf")
+                } else {
+                    formatter.write_str(".inf")
+                }
+            }
             N::Float(f) => Display::fmt(&f, formatter),
         }
     }
@@ -366,11 +383,8 @@ impl<'de> Deserialize<'de> for Number {
             }
 
             #[inline]
-            fn visit_f64<E>(self, value: f64) -> Result<Number, E>
-            where
-                E: de::Error,
-            {
-                Ok(Number::from_f64(value))
+            fn visit_f64<E>(self, value: f64) -> Result<Number, E> {
+                Ok(value.into())
             }
         }
 
@@ -453,8 +467,22 @@ macro_rules! from_unsigned {
     };
 }
 
+macro_rules! from_float {
+    ($($float_ty:ident)*) => {
+        $(
+            impl From<$float_ty> for Number {
+                #[inline]
+                fn from(f: $float_ty) -> Self {
+                    Number { n: N::Float(f as f64) }
+                }
+            }
+        )*
+    }
+}
+
 from_signed!(i8 i16 i32 i64 isize);
 from_unsigned!(u8 u16 u32 u64 usize);
+from_float!(f32 f64);
 
 // This is fine, because we don't _really_ implement hash for floats
 // all other hash functions should work as expected
@@ -468,6 +496,18 @@ impl Hash for Number {
             }
             N::PosInt(u) => u.hash(state),
             N::NegInt(i) => i.hash(state),
+        }
+    }
+}
+
+impl Number {
+    // Not public API. Should be pub(crate).
+    #[doc(hidden)]
+    pub fn unexpected(&self) -> Unexpected {
+        match self.n {
+            N::PosInt(u) => Unexpected::Unsigned(u),
+            N::NegInt(i) => Unexpected::Signed(i),
+            N::Float(f) => Unexpected::Float(f),
         }
     }
 }

@@ -17,7 +17,6 @@ use serde::de::{
 use super::Value;
 use mapping::Mapping;
 use error::Error;
-use value::number::Number;
 
 impl<'de> Deserialize<'de> for Value {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -47,13 +46,13 @@ impl<'de> Deserialize<'de> for Value {
             fn visit_u64<E>(self, u: u64) -> Result<Value, E>
                 where E: SError,
             {
-                Ok(Value::Number(Number::from(u)))
+                Ok(Value::Number(u.into()))
             }
 
             fn visit_f64<E>(self, f: f64) -> Result<Value, E>
                 where E: SError,
             {
-                Ok(Value::Number(Number::from_f64(f)))
+                Ok(Value::Number(f.into()))
             }
 
             fn visit_str<E>(self, s: &str) -> Result<Value, E>
@@ -125,17 +124,7 @@ impl<'de> Deserializer<'de> for Value {
         match self {
             Value::Null => visitor.visit_unit(),
             Value::Bool(v) => visitor.visit_bool(v),
-            Value::Number(ref n) => {
-                if let Some(u) = n.as_u64() {
-                    visitor.visit_u64(u)
-                } else if let Some(i) = n.as_i64() {
-                    visitor.visit_i64(i)
-                } else if let Some(f) = n.as_f64() {
-                    visitor.visit_f64(f)
-                } else {
-                    unreachable!("unexpected number")
-                }
-            }
+            Value::Number(n) => n.deserialize_any(visitor),
             Value::String(v) => visitor.visit_string(v),
             Value::Sequence(v) => {
                 let len = v.len();
@@ -426,17 +415,7 @@ impl Value {
         match *self {
             Value::Null => Unexpected::Unit,
             Value::Bool(b) => Unexpected::Bool(b),
-            Value::Number(ref n) => {
-                if let Some(u) = n.as_u64() {
-                    Unexpected::Unsigned(u)
-                } else if let Some(i) = n.as_i64() {
-                    Unexpected::Signed(i)
-                } else if let Some(f) = n.as_f64() {
-                    Unexpected::Float(f)
-                } else {
-                    unreachable!("unexpected number")
-                }
-            }
+            Value::Number(ref n) => n.unexpected(),
             Value::String(ref s) => Unexpected::Str(s),
             Value::Sequence(_) => Unexpected::Seq,
             Value::Mapping(_) => Unexpected::Map,

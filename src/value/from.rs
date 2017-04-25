@@ -1,65 +1,25 @@
 use super::Value;
 use mapping::Mapping;
-use value::number::Number;
 
 // Implement a bunch of conversion to make it easier to create YAML values
 // on the fly.
 
-macro_rules! from_integer {
+macro_rules! from_number {
     ($($ty:ident)*) => {
         $(
             impl From<$ty> for Value {
                 fn from(n: $ty) -> Self {
-                    Value::Number(Number::from(n))
+                    Value::Number(n.into())
                 }
             }
         )*
     };
 }
 
-from_integer! {
+from_number! {
     i8 i16 i32 i64 isize
     u8 u16 u32 u64 usize
-}
-
-impl From<f32> for Value {
-    /// Convert 32-bit floating point number to `Value`
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # extern crate serde_yaml;
-    /// #
-    /// # fn main() {
-    /// use serde_yaml::Value;
-    ///
-    /// let f: f32 = 13.37;
-    /// let x: Value = f.into();
-    /// # }
-    /// ```
-    fn from(f: f32) -> Self {
-        From::from(f as f64)
-    }
-}
-
-impl From<f64> for Value {
-    /// Convert 64-bit floating point number to `Value`
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # extern crate serde_yaml;
-    /// #
-    /// # fn main() {
-    /// use serde_yaml::Value;
-    ///
-    /// let f: f64 = 13.37;
-    /// let x: Value = f.into();
-    /// # }
-    /// ```
-    fn from(f: f64) -> Self {
-        Value::Number(Number::from_f64(f))
-    }
+    f32 f64
 }
 
 impl From<bool> for Value {

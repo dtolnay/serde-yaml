@@ -265,7 +265,7 @@ fn test_value() {
         config: Value::Sequence(vec![Value::Null,
                                      Value::Bool(true),
                                      Value::Number(Number::from(65535)),
-                                     Value::Number(Number::from_f64(0.54321)),
+                                     Value::Number(Number::from(0.54321)),
                                      Value::String("s".into()),
                                      Value::Mapping(Mapping::new())]),
     };

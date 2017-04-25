@@ -3,9 +3,6 @@ use std::ops;
 
 use super::Value;
 use mapping::Mapping;
-use value::number::Number;
-
-// The original implementation of the indexing tricks below is from `serde_json`.
 
 /// A type that can be used to index into a `serde_yaml::Value`. See the `get`
 /// and `get_mut` methods of `Value`.
@@ -33,14 +30,14 @@ impl Index for usize {
     fn index_into<'v>(&self, v: &'v Value) -> Option<&'v Value> {
         match *v {
             Value::Sequence(ref vec) => vec.get(*self),
-            Value::Mapping(ref vec) => vec.get(&Value::Number(Number::from(*self as i64))),
+            Value::Mapping(ref vec) => vec.get(&Value::Number((*self).into())),
             _ => None,
         }
     }
     fn index_into_mut<'v>(&self, v: &'v mut Value) -> Option<&'v mut Value> {
         match *v {
             Value::Sequence(ref mut vec) => vec.get_mut(*self),
-            Value::Mapping(ref mut vec) => vec.get_mut(&Value::Number(Number::from(*self as i64))),
+            Value::Mapping(ref mut vec) => vec.get_mut(&Value::Number((*self).into())),
             _ => None,
         }
     }
@@ -60,12 +57,13 @@ impl Index for usize {
                     )
             },
             Value::Mapping(ref mut map) => {
+                let n = Value::Number((*self).into());
                 // TODO: use entry() once LinkedHashMap supports entry()
                 // https://github.com/contain-rs/linked-hash-map/issues/5
-                if !map.contains_key(&Value::Number(Number::from(*self as i64))) {
-                    map.insert(Value::Number(Number::from(*self as i64)), Value::Null);
+                if !map.contains_key(&n) {
+                    map.insert(n.clone(), Value::Null);
                 }
-                map.get_mut(&Value::Number(Number::from(*self as i64))).unwrap()
+                map.get_mut(&n).unwrap()
             },
             _ => panic!("cannot access index {} of YAML {}", self, Type(v)),
         }
