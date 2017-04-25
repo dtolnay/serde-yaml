@@ -1,5 +1,6 @@
 use super::Value;
 use mapping::Mapping;
+use value::number::Number;
 
 // Implement a bunch of conversion to make it easier to create YAML values
 // on the fly.
@@ -9,7 +10,7 @@ macro_rules! from_integer {
         $(
             impl From<$ty> for Value {
                 fn from(n: $ty) -> Self {
-                    Value::I64(n as i64)
+                    Value::Number(Number::from(n))
                 }
             }
         )*
@@ -18,7 +19,7 @@ macro_rules! from_integer {
 
 from_integer! {
     i8 i16 i32 i64 isize
-    u8 u16 u32 usize
+    u8 u16 u32 u64 usize
 }
 
 impl From<f32> for Value {
@@ -57,7 +58,7 @@ impl From<f64> for Value {
     /// # }
     /// ```
     fn from(f: f64) -> Self {
-        Value::F64(f)
+        Value::Number(Number::from_f64(f))
     }
 }
 

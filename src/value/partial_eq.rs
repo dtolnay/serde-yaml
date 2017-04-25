@@ -1,5 +1,3 @@
-use std::mem;
-
 use super::Value;
 
 impl PartialEq for Value {
@@ -8,16 +6,7 @@ impl PartialEq for Value {
         match (self, other) {
             (&Value::Null, &Value::Null) => true,
             (&Value::Bool(a), &Value::Bool(b)) => a == b,
-            (&Value::I64(a), &Value::I64(b)) => a == b,
-            (&Value::F64(a), &Value::F64(b)) => {
-                if a.is_nan() && b.is_nan() {
-                    // compare NaN for bitwise equality
-                    let (a, b): (i64, i64) = unsafe { (mem::transmute(a), mem::transmute(b)) };
-                    a == b
-                } else {
-                    a == b
-                }
-            }
+            (&Value::Number(ref a), &Value::Number(ref b)) => a == b,
             (&Value::String(ref a), &Value::String(ref b)) => a == b,
             (&Value::Sequence(ref a), &Value::Sequence(ref b)) => a == b,
             (&Value::Mapping(ref a), &Value::Mapping(ref b)) => a == b,

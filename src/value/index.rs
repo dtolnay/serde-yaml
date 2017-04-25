@@ -3,6 +3,7 @@ use std::ops;
 
 use super::Value;
 use mapping::Mapping;
+use value::number::Number;
 
 // The original implementation of the indexing tricks below is from `serde_json`.
 
@@ -32,14 +33,14 @@ impl Index for usize {
     fn index_into<'v>(&self, v: &'v Value) -> Option<&'v Value> {
         match *v {
             Value::Sequence(ref vec) => vec.get(*self),
-            Value::Mapping(ref vec) => vec.get(&Value::I64(*self as i64)),
+            Value::Mapping(ref vec) => vec.get(&Value::Number(Number::from(*self as i64))),
             _ => None,
         }
     }
     fn index_into_mut<'v>(&self, v: &'v mut Value) -> Option<&'v mut Value> {
         match *v {
             Value::Sequence(ref mut vec) => vec.get_mut(*self),
-            Value::Mapping(ref mut vec) => vec.get_mut(&Value::I64(*self as i64)),
+            Value::Mapping(ref mut vec) => vec.get_mut(&Value::Number(Number::from(*self as i64))),
             _ => None,
         }
     }
@@ -61,10 +62,10 @@ impl Index for usize {
             Value::Mapping(ref mut map) => {
                 // TODO: use entry() once LinkedHashMap supports entry()
                 // https://github.com/contain-rs/linked-hash-map/issues/5
-                if !map.contains_key(&Value::I64(*self as i64)) {
-                    map.insert(Value::I64(*self as i64), Value::Null);
+                if !map.contains_key(&Value::Number(Number::from(*self as i64))) {
+                    map.insert(Value::Number(Number::from(*self as i64)), Value::Null);
                 }
-                map.get_mut(&Value::I64(*self as i64)).unwrap()
+                map.get_mut(&Value::Number(Number::from(*self as i64))).unwrap()
             },
             _ => panic!("cannot access index {} of YAML {}", self, Type(v)),
         }
@@ -165,8 +166,7 @@ impl<'a> fmt::Display for Type<'a> {
         match *self.0 {
             Value::Null => formatter.write_str("null"),
             Value::Bool(_) => formatter.write_str("boolean"),
-            Value::I64(_) => formatter.write_str("integer"),
-            Value::F64(_) => formatter.write_str("float"),
+            Value::Number(_) => formatter.write_str("number"),
             Value::String(_) => formatter.write_str("string"),
             Value::Sequence(_) => formatter.write_str("sequence"),
             Value::Mapping(_) => formatter.write_str("mapping"),
