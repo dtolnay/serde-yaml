@@ -344,7 +344,7 @@ impl ser::SerializeStructVariant for SerializeStructVariant {
 ///
 /// Serialization can fail if `T`'s implementation of `Serialize` decides to
 /// return an error.
-pub fn to_writer<W: ?Sized, T: ?Sized>(writer: &mut W, value: &T) -> Result<()>
+pub fn to_writer<W, T: ?Sized>(writer: W, value: &T) -> Result<()>
     where W: io::Write,
           T: ser::Serialize
 {
@@ -378,14 +378,12 @@ pub fn to_string<T: ?Sized>(value: &T) -> Result<String>
 
 /// The yaml-rust library uses `fmt::Write` intead of `io::Write` so this is a
 /// simple adapter.
-struct FmtToIoWriter<'a, W: ?Sized>
-    where W: io::Write + 'a
-{
-    writer: &'a mut W,
+struct FmtToIoWriter<W> {
+    writer: W,
 }
 
-impl<'a, W: ?Sized> fmt::Write for FmtToIoWriter<'a, W>
-    where W: io::Write + 'a
+impl<W> fmt::Write for FmtToIoWriter<W>
+    where W: io::Write
 {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         if self.writer.write(s.as_bytes()).is_err() {
