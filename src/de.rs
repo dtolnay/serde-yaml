@@ -623,6 +623,8 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
 /// is wrong with the data, for example required struct fields are missing from
 /// the YAML map or some number is too big to fit in the expected primitive
 /// type.
+///
+/// YAML currently does not support zero-copy deserialization.
 pub fn from_str<T>(s: &str) -> Result<T>
     where T: DeserializeOwned
 {
@@ -678,6 +680,8 @@ pub fn from_reader<R, T>(mut rdr: R) -> Result<T>
 /// is wrong with the data, for example required struct fields are missing from
 /// the YAML map or some number is too big to fit in the expected primitive
 /// type.
+///
+/// YAML currently does not support zero-copy deserialization.
 pub fn from_slice<T>(v: &[u8]) -> Result<T>
     where T: DeserializeOwned
 {
