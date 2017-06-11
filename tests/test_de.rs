@@ -160,6 +160,21 @@ fn test_number_as_string() {
 }
 
 #[test]
+fn test_number_alias_as_string() {
+    #[derive(Deserialize, PartialEq, Debug)]
+    struct Num {
+        version: String,
+        value: String,
+    }
+    let yaml = unindent("
+        ---
+        version: &a 1.10
+        value: *a");
+    let expected = Num { version: "1.10".to_owned(), value: "1.10".to_owned() };
+    test_de(&yaml, &expected);
+}
+
+#[test]
 fn test_de_mapping() {
     #[derive(Debug, Deserialize, PartialEq)]
     struct Data {
