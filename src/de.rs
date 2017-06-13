@@ -512,11 +512,17 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
         where V: de::Visitor<'de>
     {
         let (next, marker) = self.peek()?;
-        if let Event::Scalar(ref v, _, _) = *next {
-            *self.pos += 1;
-            visitor.visit_str(v).map_err(|err: Error| err.fix_marker(marker, self.path))
-        } else {
-            self.deserialize_any(visitor)
+        match *next {
+            Event::Scalar(ref v, _, _) => {
+                *self.pos += 1;
+                visitor.visit_str(v).map_err(|err: Error| err.fix_marker(marker, self.path))
+            },
+            Event::Alias(i) => {
+                *self.pos += 1;
+                let mut pos = i;
+                self.jump(&mut pos)?.deserialize_str(visitor)
+            },
+            _ => self.deserialize_any(visitor)
         }
     }
 
