@@ -70,6 +70,7 @@
 // things are often more readable this way
     single_match_else,
     stutter,
+    use_self,
 // not practical
     missing_docs_in_private_items,
 // not stable
