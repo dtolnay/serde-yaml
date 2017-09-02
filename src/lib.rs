@@ -68,6 +68,7 @@
 // private Deserializer::next
     should_implement_trait,
 // things are often more readable this way
+    cast_lossless,
     single_match_else,
     stutter,
     use_self,
