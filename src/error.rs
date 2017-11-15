@@ -22,7 +22,7 @@ use path::Path;
 
 /// This type represents all possible errors that can occur when serializing or
 /// deserializing YAML data.
-pub struct Error(Box<ErrorImpl>);
+pub struct Error(pub Box<ErrorImpl>);
 
 /// Alias for a `Result` with the error type `serde_yaml::Error`.
 pub type Result<T> = result::Result<T, Error>;
