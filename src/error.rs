@@ -49,6 +49,12 @@ pub struct Pos {
     path: String,
 }
 
+impl Pos {
+    pub fn marker(&self) -> &Marker {
+        &self.marker
+    }
+}
+
 impl Error {
     // Not public API. Should be pub(crate).
     #[doc(hidden)]
