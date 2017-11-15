@@ -30,7 +30,7 @@
 //!
 //! // Serialize it to a YAML string.
 //! let s = serde_yaml::to_string(&map).unwrap();
-//! assert_eq!(s, "---\nx: 1\ny: 2");
+//! assert_eq!(s, "---\nx: 1\n\"y\": 2");
 //!
 //! // Deserialize it back to a Rust type.
 //! let deserialized_map: BTreeMap<String, f64> = serde_yaml::from_str(&s).unwrap();
@@ -53,7 +53,7 @@
 //! let point = Point { x: 1.0, y: 2.0 };
 //!
 //! let s = serde_yaml::to_string(&point).unwrap();
-//! assert_eq!(s, "---\nx: 1\ny: 2");
+//! assert_eq!(s, "---\nx: 1\n\"y\": 2");
 //!
 //! let deserialized_point: Point = serde_yaml::from_str(&s).unwrap();
 //! assert_eq!(point, deserialized_point);
@@ -87,7 +87,7 @@ extern crate yaml_rust;
 pub use self::de::{from_reader, from_slice, from_str};
 pub use self::ser::{to_string, to_vec, to_writer};
 pub use self::value::{Sequence, Value, from_value, to_value, Number};
-pub use self::error::{Error, ErrorImpl, Result};
+pub use self::error::{Error, ErrorPos, ErrorMarker, Result};
 pub use self::mapping::Mapping;
 
 mod de;

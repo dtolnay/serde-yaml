@@ -19,10 +19,62 @@ use yaml_rust::scanner::{self, Marker, ScanError};
 use serde::{de, ser};
 
 use path::Path;
-
-/// This type represents all possible errors that can occur when serializing or
 /// deserializing YAML data.
-pub struct Error(pub Box<ErrorImpl>);
+pub struct Error(Box<ErrorImpl>);
+
+#[derive(Clone, Debug)]
+pub struct ErrorPos {
+    pub message: String,
+    pub marker: Option<ErrorMarker>,
+}
+
+#[derive(Clone, Copy, PartialEq, Debug, Eq)]
+pub struct ErrorMarker {
+    index: usize,
+    line: usize,
+    col: usize,
+}
+
+impl ErrorMarker {
+    pub fn index(&self) -> usize {
+        self.index
+    }
+
+    pub fn line(&self) -> usize {
+        self.line
+    }
+
+    pub fn col(&self) -> usize {
+        self.col
+    }
+}
+
+impl<'a> From<&'a Marker> for ErrorMarker {
+    fn from(marker: &Marker) -> Self {
+        ErrorMarker {
+            col: marker.col(),
+            index: marker.index(),
+            line: marker.line(),
+        }
+    }
+}
+
+impl From<Error> for ErrorPos {
+    fn from(error: Error) -> Self {
+        let message = error.to_string();
+
+        let marker = match *error.0 {
+            ErrorImpl::Message(_, pos) => pos.map(|pos| ErrorMarker::from(pos.marker())),
+            ErrorImpl::Scan(scan) => Some(ErrorMarker::from(scan.marker())),
+            _ => None
+        };
+
+        ErrorPos {
+            message,
+            marker
+        }
+    }
+}
 
 /// Alias for a `Result` with the error type `serde_yaml::Error`.
 pub type Result<T> = result::Result<T, Error>;
