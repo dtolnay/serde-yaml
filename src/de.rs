@@ -32,8 +32,8 @@ pub struct Loader {
 }
 
 impl MarkedEventReceiver for Loader {
-    fn on_event(&mut self, event: &YamlEvent, marker: Marker) {
-        let event = match *event {
+    fn on_event(&mut self, event: YamlEvent, marker: Marker) {
+        let event = match event {
             YamlEvent::Nothing | YamlEvent::StreamStart | YamlEvent::StreamEnd |
             YamlEvent::DocumentStart | YamlEvent::DocumentEnd => return,
 
