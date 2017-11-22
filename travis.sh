@@ -30,4 +30,8 @@ else
         channel build
         channel test
     done
+
+    CHANNEL=1.15.0
+    cargo clean
+    channel build
 fi
