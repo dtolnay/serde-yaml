@@ -47,10 +47,8 @@ impl ErrorMarker {
     pub fn col(&self) -> usize {
         self.col
     }
-}
 
-impl<'a> From<&'a Marker> for ErrorMarker {
-    fn from(marker: &Marker) -> Self {
+    fn from_marker(marker: &Marker) -> Self {
         ErrorMarker {
             col: marker.col(),
             index: marker.index(),
@@ -59,13 +57,14 @@ impl<'a> From<&'a Marker> for ErrorMarker {
     }
 }
 
+
 impl From<Error> for ErrorPos {
     fn from(error: Error) -> Self {
         let message = error.to_string();
 
         let marker = match *error.0 {
-            ErrorImpl::Message(_, pos) => pos.map(|pos| ErrorMarker::from(pos.marker())),
-            ErrorImpl::Scan(scan) => Some(ErrorMarker::from(scan.marker())),
+            ErrorImpl::Message(_, pos) => pos.map(|pos| ErrorMarker::from_marker(pos.marker())),
+            ErrorImpl::Scan(scan) => Some(ErrorMarker::from_marker(scan.marker())),
             _ => None
         };
 
