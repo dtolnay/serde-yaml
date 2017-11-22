@@ -101,7 +101,7 @@ pub struct Pos {
 }
 
 impl Pos {
-    pub fn marker(&self) -> &Marker {
+    fn marker(&self) -> &Marker {
         &self.marker
     }
 }
