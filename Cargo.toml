@@ -13,8 +13,9 @@ keywords = ["yaml", "serde"]
 linked-hash-map = "0.5"
 num-traits = "0.1.37"
 serde = "1.0"
-yaml-rust = { git = "https://github.com/cetra3/yaml-rust", version = "0.3.9" }
+yaml-rust = "0.4"
+
 [dev-dependencies]
 serde_derive = "1.0"
 unindent = "0.1"
-version-sync = "0.4"
+version-sync = "0.5"

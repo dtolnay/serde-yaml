@@ -38,9 +38,9 @@ impl MarkedEventReceiver for Loader {
             YamlEvent::DocumentStart | YamlEvent::DocumentEnd => return,
 
             YamlEvent::Alias(id) => Event::Alias(id),
-            YamlEvent::Scalar(ref value, style, id, ref tag) => {
+            YamlEvent::Scalar(value, style, id, tag) => {
                 self.aliases.insert(id, self.events.len());
-                Event::Scalar(value.clone(), style, tag.clone())
+                Event::Scalar(value, style, tag)
             }
             YamlEvent::SequenceStart(id) => {
                 self.aliases.insert(id, self.events.len());
