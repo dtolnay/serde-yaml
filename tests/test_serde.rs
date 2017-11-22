@@ -124,11 +124,11 @@ fn test_nested_vec() {
     let thing = vec![vec![1, 2, 3], vec![4, 5, 6]];
     let yaml = unindent("
         ---
-        - 
+        -
           - 1
           - 2
           - 3
-        - 
+        -
           - 4
           - 5
           - 6");
@@ -148,7 +148,7 @@ fn test_nested_struct() {
     let thing = Outer { inner: Inner { v: 512 } };
     let yaml = unindent(r#"
         ---
-        inner: 
+        inner:
           v: 512"#);
     test_serde(&thing, &yaml);
 }
@@ -225,7 +225,7 @@ fn test_tuple_variant() {
     let thing = Variant::Rgb(32, 64, 96);
     let yaml = unindent(r#"
         ---
-        Rgb: 
+        Rgb:
           - 32
           - 64
           - 96"#);
@@ -245,7 +245,7 @@ fn test_struct_variant() {
     };
     let yaml = unindent(r#"
         ---
-        Color: 
+        Color:
           r: 32
           g: 64
           b: 96"#);
@@ -274,7 +274,7 @@ fn test_value() {
     let yaml = unindent(r#"
         ---
         type: primary
-        config: 
+        config:
           - ~
           - true
           - 65535
@@ -300,7 +300,7 @@ fn test_mapping() {
 
     let yaml = unindent("
         ---
-        substructure: 
+        substructure:
           a: foo
           b: bar");
 
