@@ -19,61 +19,10 @@ use yaml_rust::scanner::{self, Marker, ScanError};
 use serde::{de, ser};
 
 use path::Path;
+
+/// This type represents all possible errors that can occur when serializing or
 /// deserializing YAML data.
 pub struct Error(Box<ErrorImpl>);
-
-#[derive(Clone, Debug)]
-pub struct ErrorPos {
-    pub message: String,
-    pub marker: Option<ErrorMarker>,
-}
-
-#[derive(Clone, Copy, PartialEq, Debug, Eq)]
-pub struct ErrorMarker {
-    index: usize,
-    line: usize,
-    col: usize,
-}
-
-impl ErrorMarker {
-    pub fn index(&self) -> usize {
-        self.index
-    }
-
-    pub fn line(&self) -> usize {
-        self.line
-    }
-
-    pub fn col(&self) -> usize {
-        self.col
-    }
-
-    fn from_marker(marker: &Marker) -> Self {
-        ErrorMarker {
-            col: marker.col(),
-            index: marker.index(),
-            line: marker.line(),
-        }
-    }
-}
-
-
-impl From<Error> for ErrorPos {
-    fn from(error: Error) -> Self {
-        let message = error.to_string();
-
-        let marker = match *error.0 {
-            ErrorImpl::Message(_, pos) => pos.map(|pos| ErrorMarker::from_marker(pos.marker())),
-            ErrorImpl::Scan(scan) => Some(ErrorMarker::from_marker(scan.marker())),
-            _ => None
-        };
-
-        ErrorPos {
-            message,
-            marker
-        }
-    }
-}
 
 /// Alias for a `Result` with the error type `serde_yaml::Error`.
 pub type Result<T> = result::Result<T, Error>;
@@ -100,13 +49,72 @@ pub struct Pos {
     path: String,
 }
 
-impl Pos {
-    fn marker(&self) -> &Marker {
-        &self.marker
+
+/// This type represents the location that an error occured
+#[derive(Debug)]
+pub struct ErrorMarker {
+    index: usize,
+    line: usize,
+    col: usize,
+} 
+
+impl ErrorMarker {
+    /// The byte index of the error
+    pub fn index(&self) -> usize {
+        self.index
+    }
+
+    /// The line of the error
+    pub fn line(&self) -> usize {
+        self.line
+    }
+
+    /// The column of the error
+    pub fn col(&self) -> usize {
+        self.col
+    }
+
+    fn from_marker(marker: &Marker) -> Self {
+        ErrorMarker {
+            col: marker.col(),
+            index: marker.index(),
+            line: marker.line(),
+        }
     }
 }
-
+  
 impl Error {
+    /// Returns the ErrorMarker from the error if one exists.
+    /// Allows for the exact location of the error to be gathered.
+    /// Not all errors have a location, so this will return `None`
+    /// # Examples
+    ///
+    /// ```rust
+    /// # extern crate serde_yaml;
+    /// # use serde_yaml::{Value, Error};
+    ///
+    /// # fn yaml(i: &str) -> Result<Value, Error> { serde_yaml::from_str(i) }
+    /// # fn main() {
+    /// # 
+    /// // The `@` character as the first character makes this invalid yaml
+    /// let result: Result<Value, Error> = yaml(r#"@invalid_yaml"#);
+    /// 
+    /// let marker = result.unwrap_err().marker().unwrap();
+    ///
+    /// assert_eq!(marker.line(), 1);
+    /// assert_eq!(marker.col(), 0);
+    ///
+    ///
+    /// # }
+    /// ```
+    pub fn marker(&self) -> Option<ErrorMarker> {
+        match *self.0 {
+            ErrorImpl::Message(_, Some(ref pos)) => Some(ErrorMarker::from_marker(&pos.marker)),
+            ErrorImpl::Scan(ref scan) => Some(ErrorMarker::from_marker(scan.marker())),
+            _ => None
+        }
+    }
+
     // Not public API. Should be pub(crate).
     #[doc(hidden)]
     pub fn end_of_stream() -> Self {
