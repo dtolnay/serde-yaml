@@ -189,3 +189,12 @@ fn test_long_tuple() {
     let expected = "invalid length 3, expected sequence of 2 elements at line 2 column 1";
     test_error::<(u8, u8)>(&yaml, expected);
 }
+
+#[test]
+fn test_no_location() {
+    let invalid_utf8: Result<serde_yaml::Value, serde_yaml::Error> = serde_yaml::from_slice(b"\x80\xae");
+
+    let utf8_location = invalid_utf8.unwrap_err().location();
+
+    assert_eq!(utf8_location.is_none(), true);
+}

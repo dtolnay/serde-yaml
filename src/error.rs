@@ -50,15 +50,15 @@ pub struct Pos {
 }
 
 
-/// This type represents the location that an error occured
+/// This type represents the location that an error occured.
 #[derive(Debug)]
-pub struct ErrorMarker {
+pub struct Location {
     index: usize,
     line: usize,
-    col: usize,
+    column: usize,
 } 
 
-impl ErrorMarker {
+impl Location {
     /// The byte index of the error
     pub fn index(&self) -> usize {
         self.index
@@ -70,13 +70,16 @@ impl ErrorMarker {
     }
 
     /// The column of the error
-    pub fn col(&self) -> usize {
-        self.col
+    pub fn column(&self) -> usize {
+        self.column
     }
 
+    // This is to keep decoupled with the yaml crate
+    #[doc(hidden)]
     fn from_marker(marker: &Marker) -> Self {
-        ErrorMarker {
-            col: marker.col(),
+        Location {
+            // `col` returned from the `yaml` crate is 0-indexed but all error messages add + 1 to this value
+            column: marker.col() + 1,
             index: marker.index(),
             line: marker.line(),
         }
@@ -84,34 +87,32 @@ impl ErrorMarker {
 }
   
 impl Error {
-    /// Returns the ErrorMarker from the error if one exists.
-    /// Allows for the exact location of the error to be gathered.
-    /// Not all errors have a location, so this will return `None`
+    /// Returns the Location from the error if one exists.
+    ///
+    /// Not all types of errors have a location so this can return `None`.
+    ///
     /// # Examples
     ///
     /// ```rust
     /// # extern crate serde_yaml;
     /// # use serde_yaml::{Value, Error};
-    ///
-    /// # fn yaml(i: &str) -> Result<Value, Error> { serde_yaml::from_str(i) }
     /// # fn main() {
     /// # 
     /// // The `@` character as the first character makes this invalid yaml
-    /// let result: Result<Value, Error> = yaml(r#"@invalid_yaml"#);
+    /// let invalid_yaml: Result<Value, Error> = serde_yaml::from_str("@invalid_yaml");
     /// 
-    /// let marker = result.unwrap_err().marker().unwrap();
+    /// let location = invalid_yaml.unwrap_err().location().unwrap();
     ///
-    /// assert_eq!(marker.line(), 1);
-    /// assert_eq!(marker.col(), 0);
-    ///
+    /// assert_eq!(location.line(), 1);
+    /// assert_eq!(location.column(), 1);
     ///
     /// # }
     /// ```
-    pub fn marker(&self) -> Option<ErrorMarker> {
+    pub fn location(&self) -> Option<Location> {
         match *self.0 {
-            ErrorImpl::Message(_, Some(ref pos)) => Some(ErrorMarker::from_marker(&pos.marker)),
-            ErrorImpl::Scan(ref scan) => Some(ErrorMarker::from_marker(scan.marker())),
-            _ => None
+            ErrorImpl::Message(_, Some(ref pos)) => Some(Location::from_marker(&pos.marker)),
+            ErrorImpl::Scan(ref scan) => Some(Location::from_marker(scan.marker())),
+            _ => None,
         }
     }
 

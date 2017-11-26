@@ -87,7 +87,7 @@ extern crate yaml_rust;
 pub use self::de::{from_reader, from_slice, from_str};
 pub use self::ser::{to_string, to_vec, to_writer};
 pub use self::value::{Sequence, Value, from_value, to_value, Number};
-pub use self::error::{Error, ErrorMarker, Result};
+pub use self::error::{Error, Location, Result};
 pub use self::mapping::Mapping;
 
 mod de;
