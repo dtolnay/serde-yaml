@@ -49,14 +49,13 @@ pub struct Pos {
     path: String,
 }
 
-
 /// This type represents the location that an error occured.
 #[derive(Debug)]
 pub struct Location {
     index: usize,
     line: usize,
     column: usize,
-} 
+}
 
 impl Location {
     /// The byte index of the error
@@ -85,7 +84,7 @@ impl Location {
         }
     }
 }
-  
+
 impl Error {
     /// Returns the Location from the error if one exists.
     ///
@@ -97,10 +96,10 @@ impl Error {
     /// # extern crate serde_yaml;
     /// # use serde_yaml::{Value, Error};
     /// # fn main() {
-    /// # 
+    /// #
     /// // The `@` character as the first character makes this invalid yaml
     /// let invalid_yaml: Result<Value, Error> = serde_yaml::from_str("@invalid_yaml");
-    /// 
+    ///
     /// let location = invalid_yaml.unwrap_err().location().unwrap();
     ///
     /// assert_eq!(location.line(), 1);
