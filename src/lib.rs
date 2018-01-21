@@ -76,6 +76,8 @@
     missing_docs_in_private_items,
 // not stable
     empty_enum,
+// meh, some things won't fail
+    result_unwrap_used,
 ))]
 
 extern crate dtoa;
