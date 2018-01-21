@@ -17,6 +17,7 @@ extern crate serde_yaml;
 extern crate unindent;
 use unindent::unindent;
 
+use std::f64;
 use std::fmt::Debug;
 use std::collections::BTreeMap;
 
@@ -73,6 +74,29 @@ fn test_float() {
         ---
         25.6");
     test_serde(&thing, &yaml);
+
+    let thing = 25.;
+    let yaml = unindent("
+        ---
+        25.0");
+    test_serde(&thing, &yaml);
+
+    let thing = f64::INFINITY;
+    let yaml = unindent("
+        ---
+        .inf");
+    test_serde(&thing, &yaml);
+
+    let thing = f64::NEG_INFINITY;
+    let yaml = unindent("
+        ---
+        -.inf");
+    test_serde(&thing, &yaml);
+
+    let float: f64 = serde_yaml::from_str(&unindent("
+        ---
+        .nan")).unwrap();
+    assert!(float.is_nan());
 }
 
 #[test]

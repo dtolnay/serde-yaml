@@ -10,7 +10,7 @@
 //!
 //! This module provides YAML serialization with the type `Serializer`.
 
-use std::{fmt, io};
+use std::{fmt, io, num, str};
 
 use yaml_rust::{yaml, Yaml, YamlEmitter};
 
@@ -73,7 +73,16 @@ impl ser::Serializer for Serializer {
     }
 
     fn serialize_f64(self, v: f64) -> Result<Yaml> {
-        Ok(Yaml::Real(v.to_string()))
+        Ok(Yaml::Real(match v.classify() {
+            num::FpCategory::Infinite if v.is_sign_positive() => ".inf".into(),
+            num::FpCategory::Infinite => "-.inf".into(),
+            num::FpCategory::Nan => ".nan".into(),
+            _ => {
+                let mut buf = vec![];
+                ::dtoa::write(&mut buf, v).unwrap();
+                ::std::str::from_utf8(&buf).unwrap().into()
+            }
+        }))
     }
 
     fn serialize_char(self, value: char) -> Result<Yaml> {

@@ -11,6 +11,7 @@
 //! This module provides YAML deserialization with the type `Deserializer`.
 
 use std::collections::BTreeMap;
+use std::f64;
 use std::fmt;
 use std::io;
 use std::str;
@@ -489,6 +490,16 @@ fn visit_untagged_str<'de, V>(visitor: V, v: &str) -> Result<V::Value>
     }
     if let Ok(n) = v.parse() {
         return visitor.visit_i64(n);
+    }
+    match v.trim_left_matches('+') {
+        ".inf" | ".Inf" | ".INF" => return visitor.visit_f64(f64::INFINITY),
+        _ => (),
+    }
+    if v == "-.inf" || v == "-.Inf" || v == "-.INF" {
+        return visitor.visit_f64(f64::NEG_INFINITY);
+    }
+    if v == ".nan" || v == ".NaN" || v == ".NAN" {
+        return visitor.visit_f64(f64::NAN);
     }
     if let Ok(n) = v.parse() {
         return visitor.visit_f64(n);
