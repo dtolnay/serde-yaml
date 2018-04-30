@@ -85,7 +85,6 @@ impl PartialEq<String> for Value {
     }
 }
 
-
 impl PartialEq<Value> for String {
     /// Compare `String` with YAML value
     ///

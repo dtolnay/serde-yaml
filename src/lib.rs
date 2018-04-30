@@ -61,7 +61,6 @@
 //! ```
 
 #![doc(html_root_url = "https://docs.rs/serde_yaml/0.7.4")]
-
 #![cfg_attr(feature = "cargo-clippy", deny(clippy, clippy_pedantic))]
 // Whitelisted clippy lints
 #![cfg_attr(feature = "cargo-clippy", allow(redundant_field_names))]
@@ -89,15 +88,15 @@ extern crate serde;
 extern crate yaml_rust;
 
 pub use self::de::{from_reader, from_slice, from_str};
-pub use self::ser::{to_string, to_vec, to_writer};
-pub use self::value::{Sequence, Value, from_value, to_value, Number};
 pub use self::error::{Error, Location, Result};
 pub use self::mapping::Mapping;
+pub use self::ser::{to_string, to_vec, to_writer};
+pub use self::value::{from_value, to_value, Number, Sequence, Value};
 
 mod de;
-mod ser;
-mod value;
 mod error;
-mod path;
 mod mapping;
 mod number;
+mod path;
+mod ser;
+mod value;

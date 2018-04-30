@@ -30,11 +30,12 @@ impl<'a> Display for Path<'a> {
             Path::Root => formatter.write_str("."),
             Path::Seq { parent, index } => write!(formatter, "{}[{}]", parent, index),
             Path::Map { parent, key } => write!(formatter, "{}{}", Parent(parent), key),
-            Path::Some { parent } |
-            Path::NewtypeStruct { parent } |
-            Path::Alias { parent } => write!(formatter, "{}", parent),
-            Path::NewtypeVariant { parent } |
-            Path::Unknown { parent } => write!(formatter, "{}?", Parent(parent)),
+            Path::Some { parent } | Path::NewtypeStruct { parent } | Path::Alias { parent } => {
+                write!(formatter, "{}", parent)
+            }
+            Path::NewtypeVariant { parent } | Path::Unknown { parent } => {
+                write!(formatter, "{}?", Parent(parent))
+            }
         }
     }
 }

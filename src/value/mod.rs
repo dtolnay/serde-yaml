@@ -10,11 +10,8 @@
 
 use std::hash::{Hash, Hasher};
 
+use serde::de::{Deserialize, DeserializeOwned};
 use serde::Serialize;
-use serde::de::{
-    Deserialize,
-    DeserializeOwned,
-};
 use yaml_rust::Yaml;
 
 use error::Error;
@@ -59,7 +56,8 @@ pub type Sequence = Vec<Value>;
 /// ```
 #[cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
 pub fn to_value<T>(value: T) -> Result<Value, Error>
-    where T: Serialize
+where
+    T: Serialize,
 {
     value.serialize(Serializer).map(yaml_to_value)
 }
@@ -81,7 +79,8 @@ pub fn to_value<T>(value: T) -> Result<Value, Error>
 /// assert_eq!("foo", s);
 /// ```
 pub fn from_value<T>(value: Value) -> Result<T, Error>
-    where T: DeserializeOwned
+where
+    T: DeserializeOwned,
 {
     Deserialize::deserialize(value)
 }
@@ -161,7 +160,11 @@ impl Value {
     /// assert!(!v.is_null());
     /// ```
     pub fn is_null(&self) -> bool {
-        if let Value::Null = *self { true } else { false }
+        if let Value::Null = *self {
+            true
+        } else {
+            false
+        }
     }
 
     /// If the `Value` is a Null, returns (). Returns None otherwise.
@@ -551,19 +554,19 @@ impl Value {
 
 fn yaml_to_value(yaml: Yaml) -> Value {
     match yaml {
-        Yaml::Real(f) => {
-            match f.parse::<f64>() {
-                Ok(f) => Value::Number(f.into()),
-                Err(_) => Value::String(f),
-            }
-        }
+        Yaml::Real(f) => match f.parse::<f64>() {
+            Ok(f) => Value::Number(f.into()),
+            Err(_) => Value::String(f),
+        },
         Yaml::Integer(i) => Value::Number(i.into()),
         Yaml::String(s) => Value::String(s),
         Yaml::Boolean(b) => Value::Bool(b),
         Yaml::Array(sequence) => Value::Sequence(sequence.into_iter().map(yaml_to_value).collect()),
-        Yaml::Hash(hash) => {
-            Value::Mapping(hash.into_iter().map(|(k, v)| (yaml_to_value(k), yaml_to_value(v))).collect())
-        }
+        Yaml::Hash(hash) => Value::Mapping(
+            hash.into_iter()
+                .map(|(k, v)| (yaml_to_value(k), yaml_to_value(v)))
+                .collect(),
+        ),
         Yaml::Alias(_) => panic!("alias unsupported"),
         Yaml::Null => Value::Null,
         Yaml::BadValue => panic!("bad value"),
@@ -585,9 +588,9 @@ impl Hash for Value {
     }
 }
 
+mod from;
 mod index;
 mod partial_eq;
-mod from;
 
-mod ser;
 mod de;
+mod ser;

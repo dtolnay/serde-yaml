@@ -7,8 +7,8 @@
 // except according to those terms.
 
 use error::Error;
-use serde::de::{Visitor, Unexpected};
-use serde::{Serialize, Serializer, Deserialize, Deserializer};
+use serde::de::{Unexpected, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Debug, Display};
 use std::hash::{Hash, Hasher};
 use std::i64;

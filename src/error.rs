@@ -7,7 +7,7 @@
 // except according to those terms.
 
 use std::error;
-use std::fmt::{self, Display, Debug};
+use std::fmt::{self, Debug, Display};
 use std::io;
 use std::result;
 use std::str;
@@ -162,9 +162,9 @@ impl Error {
     pub fn fix_marker(mut self, marker: Marker, path: Path) -> Self {
         if let ErrorImpl::Message(_, ref mut none @ None) = *self.0.as_mut() {
             *none = Some(Pos {
-                             marker: marker,
-                             path: path.to_string(),
-                         });
+                marker: marker,
+                path: path.to_string(),
+            });
         }
         self
     }
@@ -180,7 +180,9 @@ impl error::Error for Error {
             ErrorImpl::Utf8(ref err) => err.description(),
             ErrorImpl::FromUtf8(ref err) => err.description(),
             ErrorImpl::EndOfStream => "EOF while parsing a value",
-            ErrorImpl::MoreThanOneDocument => "deserializing from YAML containing more than one document is not supported",
+            ErrorImpl::MoreThanOneDocument => {
+                "deserializing from YAML containing more than one document is not supported"
+            }
         }
     }
 
@@ -213,9 +215,9 @@ impl Display for Error {
             ErrorImpl::Utf8(ref err) => Display::fmt(err, f),
             ErrorImpl::FromUtf8(ref err) => Display::fmt(err, f),
             ErrorImpl::EndOfStream => f.write_str("EOF while parsing a value"),
-            ErrorImpl::MoreThanOneDocument => {
-                f.write_str("deserializing from YAML containing more than one document is not supported")
-            }
+            ErrorImpl::MoreThanOneDocument => f.write_str(
+                "deserializing from YAML containing more than one document is not supported",
+            ),
         }
     }
 }
@@ -225,12 +227,11 @@ impl Display for Error {
 impl Debug for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match *self.0 {
-            ErrorImpl::Message(ref msg, ref pos) => {
-                formatter.debug_tuple("Message")
-                    .field(msg)
-                    .field(pos)
-                    .finish()
-            }
+            ErrorImpl::Message(ref msg, ref pos) => formatter
+                .debug_tuple("Message")
+                .field(msg)
+                .field(pos)
+                .finish(),
             ErrorImpl::Emit(ref emit) => formatter.debug_tuple("Emit").field(emit).finish(),
             ErrorImpl::Scan(ref scan) => formatter.debug_tuple("Scan").field(scan).finish(),
             ErrorImpl::Io(ref io) => formatter.debug_tuple("Io").field(io).finish(),

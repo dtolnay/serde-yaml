@@ -15,11 +15,12 @@ extern crate serde_yaml;
 extern crate unindent;
 use unindent::unindent;
 
-use std::fmt::Debug;
 use std::collections::BTreeMap;
+use std::fmt::Debug;
 
 fn test_de<T>(yaml: &str, expected: &T)
-    where T: serde::de::DeserializeOwned + PartialEq + Debug
+where
+    T: serde::de::DeserializeOwned + PartialEq + Debug,
 {
     let deserialized: T = serde_yaml::from_str(yaml).unwrap();
     assert_eq!(*expected, deserialized);
@@ -27,14 +28,16 @@ fn test_de<T>(yaml: &str, expected: &T)
 
 #[test]
 fn test_alias() {
-    let yaml = unindent("
+    let yaml = unindent(
+        "
         ---
         first:
           &alias
           1
         second:
           *alias
-        third: 3");
+        third: 3",
+    );
     let mut expected = BTreeMap::new();
     {
         expected.insert(String::from("first"), 1);
@@ -52,10 +55,12 @@ fn test_option() {
         b: Option<String>,
         c: Option<bool>,
     }
-    let yaml = unindent("
+    let yaml = unindent(
+        "
         ---
         b:
-        c: true");
+        c: true",
+    );
     let expected = Data {
         a: None,
         b: None,
@@ -75,7 +80,8 @@ fn test_option_alias() {
         e: Option<String>,
         f: Option<bool>,
     }
-    let yaml = unindent("
+    let yaml = unindent(
+        "
         ---
         none_f:
           &none_f
@@ -102,7 +108,8 @@ fn test_option_alias() {
         c: *none_b
         d: *some_f
         e: *some_s
-        f: *some_b");
+        f: *some_b",
+    );
     let expected = Data {
         a: None,
         b: None,
@@ -126,7 +133,8 @@ fn test_enum_alias() {
         a: E,
         b: E,
     }
-    let yaml = unindent("
+    let yaml = unindent(
+        "
         ---
         aref:
           &aref
@@ -138,7 +146,8 @@ fn test_enum_alias() {
             - 2
 
         a: *aref
-        b: *bref");
+        b: *bref",
+    );
     let expected = Data {
         a: E::A,
         b: E::B(1, 2),
@@ -152,10 +161,14 @@ fn test_number_as_string() {
     struct Num {
         value: String,
     }
-    let yaml = unindent("
+    let yaml = unindent(
+        "
         ---
-        value: 123456789012345678901234567890");
-    let expected = Num { value: "123456789012345678901234567890".to_owned() };
+        value: 123456789012345678901234567890",
+    );
+    let expected = Num {
+        value: "123456789012345678901234567890".to_owned(),
+    };
     test_de(&yaml, &expected);
 }
 
@@ -166,11 +179,16 @@ fn test_number_alias_as_string() {
         version: String,
         value: String,
     }
-    let yaml = unindent("
+    let yaml = unindent(
+        "
         ---
         version: &a 1.10
-        value: *a");
-    let expected = Num { version: "1.10".to_owned(), value: "1.10".to_owned() };
+        value: *a",
+    );
+    let expected = Num {
+        version: "1.10".to_owned(),
+        value: "1.10".to_owned(),
+    };
     test_de(&yaml, &expected);
 }
 
@@ -180,17 +198,25 @@ fn test_de_mapping() {
     struct Data {
         pub substructure: serde_yaml::Mapping,
     }
-    let yaml = unindent("
+    let yaml = unindent(
+        "
         ---
         substructure:
           a: 'foo'
-          b: 'bar'");
+          b: 'bar'",
+    );
 
-    let mut expected = Data { substructure: serde_yaml::Mapping::new() };
-    expected.substructure.insert(serde_yaml::Value::String("a".to_owned()),
-                                 serde_yaml::Value::String("foo".to_owned()));
-    expected.substructure.insert(serde_yaml::Value::String("b".to_owned()),
-                                 serde_yaml::Value::String("bar".to_owned()));
+    let mut expected = Data {
+        substructure: serde_yaml::Mapping::new(),
+    };
+    expected.substructure.insert(
+        serde_yaml::Value::String("a".to_owned()),
+        serde_yaml::Value::String("foo".to_owned()),
+    );
+    expected.substructure.insert(
+        serde_yaml::Value::String("b".to_owned()),
+        serde_yaml::Value::String("bar".to_owned()),
+    );
 
     test_de(&yaml, &expected);
 }

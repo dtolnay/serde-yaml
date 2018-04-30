@@ -1,5 +1,5 @@
-extern crate serde_yaml;
 extern crate serde;
+extern crate serde_yaml;
 
 use std::collections::HashSet;
 use std::fmt;
@@ -63,7 +63,6 @@ impl<'de> Visitor<'de> for NamesVisitor {
         Ok(Names { inner: out })
     }
 }
-
 
 #[test]
 #[ignore]

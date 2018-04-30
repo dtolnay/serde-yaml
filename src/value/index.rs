@@ -45,17 +45,13 @@ impl Index for usize {
         match *v {
             Value::Sequence(ref mut vec) => {
                 let len = vec.len();
-                vec.get_mut(*self)
-                    .unwrap_or_else(
-                        || {
-                            panic!(
-                                "cannot access index {} of YAML sequence of length {}",
-                                self,
-                                len
-                            )
-                        },
+                vec.get_mut(*self).unwrap_or_else(|| {
+                    panic!(
+                        "cannot access index {} of YAML sequence of length {}",
+                        self, len
                     )
-            },
+                })
+            }
             Value::Mapping(ref mut map) => {
                 let n = Value::Number((*self).into());
                 // TODO: use entry() once LinkedHashMap supports entry()
@@ -64,7 +60,7 @@ impl Index for usize {
                     map.insert(n.clone(), Value::Null);
                 }
                 map.get_mut(&n).unwrap()
-            },
+            }
             _ => panic!("cannot access index {} of YAML {}", self, Type(v)),
         }
     }

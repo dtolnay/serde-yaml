@@ -106,27 +106,31 @@ impl ser::Serializer for Serializer {
         self.serialize_unit()
     }
 
-    fn serialize_unit_variant(self,
-                              _name: &str,
-                              _variant_index: u32,
-                              variant: &str)
-                              -> Result<Yaml> {
+    fn serialize_unit_variant(
+        self,
+        _name: &str,
+        _variant_index: u32,
+        variant: &str,
+    ) -> Result<Yaml> {
         Ok(Yaml::String(variant.to_owned()))
     }
 
     fn serialize_newtype_struct<T: ?Sized>(self, _name: &'static str, value: &T) -> Result<Yaml>
-        where T: ser::Serialize
+    where
+        T: ser::Serialize,
     {
         value.serialize(self)
     }
 
-    fn serialize_newtype_variant<T: ?Sized>(self,
-                                            _name: &str,
-                                            _variant_index: u32,
-                                            variant: &str,
-                                            value: &T)
-                                            -> Result<Yaml>
-        where T: ser::Serialize
+    fn serialize_newtype_variant<T: ?Sized>(
+        self,
+        _name: &str,
+        _variant_index: u32,
+        variant: &str,
+        value: &T,
+    ) -> Result<Yaml>
+    where
+        T: ser::Serialize,
     {
         Ok(singleton_hash(to_yaml(variant)?, to_yaml(value)?))
     }
@@ -136,7 +140,8 @@ impl ser::Serializer for Serializer {
     }
 
     fn serialize_some<V: ?Sized>(self, value: &V) -> Result<Yaml>
-        where V: ser::Serialize
+    where
+        V: ser::Serialize,
     {
         value.serialize(self)
     }
@@ -157,39 +162,43 @@ impl ser::Serializer for Serializer {
         self.serialize_seq(Some(len))
     }
 
-    fn serialize_tuple_variant(self,
-                               _enum: &'static str,
-                               _idx: u32,
-                               variant: &'static str,
-                               len: usize)
-                               -> Result<SerializeTupleVariant> {
+    fn serialize_tuple_variant(
+        self,
+        _enum: &'static str,
+        _idx: u32,
+        variant: &'static str,
+        len: usize,
+    ) -> Result<SerializeTupleVariant> {
         Ok(SerializeTupleVariant {
-               name: variant,
-               array: yaml::Array::with_capacity(len),
-           })
+            name: variant,
+            array: yaml::Array::with_capacity(len),
+        })
     }
 
     fn serialize_map(self, _len: Option<usize>) -> Result<SerializeMap> {
         Ok(SerializeMap {
-               hash: yaml::Hash::new(),
-               next_key: None,
-           })
+            hash: yaml::Hash::new(),
+            next_key: None,
+        })
     }
 
     fn serialize_struct(self, _name: &'static str, _len: usize) -> Result<SerializeStruct> {
-        Ok(SerializeStruct { hash: yaml::Hash::new() })
+        Ok(SerializeStruct {
+            hash: yaml::Hash::new(),
+        })
     }
 
-    fn serialize_struct_variant(self,
-                                _enum: &'static str,
-                                _idx: u32,
-                                variant: &'static str,
-                                _len: usize)
-                                -> Result<SerializeStructVariant> {
+    fn serialize_struct_variant(
+        self,
+        _enum: &'static str,
+        _idx: u32,
+        variant: &'static str,
+        _len: usize,
+    ) -> Result<SerializeStructVariant> {
         Ok(SerializeStructVariant {
-               name: variant,
-               hash: yaml::Hash::new(),
-           })
+            name: variant,
+            hash: yaml::Hash::new(),
+        })
     }
 }
 
@@ -226,7 +235,8 @@ impl ser::SerializeSeq for SerializeArray {
     type Error = Error;
 
     fn serialize_element<T: ?Sized>(&mut self, elem: &T) -> Result<()>
-        where T: ser::Serialize
+    where
+        T: ser::Serialize,
     {
         self.array.push(to_yaml(elem)?);
         Ok(())
@@ -242,7 +252,8 @@ impl ser::SerializeTuple for SerializeArray {
     type Error = Error;
 
     fn serialize_element<T: ?Sized>(&mut self, elem: &T) -> Result<()>
-        where T: ser::Serialize
+    where
+        T: ser::Serialize,
     {
         ser::SerializeSeq::serialize_element(self, elem)
     }
@@ -257,7 +268,8 @@ impl ser::SerializeTupleStruct for SerializeArray {
     type Error = Error;
 
     fn serialize_field<V: ?Sized>(&mut self, value: &V) -> Result<()>
-        where V: ser::Serialize
+    where
+        V: ser::Serialize,
     {
         ser::SerializeSeq::serialize_element(self, value)
     }
@@ -272,7 +284,8 @@ impl ser::SerializeTupleVariant for SerializeTupleVariant {
     type Error = Error;
 
     fn serialize_field<V: ?Sized>(&mut self, v: &V) -> Result<()>
-        where V: ser::Serialize
+    where
+        V: ser::Serialize,
     {
         self.array.push(to_yaml(v)?);
         Ok(())
@@ -288,14 +301,16 @@ impl ser::SerializeMap for SerializeMap {
     type Error = Error;
 
     fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<()>
-        where T: ser::Serialize
+    where
+        T: ser::Serialize,
     {
         self.next_key = Some(to_yaml(key)?);
         Ok(())
     }
 
     fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<()>
-        where T: ser::Serialize
+    where
+        T: ser::Serialize,
     {
         match self.next_key.take() {
             Some(key) => self.hash.insert(key, to_yaml(value)?),
@@ -305,8 +320,9 @@ impl ser::SerializeMap for SerializeMap {
     }
 
     fn serialize_entry<K: ?Sized, V: ?Sized>(&mut self, key: &K, value: &V) -> Result<()>
-        where K: ser::Serialize,
-              V: ser::Serialize
+    where
+        K: ser::Serialize,
+        V: ser::Serialize,
     {
         self.hash.insert(to_yaml(key)?, to_yaml(value)?);
         Ok(())
@@ -322,7 +338,8 @@ impl ser::SerializeStruct for SerializeStruct {
     type Error = Error;
 
     fn serialize_field<V: ?Sized>(&mut self, key: &'static str, value: &V) -> Result<()>
-        where V: ser::Serialize
+    where
+        V: ser::Serialize,
     {
         self.hash.insert(to_yaml(key)?, to_yaml(value)?);
         Ok(())
@@ -338,7 +355,8 @@ impl ser::SerializeStructVariant for SerializeStructVariant {
     type Error = Error;
 
     fn serialize_field<V: ?Sized>(&mut self, field: &'static str, v: &V) -> Result<()>
-        where V: ser::Serialize
+    where
+        V: ser::Serialize,
     {
         self.hash.insert(to_yaml(field)?, to_yaml(v)?);
         Ok(())
@@ -354,12 +372,15 @@ impl ser::SerializeStructVariant for SerializeStructVariant {
 /// Serialization can fail if `T`'s implementation of `Serialize` decides to
 /// return an error.
 pub fn to_writer<W, T: ?Sized>(writer: W, value: &T) -> Result<()>
-    where W: io::Write,
-          T: ser::Serialize
+where
+    W: io::Write,
+    T: ser::Serialize,
 {
     let doc = to_yaml(value)?;
     let mut writer_adapter = FmtToIoWriter { writer: writer };
-    YamlEmitter::new(&mut writer_adapter).dump(&doc).map_err(Error::emitter)?;
+    YamlEmitter::new(&mut writer_adapter)
+        .dump(&doc)
+        .map_err(Error::emitter)?;
     Ok(())
 }
 
@@ -368,7 +389,8 @@ pub fn to_writer<W, T: ?Sized>(writer: W, value: &T) -> Result<()>
 /// Serialization can fail if `T`'s implementation of `Serialize` decides to
 /// return an error.
 pub fn to_vec<T: ?Sized>(value: &T) -> Result<Vec<u8>>
-    where T: ser::Serialize
+where
+    T: ser::Serialize,
 {
     let mut vec = Vec::with_capacity(128);
     to_writer(&mut vec, value)?;
@@ -380,7 +402,8 @@ pub fn to_vec<T: ?Sized>(value: &T) -> Result<Vec<u8>>
 /// Serialization can fail if `T`'s implementation of `Serialize` decides to
 /// return an error.
 pub fn to_string<T: ?Sized>(value: &T) -> Result<String>
-    where T: ser::Serialize
+where
+    T: ser::Serialize,
 {
     Ok(String::from_utf8(to_vec(value)?).map_err(Error::string_utf8)?)
 }
@@ -392,7 +415,8 @@ struct FmtToIoWriter<W> {
 }
 
 impl<W> fmt::Write for FmtToIoWriter<W>
-    where W: io::Write
+where
+    W: io::Write,
 {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         if self.writer.write(s.as_bytes()).is_err() {
@@ -404,7 +428,8 @@ impl<W> fmt::Write for FmtToIoWriter<W>
 
 #[cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
 fn to_yaml<T>(elem: T) -> Result<Yaml>
-    where T: ser::Serialize
+where
+    T: ser::Serialize,
 {
     elem.serialize(Serializer)
 }

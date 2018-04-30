@@ -11,7 +11,7 @@ use std::iter::FromIterator;
 use std::ops::{Index, IndexMut};
 
 use linked_hash_map::{self, LinkedHashMap};
-use serde::{self, Serialize, Deserialize, Deserializer};
+use serde::{self, Deserialize, Deserializer, Serialize};
 
 use value::Value;
 
@@ -29,7 +29,9 @@ impl Mapping {
 
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
-        Mapping { map: LinkedHashMap::with_capacity(capacity) }
+        Mapping {
+            map: LinkedHashMap::with_capacity(capacity),
+        }
     }
 
     #[inline]
@@ -89,12 +91,16 @@ impl Mapping {
 
     #[inline]
     pub fn iter(&self) -> Iter {
-        Iter { iter: self.map.iter() }
+        Iter {
+            iter: self.map.iter(),
+        }
     }
 
     #[inline]
     pub fn iter_mut(&mut self) -> IterMut {
-        IterMut { iter: self.map.iter_mut() }
+        IterMut {
+            iter: self.map.iter_mut(),
+        }
     }
 }
 
@@ -123,7 +129,9 @@ impl Extend<(Value, Value)> for Mapping {
 impl FromIterator<(Value, Value)> for Mapping {
     #[inline]
     fn from_iter<I: IntoIterator<Item = (Value, Value)>>(iter: I) -> Self {
-        Mapping { map: LinkedHashMap::from_iter(iter) }
+        Mapping {
+            map: LinkedHashMap::from_iter(iter),
+        }
     }
 }
 
@@ -161,7 +169,9 @@ impl<'a> IntoIterator for &'a Mapping {
     type IntoIter = Iter<'a>;
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        Iter { iter: self.map.iter() }
+        Iter {
+            iter: self.map.iter(),
+        }
     }
 }
 
@@ -176,7 +186,9 @@ impl<'a> IntoIterator for &'a mut Mapping {
     type IntoIter = IterMut<'a>;
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        IterMut { iter: self.map.iter_mut() }
+        IterMut {
+            iter: self.map.iter_mut(),
+        }
     }
 }
 
@@ -191,7 +203,9 @@ impl IntoIterator for Mapping {
     type IntoIter = IntoIter;
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        IntoIter { iter: self.map.into_iter() }
+        IntoIter {
+            iter: self.map.into_iter(),
+        }
     }
 }
 
@@ -209,7 +223,8 @@ impl Serialize for Mapping {
 
 impl<'de> Deserialize<'de> for Mapping {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
         struct Visitor;
 
@@ -222,14 +237,16 @@ impl<'de> Deserialize<'de> for Mapping {
 
             #[inline]
             fn visit_unit<E>(self) -> Result<Self::Value, E>
-                where E: serde::de::Error
+            where
+                E: serde::de::Error,
             {
                 Ok(Mapping::new())
             }
 
             #[inline]
             fn visit_map<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
-                where V: serde::de::MapAccess<'de>
+            where
+                V: serde::de::MapAccess<'de>,
             {
                 let mut values = Mapping::new();
                 while let Some((k, v)) = visitor.next_entry()? {
