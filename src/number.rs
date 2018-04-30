@@ -173,7 +173,7 @@ impl Number {
                 Some(n as i64)
             } else {
                 None
-            }
+            },
             N::NegInt(n) => Some(n),
             N::Float(_) => None,
         }
