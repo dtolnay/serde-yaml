@@ -7,7 +7,6 @@
 // except according to those terms.
 
 use error::Error;
-use num_traits::NumCast;
 use serde::de::{Visitor, Unexpected};
 use serde::{Serialize, Serializer, Deserialize, Deserializer};
 use std::fmt::{self, Debug, Display};
@@ -170,7 +169,11 @@ impl Number {
     #[inline]
     pub fn as_i64(&self) -> Option<i64> {
         match self.n {
-            N::PosInt(n) => NumCast::from(n),
+            N::PosInt(n) => if n <= i64::max_value() as u64 {
+                Some(n as i64)
+            } else {
+                None
+            }
             N::NegInt(n) => Some(n),
             N::Float(_) => None,
         }
@@ -236,8 +239,8 @@ impl Number {
     #[inline]
     pub fn as_f64(&self) -> Option<f64> {
         match self.n {
-            N::PosInt(n) => NumCast::from(n),
-            N::NegInt(n) => NumCast::from(n),
+            N::PosInt(n) => Some(n as f64),
+            N::NegInt(n) => Some(n as f64),
             N::Float(n) => Some(n),
         }
     }

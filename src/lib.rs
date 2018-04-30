@@ -84,7 +84,6 @@
 
 extern crate dtoa;
 extern crate linked_hash_map;
-extern crate num_traits;
 #[macro_use]
 extern crate serde;
 extern crate yaml_rust;

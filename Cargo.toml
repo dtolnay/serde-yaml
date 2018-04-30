@@ -12,7 +12,6 @@ keywords = ["yaml", "serde"]
 [dependencies]
 dtoa = "0.4"
 linked-hash-map = "0.5"
-num-traits = "0.1.37"
 serde = "1.0"
 yaml-rust = "0.4"
 
