@@ -73,6 +73,10 @@
     single_match_else,
     stutter,
     use_self,
+// code is acceptable
+    cast_possible_wrap,
+    cast_precision_loss,
+    cast_sign_loss,
 // not practical
     missing_docs_in_private_items,
 // not stable
