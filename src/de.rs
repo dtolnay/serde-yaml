@@ -20,8 +20,9 @@ use yaml_rust::parser::{Event as YamlEvent, MarkedEventReceiver, Parser};
 use yaml_rust::scanner::{Marker, TScalarStyle, TokenType};
 
 use serde::de::IgnoredAny as Ignore;
-use serde::de::{self, Deserialize, DeserializeOwned, DeserializeSeed, Expected, IntoDeserializer,
-                Unexpected};
+use serde::de::{
+    self, Deserialize, DeserializeOwned, DeserializeSeed, Expected, IntoDeserializer, Unexpected,
+};
 
 use error::{Error, Result};
 use path::Path;

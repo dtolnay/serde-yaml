@@ -1,8 +1,10 @@
 use std::fmt;
 use std::vec;
 
-use serde::de::{Deserialize, DeserializeSeed, Deserializer, EnumAccess, Error as SError,
-                MapAccess, SeqAccess, Unexpected, VariantAccess, Visitor};
+use serde::de::{
+    Deserialize, DeserializeSeed, Deserializer, EnumAccess, Error as SError, MapAccess, SeqAccess,
+    Unexpected, VariantAccess, Visitor,
+};
 
 use super::Value;
 use error::Error;
