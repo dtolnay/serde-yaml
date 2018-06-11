@@ -145,11 +145,7 @@ mod private {
     impl Sealed for str {}
     impl Sealed for String {}
     impl Sealed for super::Value {}
-    impl<'a, T: ?Sized> Sealed for &'a T
-    where
-        T: Sealed,
-    {
-    }
+    impl<'a, T: ?Sized> Sealed for &'a T where T: Sealed {}
 }
 
 /// Used in panic messages.

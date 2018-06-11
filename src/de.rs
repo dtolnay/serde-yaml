@@ -204,22 +204,18 @@ impl<'a> Deserializer<'a> {
                 Event::MappingStart => {
                     stack.push(Nest::Mapping);
                 }
-                Event::SequenceEnd => {
-                    match stack.pop() {
-                        Some(Nest::Sequence) => {}
-                        None | Some(Nest::Mapping) => {
-                            panic!("unexpected end of sequence");
-                        }
+                Event::SequenceEnd => match stack.pop() {
+                    Some(Nest::Sequence) => {}
+                    None | Some(Nest::Mapping) => {
+                        panic!("unexpected end of sequence");
                     }
-                }
-                Event::MappingEnd => {
-                    match stack.pop() {
-                        Some(Nest::Mapping) => {}
-                        None | Some(Nest::Sequence) => {
-                            panic!("unexpected end of mapping");
-                        }
+                },
+                Event::MappingEnd => match stack.pop() {
+                    Some(Nest::Mapping) => {}
+                    None | Some(Nest::Sequence) => {
+                        panic!("unexpected end of mapping");
                     }
-                }
+                },
             }
             if stack.is_empty() {
                 return Ok(());
