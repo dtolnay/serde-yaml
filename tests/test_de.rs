@@ -24,6 +24,9 @@ where
 {
     let deserialized: T = serde_yaml::from_str(yaml).unwrap();
     assert_eq!(*expected, deserialized);
+
+    serde_yaml::from_str::<serde_yaml::Value>(yaml).unwrap();
+    serde_yaml::from_str::<serde::de::IgnoredAny>(yaml).unwrap();
 }
 
 #[test]
