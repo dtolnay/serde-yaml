@@ -89,13 +89,14 @@ impl<'a> Deserializer<'a> {
     }
 
     fn next(&mut self) -> Result<(&'a Event, Marker)> {
-        match self.events.get(*self.pos) {
-            Some(event) => {
-                *self.pos += 1;
-                Ok((&event.0, event.1))
-            }
-            None => Err(Error::end_of_stream()),
-        }
+        self.opt_next().ok_or_else(Error::end_of_stream)
+    }
+
+    fn opt_next(&mut self) -> Option<(&'a Event, Marker)> {
+        self.events.get(*self.pos).map(|event| {
+            *self.pos += 1;
+            (&event.0, event.1)
+        })
     }
 
     fn jump(&'a self, pos: &'a mut usize) -> Result<Deserializer<'a>> {
@@ -184,6 +185,52 @@ impl<'a> Deserializer<'a> {
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
         }
+    }
+
+    fn ignore_any(&mut self) -> Result<()> {
+        enum Nest {
+            Sequence,
+            Mapping,
+        }
+
+        let mut stack = Vec::new();
+
+        while let Some((event, _)) = self.opt_next() {
+            match *event {
+                Event::Alias(_) | Event::Scalar(_, _, _) => {}
+                Event::SequenceStart => {
+                    stack.push(Nest::Sequence);
+                }
+                Event::MappingStart => {
+                    stack.push(Nest::Mapping);
+                }
+                Event::SequenceEnd => {
+                    match stack.pop() {
+                        Some(Nest::Sequence) => {}
+                        None | Some(Nest::Mapping) => {
+                            panic!("unexpected end of sequence");
+                        }
+                    }
+                }
+                Event::MappingEnd => {
+                    match stack.pop() {
+                        Some(Nest::Mapping) => {}
+                        None | Some(Nest::Sequence) => {
+                            panic!("unexpected end of mapping");
+                        }
+                    }
+                }
+            }
+            if stack.is_empty() {
+                return Ok(());
+            }
+        }
+
+        if !stack.is_empty() {
+            panic!("missing end event");
+        }
+
+        Ok(())
     }
 
     fn end_sequence(&mut self, len: usize) -> Result<()> {
@@ -644,9 +691,17 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
         }
     }
 
+    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: de::Visitor<'de>,
+    {
+        self.ignore_any()?;
+        visitor.visit_unit()
+    }
+
     forward_to_deserialize_any! {
         bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char bytes byte_buf unit
-        unit_struct seq tuple tuple_struct map struct identifier ignored_any
+        unit_struct seq tuple tuple_struct map struct identifier
     }
 }
 
