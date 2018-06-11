@@ -223,3 +223,51 @@ fn test_de_mapping() {
 
     test_de(&yaml, &expected);
 }
+
+#[test]
+fn test_bomb() {
+    #[derive(Debug, Deserialize, PartialEq)]
+    struct Data {
+        expected: String,
+    }
+
+    // This would deserialize an astronomical number of elements if we were
+    // vulnerable.
+    let yaml = unindent(
+        "
+        ---
+        a: &a ~
+        b: &b [*a,*a,*a,*a,*a,*a,*a,*a,*a]
+        c: &c [*b,*b,*b,*b,*b,*b,*b,*b,*b]
+        d: &d [*c,*c,*c,*c,*c,*c,*c,*c,*c]
+        e: &e [*d,*d,*d,*d,*d,*d,*d,*d,*d]
+        f: &f [*e,*e,*e,*e,*e,*e,*e,*e,*e]
+        g: &g [*f,*f,*f,*f,*f,*f,*f,*f,*f]
+        h: &h [*g,*g,*g,*g,*g,*g,*g,*g,*g]
+        i: &i [*h,*h,*h,*h,*h,*h,*h,*h,*h]
+        j: &j [*i,*i,*i,*i,*i,*i,*i,*i,*i]
+        k: &k [*j,*j,*j,*j,*j,*j,*j,*j,*j]
+        l: &l [*k,*k,*k,*k,*k,*k,*k,*k,*k]
+        m: &m [*l,*l,*l,*l,*l,*l,*l,*l,*l]
+        n: &n [*m,*m,*m,*m,*m,*m,*m,*m,*m]
+        o: &o [*n,*n,*n,*n,*n,*n,*n,*n,*n]
+        p: &p [*o,*o,*o,*o,*o,*o,*o,*o,*o]
+        q: &q [*p,*p,*p,*p,*p,*p,*p,*p,*p]
+        r: &r [*q,*q,*q,*q,*q,*q,*q,*q,*q]
+        s: &s [*r,*r,*r,*r,*r,*r,*r,*r,*r]
+        t: &t [*s,*s,*s,*s,*s,*s,*s,*s,*s]
+        u: &u [*t,*t,*t,*t,*t,*t,*t,*t,*t]
+        v: &v [*u,*u,*u,*u,*u,*u,*u,*u,*u]
+        w: &w [*v,*v,*v,*v,*v,*v,*v,*v,*v]
+        x: &x [*w,*w,*w,*w,*w,*w,*w,*w,*w]
+        y: &y [*x,*x,*x,*x,*x,*x,*x,*x,*x]
+        z: &z [*y,*y,*y,*y,*y,*y,*y,*y,*y]
+        expected: string",
+    );
+
+    let expected = Data {
+        expected: "string".to_owned(),
+    };
+
+    assert_eq!(expected, serde_yaml::from_str::<Data>(&yaml).unwrap());
+}
