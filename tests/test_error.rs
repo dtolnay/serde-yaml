@@ -96,6 +96,22 @@ fn test_unknown_anchor() {
 }
 
 #[test]
+fn test_ignored_unknown_anchor() {
+    #[derive(Deserialize, Debug)]
+    struct Wrapper {
+        c: (),
+    }
+    let yaml = unindent(
+        "
+        ---
+        b: [*a]
+        c: ~",
+    );
+    let expected = "while parsing node, found unknown anchor at line 2 column 5";
+    test_error::<Wrapper>(&yaml, expected);
+}
+
+#[test]
 fn test_two_documents() {
     let yaml = unindent(
         "
