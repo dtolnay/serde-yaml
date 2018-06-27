@@ -266,7 +266,7 @@ where
                     Ok(v) => visitor.visit_f64(v),
                     Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a float")),
                 },
-                "null" => match v.as_ref() {
+                "null" => match v {
                     "~" | "null" => visitor.visit_unit(),
                     _ => Err(de::Error::invalid_value(Unexpected::Str(v), &"null")),
                 },
