@@ -78,6 +78,7 @@
     cast_precision_loss,
     cast_sign_loss,
 // not practical
+    indexing_slicing,
     missing_docs_in_private_items,
 // not stable
     empty_enum,
