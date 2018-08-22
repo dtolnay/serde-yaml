@@ -15,7 +15,7 @@ which is a pure Rust YAML 1.2 implementation.
 ```toml
 [dependencies]
 serde = "1.0"
-serde_yaml = "0.7"
+serde_yaml = "0.8"
 ```
 
 Release notes are available under [GitHub releases](https://github.com/dtolnay/serde-yaml/releases).
@@ -53,7 +53,7 @@ handle structs and enums defined in your own program.
 [dependencies]
 serde = "1.0"
 serde_derive = "1.0"
-serde_yaml = "0.7"
+serde_yaml = "0.8"
 ```
 
 ```rust

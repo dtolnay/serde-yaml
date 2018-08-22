@@ -60,7 +60,7 @@
 //! # }
 //! ```
 
-#![doc(html_root_url = "https://docs.rs/serde_yaml/0.7.5")]
+#![doc(html_root_url = "https://docs.rs/serde_yaml/0.8.0")]
 #![cfg_attr(feature = "cargo-clippy", deny(clippy, clippy_pedantic))]
 // Whitelisted clippy lints
 #![cfg_attr(feature = "cargo-clippy", allow(redundant_field_names))]
