@@ -65,7 +65,11 @@ impl ser::Serializer for Serializer {
     }
 
     fn serialize_u64(self, v: u64) -> Result<Yaml> {
-        Ok(Yaml::Real(v.to_string()))
+        if v <= i64::max_value() as u64 {
+            self.serialize_i64(v as i64)
+        } else {
+            Ok(Yaml::Real(v.to_string()))
+        }
     }
 
     fn serialize_f32(self, v: f32) -> Result<Yaml> {

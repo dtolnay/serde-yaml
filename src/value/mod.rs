@@ -8,7 +8,9 @@
 
 #![deny(unsafe_code, missing_docs)]
 
+use std::f64;
 use std::hash::{Hash, Hasher};
+use std::str::FromStr;
 
 use serde::de::{Deserialize, DeserializeOwned};
 use serde::Serialize;
@@ -554,10 +556,23 @@ impl Value {
 
 fn yaml_to_value(yaml: Yaml) -> Value {
     match yaml {
-        Yaml::Real(f) => match f.parse::<f64>() {
-            Ok(f) => Value::Number(f.into()),
-            Err(_) => Value::String(f),
-        },
+        Yaml::Real(f) => {
+            if f == ".inf" {
+                Value::Number(f64::INFINITY.into())
+            } else if f == "-.inf" {
+                Value::Number(f64::NEG_INFINITY.into())
+            } else if f == ".nan" {
+                Value::Number(f64::NAN.into())
+            } else if let Ok(n) = u64::from_str(&f) {
+                Value::Number(n.into())
+            } else if let Ok(n) = i64::from_str(&f) {
+                Value::Number(n.into())
+            } else if let Ok(n) = f64::from_str(&f) {
+                Value::Number(n.into())
+            } else {
+                Value::String(f)
+            }
+        }
         Yaml::Integer(i) => Value::Number(i.into()),
         Yaml::String(s) => Value::String(s),
         Yaml::Boolean(b) => Value::Bool(b),
