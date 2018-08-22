@@ -21,6 +21,8 @@ use std::collections::BTreeMap;
 use std::f64;
 use std::fmt::Debug;
 
+use serde_yaml::Value;
+
 fn test_serde<T>(thing: &T, yaml: &str)
 where
     T: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug,
@@ -28,10 +30,17 @@ where
     let serialized = serde_yaml::to_string(&thing).unwrap();
     assert_eq!(yaml, serialized);
 
+    let value = serde_yaml::to_value(&thing).unwrap();
+    let serialized = serde_yaml::to_string(&value).unwrap();
+    assert_eq!(yaml, serialized);
+
     let deserialized: T = serde_yaml::from_str(yaml).unwrap();
     assert_eq!(*thing, deserialized);
 
-    serde_yaml::from_str::<serde_yaml::Value>(yaml).unwrap();
+    let value: Value = serde_yaml::from_str(yaml).unwrap();
+    let deserialized: T = serde_yaml::from_value(value).unwrap();
+    assert_eq!(*thing, deserialized);
+
     serde_yaml::from_str::<serde::de::IgnoredAny>(yaml).unwrap();
 }
 
@@ -324,7 +333,7 @@ fn test_struct_variant() {
 
 #[test]
 fn test_value() {
-    use serde_yaml::{Mapping, Number, Value};
+    use serde_yaml::{Mapping, Number};
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct GenericInstructions {
@@ -360,7 +369,7 @@ fn test_value() {
 
 #[test]
 fn test_mapping() {
-    use serde_yaml::{Mapping, Value};
+    use serde_yaml::Mapping;
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct Data {
         pub substructure: Mapping,
