@@ -22,11 +22,13 @@ pub struct Mapping {
 }
 
 impl Mapping {
+    /// Creates an empty YAML map.
     #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Creates an empty YAML map with the given initial capacity.
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Mapping {
@@ -34,61 +36,84 @@ impl Mapping {
         }
     }
 
+    /// Reserves capacity for at least `additional` more elements to be inserted
+    /// into the map. The map may reserve more space to avoid frequent
+    /// allocations.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the new allocation size overflows `usize`.
     #[inline]
     pub fn reserve(&mut self, additional: usize) {
         self.map.reserve(additional)
     }
 
+    /// Shrinks the capacity of the map as much as possible. It will drop down
+    /// as much as possible while maintaining the internal rules and possibly
+    /// leaving some space in accordance with the resize policy.
     #[inline]
     pub fn shrink_to_fit(&mut self) {
         self.map.shrink_to_fit()
     }
 
+    /// Inserts a key-value pair into the map. If the key already existed, the
+    /// old value is returned.
     #[inline]
     pub fn insert(&mut self, k: Value, v: Value) -> Option<Value> {
         self.map.insert(k, v)
     }
 
+    /// Checks if the map contains the given key.
     #[inline]
     pub fn contains_key(&self, k: &Value) -> bool {
         self.map.contains_key(k)
     }
 
+    /// Returns the value corresponding to the key in the map.
     #[inline]
     pub fn get(&self, k: &Value) -> Option<&Value> {
         self.map.get(k)
     }
 
+    /// Returns the mutable reference corresponding to the key in the map.
     #[inline]
     pub fn get_mut(&mut self, k: &Value) -> Option<&mut Value> {
         self.map.get_mut(k)
     }
 
+    /// Removes and returns the value corresponding to the key from the map.
     #[inline]
     pub fn remove(&mut self, k: &Value) -> Option<Value> {
         self.map.remove(k)
     }
 
+    /// Returns the maximum number of key-value pairs the map can hold without
+    /// reallocating.
     #[inline]
     pub fn capacity(&self) -> usize {
         self.map.capacity()
     }
 
+    /// Returns the number of key-value pairs in the map.
     #[inline]
     pub fn len(&self) -> usize {
         self.map.len()
     }
 
+    /// Returns whether the map is currently empty.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.map.is_empty()
     }
 
+    /// Clears the map of all key-value pairs.
     #[inline]
     pub fn clear(&mut self) {
         self.map.clear()
     }
 
+    /// Returns a double-ended iterator visiting all key-value pairs in order of
+    /// insertion. Iterator element type is `(&'a Value, &'a Value)`.
     #[inline]
     pub fn iter(&self) -> Iter {
         Iter {
@@ -96,6 +121,8 @@ impl Mapping {
         }
     }
 
+    /// Returns a double-ended iterator visiting all key-value pairs in order of
+    /// insertion. Iterator element type is `(&'a Value, &'a mut ValuE)`.
     #[inline]
     pub fn iter_mut(&mut self) -> IterMut {
         IterMut {
