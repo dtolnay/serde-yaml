@@ -1,7 +1,6 @@
 use super::Value;
 
 impl PartialEq for Value {
-    #[allow(unsafe_code)]
     fn eq(&self, other: &Value) -> bool {
         match (self, other) {
             (&Value::Null, &Value::Null) => true,

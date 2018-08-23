@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![deny(unsafe_code, missing_docs)]
+#![deny(missing_docs)]
 
 use std::f64;
 use std::hash::{Hash, Hasher};
