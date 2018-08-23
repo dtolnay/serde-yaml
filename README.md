@@ -6,9 +6,14 @@ Serde YAML
 [![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://docs.rs/serde_yaml)
 
 This crate is a Rust library for using the [Serde](https://github.com/serde-rs/serde)
-serialization framework with data in [YAML](http://yaml.org) file format. This
-library does not reimplement a YAML parser; it uses [yaml-rust](https://github.com/chyh1990/yaml-rust)
-which is a pure Rust YAML 1.2 implementation.
+serialization framework with data in [YAML](http://yaml.org) file format.
+
+This library does not reimplement a YAML parser; it uses
+[yaml-rust](https://github.com/chyh1990/yaml-rust) which is a pure Rust YAML 1.2
+implementation. Be aware that yaml-rust bears the following scary disclaimer:
+
+> *This library is NOT ready for parsing arbitrary user input from untrusted
+> source.*
 
 ## Dependency
 
