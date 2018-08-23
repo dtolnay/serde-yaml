@@ -12,6 +12,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Debug, Display};
 use std::hash::{Hash, Hasher};
 use std::i64;
+use std::mem;
 
 /// Represents a YAML number, whether integer or floating point.
 #[derive(Clone, PartialEq, PartialOrd)]
@@ -22,7 +23,7 @@ pub struct Number {
 // "N" is a prefix of "NegInt"... this is a false positive.
 // https://github.com/Manishearth/rust-clippy/issues/1241
 #[cfg_attr(feature = "cargo-clippy", allow(enum_variant_names))]
-#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Debug, PartialOrd)]
 enum N {
     PosInt(u64),
     /// Always less than zero.
@@ -343,6 +344,28 @@ impl fmt::Display for Number {
 impl Debug for Number {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         Debug::fmt(&self.n, formatter)
+    }
+}
+
+impl PartialEq for N {
+    fn eq(&self, other: &N) -> bool {
+        match (*self, *other) {
+            (N::PosInt(a), N::PosInt(b)) => a == b,
+            (N::NegInt(a), N::NegInt(b)) => a == b,
+            (N::Float(a), N::Float(b)) => {
+                if a.is_nan() && b.is_nan() {
+                    // Compare NaN for bitwise equality.
+                    // The unsafe code is equivalent to f64::to_bits which was
+                    // stabilized in 1.20.0.
+                    let a = unsafe { mem::transmute::<f64, u64>(a) };
+                    let b = unsafe { mem::transmute::<f64, u64>(b) };
+                    a == b
+                } else {
+                    a == b
+                }
+            }
+            _ => false,
+        }
     }
 }
 
