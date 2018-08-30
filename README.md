@@ -1,16 +1,24 @@
 Serde YAML
 ==========
 
-[![Build Status](https://api.travis-ci.org/dtolnay/serde-yaml.svg?branch=master)](https://travis-ci.org/dtolnay/serde-yaml)
-[![Latest Version](https://img.shields.io/crates/v/serde_yaml.svg)](https://crates.io/crates/serde_yaml)
-[![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://docs.rs/serde_yaml)
+[![Build Status](https://api.travis-ci.org/dtolnay/serde-yaml.svg?branch=master)][travis]
+[![Latest Version](https://img.shields.io/crates/v/serde_yaml.svg)][crates.io]
+[![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)][docs.rs]
 
-This crate is a Rust library for using the [Serde](https://github.com/serde-rs/serde)
-serialization framework with data in [YAML](http://yaml.org) file format.
+[travis]: https://travis-ci.org/dtolnay/serde-yaml
+[crates.io]: https://crates.io/crates/serde_yaml
+[docs.rs]: https://docs.rs/serde_yaml
 
-This library does not reimplement a YAML parser; it uses
-[yaml-rust](https://github.com/chyh1990/yaml-rust) which is a pure Rust YAML 1.2
-implementation.
+This crate is a Rust library for using the [Serde] serialization framework with
+data in [YAML] file format.
+
+[Serde]: https://github.com/serde-rs/serde
+[YAML]: http://yaml.org
+
+This library does not reimplement a YAML parser; it uses [yaml-rust] which is a
+pure Rust YAML 1.2 implementation.
+
+[yaml-rust]: https://github.com/chyh1990/yaml-rust
 
 ## Dependency
 
@@ -20,12 +28,14 @@ serde = "1.0"
 serde_yaml = "0.8"
 ```
 
-Release notes are available under [GitHub releases](https://github.com/dtolnay/serde-yaml/releases).
+Release notes are available under [GitHub releases].
+
+[GitHub releases]: https://github.com/dtolnay/serde-yaml/releases
 
 ## Using Serde YAML
 
-[API documentation is available in rustdoc form](https://docs.rs/serde_yaml) but
-the general idea is:
+[API documentation is available in rustdoc form][docs.rs] but the general idea
+is:
 
 ```rust
 extern crate serde_yaml;
