@@ -10,11 +10,7 @@
 //! with data in [YAML] file format.
 //!
 //! This library does not reimplement a YAML parser; it uses [yaml-rust] which
-//! is a pure Rust YAML 1.2 implementation. Be aware that yaml-rust bears the
-//! following scary disclaimer:
-//!
-//! > *This library is NOT ready for parsing arbitrary user input from untrusted
-//! > source.*
+//! is a pure Rust YAML 1.2 implementation.
 //!
 //! [Serde]: https://github.com/serde-rs/serde
 //! [YAML]: http://yaml.org
