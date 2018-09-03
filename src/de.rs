@@ -557,12 +557,14 @@ where
 }
 
 fn invalid_type(event: &Event, exp: &Expected) -> Error {
+    enum Void {}
+
     struct InvalidType<'a> {
         exp: &'a Expected,
     }
 
     impl<'de, 'a> Visitor<'de> for InvalidType<'a> {
-        type Value = Error;
+        type Value = Void;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
             self.exp.fmt(formatter)
@@ -573,7 +575,10 @@ fn invalid_type(event: &Event, exp: &Expected) -> Error {
         Event::Alias(_) => unreachable!(),
         Event::Scalar(ref v, style, ref tag) => {
             let get_type = InvalidType { exp: exp };
-            visit_scalar(v, style, tag, get_type).unwrap()
+            match visit_scalar(v, style, tag, get_type) {
+                Ok(void) => match void {},
+                Err(invalid_type) => invalid_type,
+            }
         }
         Event::SequenceStart => de::Error::invalid_type(Unexpected::Seq, exp),
         Event::MappingStart => de::Error::invalid_type(Unexpected::Map, exp),
