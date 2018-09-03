@@ -1,6 +1,6 @@
 [package]
 name = "serde_yaml"
-version = "0.8.2"
+version = "0.8.3"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
 license = "MIT/Apache-2.0"
 description = "YAML support for Serde"
