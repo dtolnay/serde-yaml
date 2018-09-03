@@ -245,3 +245,15 @@ fn test_no_location() {
 
     assert_eq!(utf8_location.is_none(), true);
 }
+
+#[test]
+fn test_invalid_scalar_type() {
+    #[derive(Deserialize, Debug)]
+    struct S {
+        x: [(); 1],
+    }
+
+    let yaml = "x:\n";
+    let expected = "x: invalid type: unit value, expected an array of length 1 at line 2 column 1";
+    test_error::<S>(yaml, expected);
+}
