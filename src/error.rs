@@ -19,6 +19,7 @@ use yaml_rust::scanner::{self, Marker, ScanError};
 use serde::{de, ser};
 
 use path::Path;
+use private;
 
 /// This type represents all possible errors that can occur when serializing or
 /// deserializing YAML data.
@@ -115,65 +116,49 @@ impl Error {
             _ => None,
         }
     }
+}
 
-    // Not public API. Should be pub(crate).
-    #[doc(hidden)]
-    pub fn end_of_stream() -> Self {
+impl private {
+    pub fn error_end_of_stream() -> Error {
         Error(Box::new(ErrorImpl::EndOfStream))
     }
 
-    // Not public API. Should be pub(crate).
-    #[doc(hidden)]
-    pub fn more_than_one_document() -> Self {
+    pub fn error_more_than_one_document() -> Error {
         Error(Box::new(ErrorImpl::MoreThanOneDocument))
     }
 
-    // Not public API. Should be pub(crate).
-    #[doc(hidden)]
-    pub fn io(err: io::Error) -> Error {
+    pub fn error_io(err: io::Error) -> Error {
         Error(Box::new(ErrorImpl::Io(err)))
     }
 
-    // Not public API. Should be pub(crate).
-    #[doc(hidden)]
-    pub fn emitter(err: emitter::EmitError) -> Error {
+    pub fn error_emitter(err: emitter::EmitError) -> Error {
         Error(Box::new(ErrorImpl::Emit(err)))
     }
 
-    // Not public API. Should be pub(crate).
-    #[doc(hidden)]
-    pub fn scanner(err: scanner::ScanError) -> Error {
+    pub fn error_scanner(err: scanner::ScanError) -> Error {
         Error(Box::new(ErrorImpl::Scan(err)))
     }
 
-    // Not public API. Should be pub(crate).
-    #[doc(hidden)]
-    pub fn str_utf8(err: str::Utf8Error) -> Error {
+    pub fn error_str_utf8(err: str::Utf8Error) -> Error {
         Error(Box::new(ErrorImpl::Utf8(err)))
     }
 
-    // Not public API. Should be pub(crate).
-    #[doc(hidden)]
-    pub fn string_utf8(err: string::FromUtf8Error) -> Error {
+    pub fn error_string_utf8(err: string::FromUtf8Error) -> Error {
         Error(Box::new(ErrorImpl::FromUtf8(err)))
     }
 
-    // Not public API. Should be pub(crate).
-    #[doc(hidden)]
-    pub fn recursion_limit_exceeded() -> Error {
+    pub fn error_recursion_limit_exceeded() -> Error {
         Error(Box::new(ErrorImpl::RecursionLimitExceeded))
     }
 
-    // Not public API. Should be pub(crate).
-    #[doc(hidden)]
-    pub fn fix_marker(mut self, marker: Marker, path: Path) -> Self {
-        if let ErrorImpl::Message(_, ref mut none @ None) = *self.0.as_mut() {
+    pub fn fix_marker(mut error: Error, marker: Marker, path: Path) -> Error {
+        if let ErrorImpl::Message(_, ref mut none @ None) = *error.0.as_mut() {
             *none = Some(Pos {
                 marker: marker,
                 path: path.to_string(),
             });
         }
-        self
+        error
     }
 }
 

@@ -27,6 +27,7 @@ use serde::de::{
 
 use error::{Error, Result};
 use path::Path;
+use private;
 
 pub struct Loader {
     events: Vec<(Event, Marker)>,
@@ -86,12 +87,12 @@ impl<'a> Deserializer<'a> {
     fn peek(&self) -> Result<(&'a Event, Marker)> {
         match self.events.get(*self.pos) {
             Some(event) => Ok((&event.0, event.1)),
-            None => Err(Error::end_of_stream()),
+            None => Err(private::error_end_of_stream()),
         }
     }
 
     fn next(&mut self) -> Result<(&'a Event, Marker)> {
-        self.opt_next().ok_or_else(Error::end_of_stream)
+        self.opt_next().ok_or_else(private::error_end_of_stream)
     }
 
     fn opt_next(&mut self) -> Option<(&'a Event, Marker)> {
@@ -245,7 +246,7 @@ impl<'a> Deserializer<'a> {
         let previous_depth = self.remaining_depth;
         self.remaining_depth = previous_depth
             .checked_sub(1)
-            .ok_or_else(Error::recursion_limit_exceeded)?;
+            .ok_or_else(private::error_recursion_limit_exceeded)?;
         let result = f(self);
         self.remaining_depth = previous_depth;
         result
@@ -612,7 +613,7 @@ impl<'a> Deserializer<'a> {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_scalar(visitor),
             Event::Scalar(ref v, style, ref tag) => visit_scalar(v, style, tag, visitor),
             ref other => Err(invalid_type(other, &visitor)),
-        }.map_err(|err| err.fix_marker(marker, self.path))
+        }.map_err(|err| private::fix_marker(err, marker, self.path))
     }
 }
 
@@ -636,7 +637,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
         }
         // The de::Error impl creates errors with unknown line and column. Fill
         // in the position here by looking at the current index in the input.
-            .map_err(|err| err.fix_marker(marker, self.path))
+            .map_err(|err| private::fix_marker(err, marker, self.path))
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
@@ -732,7 +733,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
             Event::Scalar(ref v, _, _) => visitor.visit_str(v),
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_str(visitor),
             ref other => Err(invalid_type(other, &visitor)),
-        }.map_err(|err: Error| err.fix_marker(marker, self.path))
+        }.map_err(|err: Error| private::fix_marker(err, marker, self.path))
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
@@ -826,7 +827,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_seq(visitor),
             Event::SequenceStart => self.visit_sequence(visitor),
             ref other => Err(invalid_type(other, &visitor)),
-        }.map_err(|err| err.fix_marker(marker, self.path))
+        }.map_err(|err| private::fix_marker(err, marker, self.path))
     }
 
     fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
@@ -857,7 +858,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_map(visitor),
             Event::MappingStart => self.visit_mapping(visitor),
             ref other => Err(invalid_type(other, &visitor)),
-        }.map_err(|err| err.fix_marker(marker, self.path))
+        }.map_err(|err| private::fix_marker(err, marker, self.path))
     }
 
     fn deserialize_struct<V>(
@@ -877,7 +878,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
             Event::SequenceStart => self.visit_sequence(visitor),
             Event::MappingStart => self.visit_mapping(visitor),
             ref other => Err(invalid_type(other, &visitor)),
-        }.map_err(|err| err.fix_marker(marker, self.path))
+        }.map_err(|err| private::fix_marker(err, marker, self.path))
     }
 
     /// Parses an enum as a single key:value pair where the key identifies the
@@ -911,7 +912,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
             }
             Event::SequenceStart => {
                 let err = de::Error::invalid_type(Unexpected::Seq, &"string or singleton map");
-                Err(Error::fix_marker(err, marker, self.path))
+                Err(private::fix_marker(err, marker, self.path))
             }
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
@@ -954,9 +955,9 @@ where
         events: Vec::new(),
         aliases: BTreeMap::new(),
     };
-    parser.load(&mut loader, true).map_err(Error::scanner)?;
+    parser.load(&mut loader, true).map_err(private::error_scanner)?;
     if loader.events.is_empty() {
-        Err(Error::end_of_stream())
+        Err(private::error_end_of_stream())
     } else {
         let mut pos = 0;
         let t = Deserialize::deserialize(&mut Deserializer {
@@ -969,7 +970,7 @@ where
         if pos == loader.events.len() {
             Ok(t)
         } else {
-            Err(Error::more_than_one_document())
+            Err(private::error_more_than_one_document())
         }
     }
 }
@@ -989,8 +990,8 @@ where
     T: DeserializeOwned,
 {
     let mut bytes = Vec::new();
-    rdr.read_to_end(&mut bytes).map_err(Error::io)?;
-    let s = str::from_utf8(&bytes).map_err(Error::str_utf8)?;
+    rdr.read_to_end(&mut bytes).map_err(private::error_io)?;
+    let s = str::from_utf8(&bytes).map_err(private::error_str_utf8)?;
     from_str(s)
 }
 
@@ -1009,6 +1010,6 @@ pub fn from_slice<T>(v: &[u8]) -> Result<T>
 where
     T: DeserializeOwned,
 {
-    let s = str::from_utf8(v).map_err(Error::str_utf8)?;
+    let s = str::from_utf8(v).map_err(private::error_str_utf8)?;
     from_str(s)
 }

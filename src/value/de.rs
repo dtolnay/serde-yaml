@@ -6,7 +6,7 @@ use serde::de::{
     MapAccess, SeqAccess, Unexpected, VariantAccess, Visitor,
 };
 
-use {Error, Mapping, Sequence, Value};
+use {private, Error, Mapping, Sequence, Value};
 
 impl<'de> Deserialize<'de> for Value {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -688,7 +688,7 @@ impl Value {
         match *self {
             Value::Null => Unexpected::Unit,
             Value::Bool(b) => Unexpected::Bool(b),
-            Value::Number(ref n) => n.unexpected(),
+            Value::Number(ref n) => private::number_unexpected(n),
             Value::String(ref s) => Unexpected::Str(s),
             Value::Sequence(_) => Unexpected::Seq,
             Value::Mapping(_) => Unexpected::Map,

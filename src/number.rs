@@ -14,6 +14,8 @@ use std::hash::{Hash, Hasher};
 use std::i64;
 use std::mem;
 
+use private;
+
 /// Represents a YAML number, whether integer or floating point.
 #[derive(Clone, PartialEq, PartialOrd)]
 pub struct Number {
@@ -526,11 +528,9 @@ impl Hash for Number {
     }
 }
 
-impl Number {
-    // Not public API. Should be pub(crate).
-    #[doc(hidden)]
-    pub fn unexpected(&self) -> Unexpected {
-        match self.n {
+impl private {
+    pub fn number_unexpected(number: &Number) -> Unexpected {
+        match number.n {
             N::PosInt(u) => Unexpected::Unsigned(u),
             N::NegInt(i) => Unexpected::Signed(i),
             N::Float(f) => Unexpected::Float(f),
