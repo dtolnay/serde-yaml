@@ -1,16 +1,20 @@
-sudo: false
 language: rust
-cache: cargo
-
-rust:
-  - stable
-  - beta
-  - nightly
-  - 1.17.0
 
 matrix:
   include:
+    - rust: stable
+    - rust: beta
     - rust: nightly
-      env: CLIPPY=true
+    - rust: 1.17.0
+      script: cargo check
+    - rust: 1.21.0
+    - rust: nightly
+      env: CLIPPY
+      script: |
+          if rustup component add clippy-preview; then
+              cargo clippy -- -Dclippy
+          fi
 
-script: ./travis.sh
+script:
+  - cargo build
+  - cargo test
