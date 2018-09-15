@@ -79,6 +79,7 @@ struct Deserializer<'a> {
     aliases: &'a BTreeMap<usize, usize>,
     pos: &'a mut usize,
     path: Path<'a>,
+    remaining_depth: u8,
 }
 
 impl<'a> Deserializer<'a> {
@@ -109,6 +110,7 @@ impl<'a> Deserializer<'a> {
                     aliases: self.aliases,
                     pos: pos,
                     path: Path::Alias { parent: &self.path },
+                    remaining_depth: self.remaining_depth,
                 })
             }
             None => panic!("unresolved alias: {}", *pos),
@@ -161,11 +163,11 @@ impl<'a> Deserializer<'a> {
     where
         V: Visitor<'de>,
     {
-        let (value, len) = {
-            let mut seq = SeqAccess { de: self, len: 0 };
+        let (value, len) = self.recursion_check(|de| {
+            let mut seq = SeqAccess { de: de, len: 0 };
             let value = visitor.visit_seq(&mut seq)?;
-            (value, seq.len)
-        };
+            Ok((value, seq.len))
+        })?;
         self.end_sequence(len)?;
         Ok(value)
     }
@@ -174,15 +176,15 @@ impl<'a> Deserializer<'a> {
     where
         V: Visitor<'de>,
     {
-        let (value, len) = {
+        let (value, len) = self.recursion_check(|de| {
             let mut map = MapAccess {
-                de: &mut *self,
+                de: de,
                 len: 0,
                 key: None,
             };
             let value = visitor.visit_map(&mut map)?;
-            (value, map.len)
-        };
+            Ok((value, map.len))
+        })?;
         self.end_mapping(len)?;
         Ok(value)
     }
@@ -237,6 +239,16 @@ impl<'a> Deserializer<'a> {
             }
             Err(de::Error::invalid_length(total, &ExpectedMap(len)))
         }
+    }
+
+    fn recursion_check<F: FnOnce(&mut Self) -> Result<T>, T>(&mut self, f: F) -> Result<T> {
+        let previous_depth = self.remaining_depth;
+        self.remaining_depth = previous_depth
+            .checked_sub(1)
+            .ok_or_else(Error::recursion_limit_exceeded)?;
+        let result = f(self);
+        self.remaining_depth = previous_depth;
+        result
     }
 }
 
@@ -303,6 +315,7 @@ impl<'de, 'a, 'r> de::SeqAccess<'de> for SeqAccess<'a, 'r> {
                         parent: &self.de.path,
                         index: self.len,
                     },
+                    remaining_depth: self.de.remaining_depth,
                 };
                 self.len += 1;
                 seed.deserialize(&mut element_de).map(Some)
@@ -357,6 +370,7 @@ impl<'de, 'a, 'r> de::MapAccess<'de> for MapAccess<'a, 'r> {
                     parent: &self.de.path,
                 }
             },
+            remaining_depth: self.de.remaining_depth,
         };
         seed.deserialize(&mut value_de)
     }
@@ -409,6 +423,7 @@ impl<'de, 'a, 'r> de::EnumAccess<'de> for EnumAccess<'a, 'r> {
                 parent: &self.de.path,
                 key: variant,
             },
+            remaining_depth: self.de.remaining_depth,
         };
         Ok((ret, variant_visitor))
     }
@@ -949,6 +964,7 @@ where
             aliases: &loader.aliases,
             pos: &mut pos,
             path: Path::Root,
+            remaining_depth: 128,
         })?;
         if pos == loader.events.len() {
             Ok(t)

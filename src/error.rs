@@ -41,6 +41,7 @@ pub enum ErrorImpl {
 
     EndOfStream,
     MoreThanOneDocument,
+    RecursionLimitExceeded,
 }
 
 #[derive(Debug)]
@@ -159,6 +160,12 @@ impl Error {
 
     // Not public API. Should be pub(crate).
     #[doc(hidden)]
+    pub fn recursion_limit_exceeded() -> Error {
+        Error(Box::new(ErrorImpl::RecursionLimitExceeded))
+    }
+
+    // Not public API. Should be pub(crate).
+    #[doc(hidden)]
     pub fn fix_marker(mut self, marker: Marker, path: Path) -> Self {
         if let ErrorImpl::Message(_, ref mut none @ None) = *self.0.as_mut() {
             *none = Some(Pos {
@@ -183,6 +190,7 @@ impl error::Error for Error {
             ErrorImpl::MoreThanOneDocument => {
                 "deserializing from YAML containing more than one document is not supported"
             }
+            ErrorImpl::RecursionLimitExceeded => "recursion limit exceeded",
         }
     }
 
@@ -218,6 +226,7 @@ impl Display for Error {
             ErrorImpl::MoreThanOneDocument => f.write_str(
                 "deserializing from YAML containing more than one document is not supported",
             ),
+            ErrorImpl::RecursionLimitExceeded => f.write_str("recursion limit exceeded"),
         }
     }
 }
@@ -241,6 +250,9 @@ impl Debug for Error {
             }
             ErrorImpl::EndOfStream => formatter.debug_tuple("EndOfStream").finish(),
             ErrorImpl::MoreThanOneDocument => formatter.debug_tuple("MoreThanOneDocument").finish(),
+            ErrorImpl::RecursionLimitExceeded => {
+                formatter.debug_tuple("RecursionLimitExceeded").finish()
+            }
         }
     }
 }

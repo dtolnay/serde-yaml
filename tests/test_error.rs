@@ -257,3 +257,51 @@ fn test_invalid_scalar_type() {
     let expected = "x: invalid type: unit value, expected an array of length 1 at line 2 column 1";
     test_error::<S>(yaml, expected);
 }
+
+#[test]
+fn test_infinite_recursion_objects() {
+    #[derive(Deserialize, Debug)]
+    struct S {
+        x: Option<Box<S>>,
+    }
+
+    let yaml = "&a {x: *a}";
+    let expected = "recursion limit exceeded";
+    test_error::<S>(yaml, expected);
+}
+
+#[test]
+fn test_infinite_recursion_arrays() {
+    #[derive(Deserialize, Debug)]
+    struct S {
+        x: Option<Box<S>>,
+    }
+
+    let yaml = "&a [*a]";
+    let expected = "recursion limit exceeded";
+    test_error::<S>(yaml, expected);
+}
+
+#[test]
+fn test_finite_recursion_objects() {
+    #[derive(Deserialize, Debug)]
+    struct S {
+        x: Option<Box<S>>,
+    }
+
+    let yaml = "{x:".repeat(1_000) + &"}".repeat(1_000);
+    let expected = "recursion limit exceeded";
+    test_error::<i32>(&yaml, expected);
+}
+
+#[test]
+fn test_finite_recursion_arrays() {
+    #[derive(Deserialize, Debug)]
+    struct S {
+        x: Option<Box<S>>,
+    }
+
+    let yaml = "[".repeat(1_000) + &"]".repeat(1_000);
+    let expected = "recursion limit exceeded";
+    test_error::<S>(&yaml, expected);
+}
