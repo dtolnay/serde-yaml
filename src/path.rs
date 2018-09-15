@@ -27,12 +27,8 @@ impl<'a> Display for Path<'a> {
             Path::Root => formatter.write_str("."),
             Path::Seq { parent, index } => write!(formatter, "{}[{}]", parent, index),
             Path::Map { parent, key } => write!(formatter, "{}{}", Parent(parent), key),
-            Path::Alias { parent } => {
-                write!(formatter, "{}", parent)
-            }
-            Path::Unknown { parent } => {
-                write!(formatter, "{}?", Parent(parent))
-            }
+            Path::Alias { parent } => write!(formatter, "{}", parent),
+            Path::Unknown { parent } => write!(formatter, "{}?", Parent(parent)),
         }
     }
 }

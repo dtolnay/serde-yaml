@@ -16,8 +16,8 @@ use yaml_rust::{yaml, Yaml, YamlEmitter};
 
 use serde::ser;
 
-use private;
 use super::error::{Error, Result};
+use private;
 
 pub struct Serializer;
 

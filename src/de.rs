@@ -626,9 +626,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
     {
         let (next, marker) = self.next()?;
         match *next {
-            Event::Alias(mut pos) => {
-                self.jump(&mut pos)?.deserialize_any(visitor)
-            }
+            Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_any(visitor),
             Event::Scalar(ref v, style, ref tag) => visit_scalar(v, style, tag, visitor),
             Event::SequenceStart => self.visit_sequence(visitor),
             Event::MappingStart => self.visit_mapping(visitor),
@@ -637,7 +635,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
         }
         // The de::Error impl creates errors with unknown line and column. Fill
         // in the position here by looking at the current index in the input.
-            .map_err(|err| private::fix_marker(err, marker, self.path))
+        .map_err(|err| private::fix_marker(err, marker, self.path))
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
@@ -955,7 +953,9 @@ where
         events: Vec::new(),
         aliases: BTreeMap::new(),
     };
-    parser.load(&mut loader, true).map_err(private::error_scanner)?;
+    parser
+        .load(&mut loader, true)
+        .map_err(private::error_scanner)?;
     if loader.events.is_empty() {
         Err(private::error_end_of_stream())
     } else {
