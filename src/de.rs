@@ -542,6 +542,14 @@ where
             return visitor.visit_i64(n);
         }
     }
+    if v.starts_with("0b") {
+        if let Ok(n) = u64::from_str_radix(&v[2..], 2) {
+            return visitor.visit_u64(n);
+        }
+        if let Ok(n) = i64::from_str_radix(&v[2..], 2) {
+            return visitor.visit_i64(n);
+        }
+    }
     if v.starts_with('+') {
         if let Ok(n) = v.parse() {
             return visitor.visit_u64(n);
