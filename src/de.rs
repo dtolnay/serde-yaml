@@ -526,35 +526,39 @@ where
     if v == "false" {
         return visitor.visit_bool(false);
     }
-    if v.starts_with("0x") {
-        if let Ok(n) = u64::from_str_radix(&v[2..], 16) {
+    if v.starts_with("0x") || v.starts_with("+0x") {
+        let start = 2 + v.starts_with('+') as usize;
+        if let Ok(n) = u64::from_str_radix(&v[start..], 16) {
             return visitor.visit_u64(n);
         }
-        if let Ok(n) = i64::from_str_radix(&v[2..], 16) {
+    }
+    if v.starts_with("-0x") {
+        let negative = format!("-{}", &v[3..]);
+        if let Ok(n) = i64::from_str_radix(&negative, 16) {
             return visitor.visit_i64(n);
         }
     }
-    if v.starts_with("0o") {
-        if let Ok(n) = u64::from_str_radix(&v[2..], 8) {
+    if v.starts_with("0o") || v.starts_with("+0o") {
+        let start = 2 + v.starts_with('+') as usize;
+        if let Ok(n) = u64::from_str_radix(&v[start..], 8) {
             return visitor.visit_u64(n);
         }
-        if let Ok(n) = i64::from_str_radix(&v[2..], 8) {
+    }
+    if v.starts_with("-0o") {
+        let negative = format!("-{}", &v[3..]);
+        if let Ok(n) = i64::from_str_radix(&negative, 8) {
             return visitor.visit_i64(n);
         }
     }
-    if v.starts_with("0b") {
-        if let Ok(n) = u64::from_str_radix(&v[2..], 2) {
+    if v.starts_with("0b") || v.starts_with("+0b") {
+        let start = 2 + v.starts_with('+') as usize;
+        if let Ok(n) = u64::from_str_radix(&v[start..], 2) {
             return visitor.visit_u64(n);
-        }
-        if let Ok(n) = i64::from_str_radix(&v[2..], 2) {
-            return visitor.visit_i64(n);
         }
     }
-    if v.starts_with('+') {
-        if let Ok(n) = v.parse() {
-            return visitor.visit_u64(n);
-        }
-        if let Ok(n) = v[1..].parse() {
+    if v.starts_with("-0b") {
+        let negative = format!("-{}", &v[3..]);
+        if let Ok(n) = i64::from_str_radix(&negative, 2) {
             return visitor.visit_i64(n);
         }
     }

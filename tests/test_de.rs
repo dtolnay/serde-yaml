@@ -18,6 +18,8 @@ use unindent::unindent;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
+use serde_yaml::Value;
+
 fn test_de<T>(yaml: &str, expected: &T)
 where
     T: serde::de::DeserializeOwned + PartialEq + Debug,
@@ -270,4 +272,39 @@ fn test_bomb() {
     };
 
     assert_eq!(expected, serde_yaml::from_str::<Data>(&yaml).unwrap());
+}
+
+#[test]
+fn test_numbers() {
+    let cases = [
+        ("0xF0", "240"),
+        ("+0xF0", "240"),
+        ("-0xF0", "-240"),
+        ("0o70", "56"),
+        ("+0o70", "56"),
+        ("-0o70", "-56"),
+        ("0b10", "2"),
+        ("+0b10", "2"),
+        ("-0b10", "-2"),
+        ("127", "127"),
+        ("+127", "127"),
+        ("-127", "-127"),
+        (".inf", ".inf"),
+        (".Inf", ".inf"),
+        (".INF", ".inf"),
+        ("-.inf", "-.inf"),
+        ("-.Inf", "-.inf"),
+        ("-.INF", "-.inf"),
+        (".nan", ".nan"),
+        (".NaN", ".nan"),
+        (".NAN", ".nan"),
+        ("0.1", "0.1"),
+    ];
+    for (yaml, expected) in &cases {
+        let value = serde_yaml::from_str::<Value>(yaml).unwrap();
+        match value {
+            Value::Number(number) => assert_eq!(number.to_string(), **expected),
+            _ => panic!("expected number"),
+        }
+    }
 }
