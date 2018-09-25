@@ -300,10 +300,10 @@ fn test_numbers() {
         (".NAN", ".nan"),
         ("0.1", "0.1"),
     ];
-    for (yaml, expected) in &cases {
+    for &(yaml, expected) in &cases {
         let value = serde_yaml::from_str::<Value>(yaml).unwrap();
         match value {
-            Value::Number(number) => assert_eq!(number.to_string(), **expected),
+            Value::Number(number) => assert_eq!(number.to_string(), expected),
             _ => panic!("expected number"),
         }
     }
