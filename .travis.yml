@@ -21,4 +21,4 @@ matrix:
 script:
   - cargo build
   - cargo test
-  - caro test --features "i128"
+  - cargo test --features "i128"
