@@ -35,7 +35,7 @@ enum N {
     NegInt(i64),
     /// May be infinite or NaN.
     Float(f64),
-    /// Always greater than u64::MAX
+    /// Always greater than u64::max_value()
     #[cfg(integer128)]
     PosInt128(u128),
     /// Always less than i64::MIN
@@ -130,11 +130,9 @@ impl Number {
     #[inline]
     pub fn is_i128(&self) -> bool {
         match self.n {
-            N::PosInt(_) => true,
-            N::NegInt(_) => true,
+            N::PosInt(_) | N::NegInt(_) | N::NegInt128(_) => true,
             N::Float(_) => false,
             N::PosInt128(v) => v <= i128::max_value() as u128,
-            N::NegInt128(_) => true,
         }
     }
 
@@ -274,6 +272,7 @@ impl Number {
     /// # }
     /// ```
     #[inline]
+    #[cfg_attr(feature = "cargo-clippy", allow(cast_possible_truncation))]
     pub fn as_i64(&self) -> Option<i64> {
         match self.n {
             N::PosInt(n) => if n <= i64::max_value() as u64 {
@@ -369,11 +368,12 @@ impl Number {
     /// # }
     /// ```
     #[inline]
+    #[cfg_attr(feature = "cargo-clippy", allow(cast_possible_truncation))]
     pub fn as_u64(&self) -> Option<u64> {
         match self.n {
             N::PosInt(n) => Some(n),
             #[cfg(integer128)]
-            N::PosInt128(n) if n <= u64::MAX as u128 => Some(n as u64),
+            N::PosInt128(n) if n <= u64::max_value() as u128 => Some(n as u64),
             _ => None,
         }
     }
@@ -723,13 +723,14 @@ macro_rules! from_signed {
             impl From<$signed_ty> for Number {
                 #[inline]
                 #[cfg_attr(feature = "cargo-clippy", allow(cast_sign_loss))]
+                #[cfg_attr(feature = "cargo-clippy", allow(cast_possible_truncation))]
                 #[cfg(integer128)]
                 fn from(i: $signed_ty) -> Self {
-                    if i < 0 && i as i128 >= i64::MIN as i128 {
+                    if i < 0 && i as i128 >= i64::min_value() as i128 {
                         Number { n: N::NegInt(i as i64) }
                     } else if i < 0 {
                         Number { n: N::NegInt128(i as i128) }
-                    } else if i as u128 <= u64::MAX as u128 {
+                    } else if i as u128 <= u64::max_value() as u128 {
                         Number { n: N::PosInt(i as u64) }
                     } else {
                         Number { n: N::PosInt128(i as u128) }
@@ -754,8 +755,9 @@ macro_rules! from_unsigned {
             impl From<$unsigned_ty> for Number {
                 #[inline]
                 #[cfg(integer128)]
+                #[cfg_attr(feature = "cargo-clippy", allow(cast_possible_truncation))]
                 fn from(u: $unsigned_ty) -> Self {
-                    if u as u128 > u64::MAX as u128 {
+                    if u as u128 > u64::max_value() as u128 {
                         Number { n: N::PosInt128(u as u128) }
                     } else {
                         Number { n: N::PosInt(u as u64) }
