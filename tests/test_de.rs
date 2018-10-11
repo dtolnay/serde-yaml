@@ -169,10 +169,11 @@ fn test_number_as_string() {
     let yaml = unindent(
         "
         ---
-        value: 123456789012345678901234567890",
+        # Cannot be represented as u128
+        value: 340282366920938463463374607431768211457",
     );
     let expected = Num {
-        value: "123456789012345678901234567890".to_owned(),
+        value: "340282366920938463463374607431768211457".to_owned(),
     };
     test_de(&yaml, &expected);
 }

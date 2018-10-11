@@ -10,15 +10,19 @@ readme = "README.md"
 keywords = ["yaml", "serde"]
 
 [dependencies]
+cfg-if = "0.1"
 dtoa = "0.4"
 linked-hash-map = "0.5"
-serde = "1.0"
+serde = "1.0.60"
 yaml-rust = "0.4"
 
 [dev-dependencies]
 serde_derive = "1.0"
 unindent = "0.1"
 version-sync = "0.5"
+
+[features]
+i128 = []
 
 [badges]
 travis-ci = { repository = "dtolnay/serde-yaml" }

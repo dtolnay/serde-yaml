@@ -8,6 +8,9 @@ matrix:
     - rust: 1.17.0
       script: cargo check
     - rust: 1.21.0
+      script:
+        - cargo build
+        - cargo test
     - rust: nightly
       env: CLIPPY
       script: |
@@ -18,3 +21,4 @@ matrix:
 script:
   - cargo build
   - cargo test
+  - caro test --features "i128"

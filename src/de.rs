@@ -565,8 +565,18 @@ where
     if let Ok(n) = v.parse() {
         return visitor.visit_u64(n);
     }
+    serde_if_integer128! {
+        if let Ok(n) = v.parse() {
+            return visitor.visit_u128(n);
+        }
+    }
     if let Ok(n) = v.parse() {
         return visitor.visit_i64(n);
+    }
+    serde_if_integer128! {
+        if let Ok(n) = v.parse() {
+            return visitor.visit_i128(n);
+        }
     }
     match v.trim_left_matches('+') {
         ".inf" | ".Inf" | ".INF" => return visitor.visit_f64(f64::INFINITY),
@@ -685,6 +695,23 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
         self.deserialize_scalar(visitor)
     }
 
+    serde_if_integer128! {
+        #[cfg(feature = "i128")]
+        fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value>
+        where
+            V: Visitor<'de>,
+        {
+            self.deserialize_scalar(visitor)
+        }
+        #[cfg(not(feature = "i128"))]
+        fn deserialize_i128<V>(self, _visitor: V) -> Result<V::Value>
+        where
+            V: Visitor<'de>,
+        {
+            Err(de::Error::custom("i128 is not supported.  Enable the `i128` feature of `serde-yaml`"))
+        }
+    }
+
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -711,6 +738,23 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
         V: Visitor<'de>,
     {
         self.deserialize_scalar(visitor)
+    }
+
+    serde_if_integer128! {
+        #[cfg(feature = "i128")]
+        fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value>
+        where
+            V: Visitor<'de>,
+        {
+            self.deserialize_scalar(visitor)
+        }
+        #[cfg(not(feature = "i128"))]
+        fn deserialize_u128<V>(self, _visitor: V) -> Result<V::Value>
+        where
+            V: Visitor<'de>,
+        {
+            Err(de::Error::custom("u128 is not supported.  Enable the `i128` feature of `serde-yaml`"))
+        }
     }
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>

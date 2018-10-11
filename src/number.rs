@@ -8,10 +8,13 @@
 
 use error::Error;
 use serde::de::{Unexpected, Visitor};
+serde_if_integer128! {
+    use serde::de::Error as SError;
+}
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Debug, Display};
 use std::hash::{Hash, Hasher};
-use std::i64;
+use std::{i64, u64};
 use std::mem;
 
 use private;
@@ -32,6 +35,12 @@ enum N {
     NegInt(i64),
     /// May be infinite or NaN.
     Float(f64),
+    /// Always greater than u64::MAX
+    #[cfg(feature = "i128")]
+    PosInt128(u128),
+    /// Always less than i64::MIN
+    #[cfg(feature = "i128")]
+    NegInt128(i128)
 }
 
 impl Number {
@@ -72,6 +81,60 @@ impl Number {
             N::PosInt(v) => v <= i64::max_value() as u64,
             N::NegInt(_) => true,
             N::Float(_) => false,
+            #[cfg(feature = "i128")]
+            N::PosInt128(v) => v <= i64::max_value() as u128,
+            #[cfg(feature = "i128")]
+            N::NegInt128(v) => v >= i64::min_value() as i128
+        }
+    }
+
+    /// Returns true if the `Number` is an integer between `i128::MIN` and
+    /// `i128::MAX`.
+    ///
+    /// For any Number on which `is_i128` returns true, `as_i128` is guaranteed
+    /// to return the integer value.
+    ///
+    /// ```rust
+    /// # #[macro_use]
+    /// # extern crate serde_yaml;
+    /// #
+    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
+    /// # fn main() {
+    /// let v = yaml(r#"
+    /// a: 64
+    /// b: -64
+    /// c: 256.0
+    /// ## d does not fit in a u64
+    /// d: 18446744073709551616
+    /// ## e does not fit in an i64
+    /// e: -9223372036854775809
+    /// ## f does not fit in an i128
+    /// f: 170141183460469231731687303715884105728
+    /// "#);
+    ///
+    /// assert!(v["a"].is_i128());
+    /// assert!(v["d"].is_i128());
+    ///
+    /// // Negative integers.
+    /// assert!(v["b"].is_i128());
+    /// assert!(v["e"].is_i128());
+    ///
+    /// // Numbers with a decimal point are not considered integers.
+    /// assert!(!v["c"].is_i128());
+    ///
+    /// // Integers that are too big for i128
+    /// assert!(!v["f"].is_i128());
+    /// # }
+    /// ```
+    #[cfg(feature = "i128")]
+    #[inline]
+    pub fn is_i128(&self) -> bool {
+        match self.n {
+            N::PosInt(_) => true,
+            N::NegInt(_) => true,
+            N::Float(_) => false,
+            N::PosInt128(v) => v <= i128::max_value() as u128,
+            N::NegInt128(_) => true,
         }
     }
 
@@ -105,7 +168,48 @@ impl Number {
     pub fn is_u64(&self) -> bool {
         match self.n {
             N::PosInt(_) => true,
-            N::NegInt(_) | N::Float(_) => false,
+            _ => false,
+        }
+    }
+
+    /// Returns true if the `Number` is an integer between zero and `u128::MAX`.
+    ///
+    /// For any Number on which `is_u128` returns true, `as_u128` is guaranteed
+    /// to return the integer value.
+    ///
+    /// ```rust
+    /// # #[macro_use]
+    /// # extern crate serde_yaml;
+    /// #
+    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
+    /// # fn main() {
+    /// let v = yaml(r#"
+    /// a: 64
+    /// b: -64
+    /// c: 256.0
+    /// ## d does not fit in a u64
+    /// d: 18446744073709551616
+    /// ## e does not fit in an i64
+    /// e: -9223372036854775809
+    /// "#);
+    ///
+    /// assert!(v["a"].is_u128());
+    /// assert!(v["d"].is_u128());
+    ///
+    /// // Negative integers.
+    /// assert!(!v["b"].is_u128());
+    /// assert!(!v["e"].is_u128());
+    ///
+    /// // Numbers with a decimal point are not considered integers.
+    /// assert!(!v["c"].is_u128());
+    /// # }
+    /// ```
+    #[cfg(feature = "i128")]
+    #[inline]
+    pub fn is_u128(&self) -> bool {
+        match self.n {
+            N::PosInt(_) | N::PosInt128(_) => true,
+            _ => false,
         }
     }
 
@@ -141,7 +245,7 @@ impl Number {
     pub fn is_f64(&self) -> bool {
         match self.n {
             N::Float(_) => true,
-            N::PosInt(_) | N::NegInt(_) => false,
+            _ => false,
         }
     }
 
@@ -177,7 +281,68 @@ impl Number {
             } else {
                 None
             },
+            #[cfg(feature = "i128")]
+            N::PosInt128(n) => if n <= i64::max_value() as u128 {
+                Some(n as i64)
+            } else {
+                None
+            },
             N::NegInt(n) => Some(n),
+            #[cfg(feature = "i128")]
+            N::NegInt128(n) => if n >= i64::min_value() as i128 {
+                Some(n as i64)
+            } else {
+                None
+            },
+            N::Float(_) => None,
+        }
+    }
+
+    /// If the `Number` is an integer, represent it as i128 if possible. Returns
+    /// None otherwise.
+    ///
+    /// ```rust
+    /// # #[macro_use]
+    /// # extern crate serde_yaml;
+    /// # use std::i128;
+    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
+    /// # fn main() {
+    /// println!("i128::MAX is {:?}", i128::MAX);
+    /// let v = yaml(r#"
+    /// ---
+    /// c: 256.0
+    /// ## d fits in an i64
+    /// d: -9223372036854775808
+    /// ## e does not fit in an i64
+    /// e: -9223372036854775809
+    /// ## f fits in a u64
+    /// f: 18446744073709551615
+    /// ## g does not fit in a u64
+    /// g: 18446744073709551616
+    /// ## h does not fit in an i128
+    /// h: 170141183460469231731687303715884105728
+    /// "#);
+    ///
+    /// assert_eq!(v["c"].as_i128(), None);
+    /// assert_eq!(v["d"].as_i128(), Some(-9223372036854775808));
+    /// assert_eq!(v["e"].as_i128(), Some(-9223372036854775809));
+    /// assert_eq!(v["f"].as_i128(), Some(18446744073709551615));
+    /// assert_eq!(v["g"].as_i128(), Some(18446744073709551616));
+    /// assert_eq!(v["h"].as_i128(), None);
+    /// # }
+    /// ```
+    #[cfg(feature = "i128")]
+    #[inline]
+    pub fn as_i128(&self) -> Option<i128> {
+        match self.n {
+            N::PosInt(n) => Some(n as i128),
+            N::PosInt128(n) => if n <= i128::max_value() as u128 {
+                Some(n as i128)
+            } else {
+                None
+            },
+            N::NegInt(n) => Some(n as i128),
+            N::NegInt128(n) => Some(n),
             N::Float(_) => None,
         }
     }
@@ -207,7 +372,51 @@ impl Number {
     pub fn as_u64(&self) -> Option<u64> {
         match self.n {
             N::PosInt(n) => Some(n),
-            N::NegInt(_) | N::Float(_) => None,
+            #[cfg(feature = "i128")]
+            N::PosInt128(n) if n <= u64::MAX as u128 => Some(n as u64),
+            _ => None,
+        }
+    }
+
+    /// If the `Number` is an integer, represent it as u128 if possible. Returns
+    /// None otherwise.
+    ///
+    /// ```rust
+    /// # #[macro_use]
+    /// # extern crate serde_yaml;
+    /// #
+    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
+    /// # fn main() {
+    /// let v = yaml(r#"
+    /// ---
+    /// c: 256.0
+    /// ## d fits in an i64
+    /// d: -9223372036854775808
+    /// ## e does not fit in an i64
+    /// e: -9223372036854775809
+    /// ## f fits in a u64
+    /// f: 18446744073709551615
+    /// ## g does not fit in a u64
+    /// g: 18446744073709551616
+    /// ## h does not fit in an i128
+    /// h: 170141183460469231731687303715884105728
+    /// "#);
+    ///
+    /// assert_eq!(v["c"].as_u128(), None);
+    /// assert_eq!(v["d"].as_u128(), None);
+    /// assert_eq!(v["e"].as_u128(), None);
+    /// assert_eq!(v["f"].as_u128(), Some(18446744073709551615));
+    /// assert_eq!(v["g"].as_u128(), Some(18446744073709551616));
+    /// assert_eq!(v["h"].as_u128(), Some(170141183460469231731687303715884105728));
+    /// # }
+    /// ```
+    #[cfg(feature = "i128")]
+    #[inline]
+    pub fn as_u128(&self) -> Option<u128> {
+        match self.n {
+            N::PosInt(n) => Some(n as u128),
+            N::PosInt128(n) => Some(n),
+            _ => None,
         }
     }
 
@@ -243,6 +452,10 @@ impl Number {
     pub fn as_f64(&self) -> Option<f64> {
         match self.n {
             N::PosInt(n) => Some(n as f64),
+            #[cfg(feature = "i128")]
+            N::PosInt128(n) => Some(n as f64),
+            #[cfg(feature = "i128")]
+            N::NegInt128(n) => Some(n as f64),
             N::NegInt(n) => Some(n as f64),
             N::Float(n) => Some(n),
         }
@@ -268,8 +481,8 @@ impl Number {
     #[inline]
     pub fn is_nan(&self) -> bool {
         match self.n {
-            N::PosInt(_) | N::NegInt(_) => false,
             N::Float(f) => f.is_nan(),
+            _ => false,
         }
     }
 
@@ -294,8 +507,8 @@ impl Number {
     #[inline]
     pub fn is_infinite(&self) -> bool {
         match self.n {
-            N::PosInt(_) | N::NegInt(_) => false,
             N::Float(f) => f.is_infinite(),
+            _ => false,
         }
     }
 
@@ -319,8 +532,8 @@ impl Number {
     #[inline]
     pub fn is_finite(&self) -> bool {
         match self.n {
-            N::PosInt(_) | N::NegInt(_) => true,
             N::Float(f) => f.is_finite(),
+            _ => true,
         }
     }
 }
@@ -329,6 +542,10 @@ impl fmt::Display for Number {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self.n {
             N::PosInt(i) => Display::fmt(&i, formatter),
+            #[cfg(feature = "i128")]
+            N::PosInt128(i) => Display::fmt(&i, formatter),
+            #[cfg(feature = "i128")]
+            N::NegInt128(i) => Display::fmt(&i, formatter),
             N::NegInt(i) => Display::fmt(&i, formatter),
             N::Float(f) if f.is_nan() => formatter.write_str(".nan"),
             N::Float(f) if f.is_infinite() => {
@@ -353,6 +570,10 @@ impl PartialEq for N {
     fn eq(&self, other: &N) -> bool {
         match (*self, *other) {
             (N::PosInt(a), N::PosInt(b)) => a == b,
+            #[cfg(feature = "i128")]
+            (N::PosInt128(a), N::PosInt128(b)) => a == b,
+            #[cfg(feature = "i128")]
+            (N::NegInt128(a), N::NegInt128(b)) => a == b,
             (N::NegInt(a), N::NegInt(b)) => a == b,
             (N::Float(a), N::Float(b)) => {
                 if a.is_nan() && b.is_nan() {
@@ -379,6 +600,10 @@ impl Serialize for Number {
     {
         match self.n {
             N::PosInt(i) => serializer.serialize_u64(i),
+            #[cfg(feature = "i128")]
+            N::PosInt128(i) => serializer.serialize_u128(i),
+            #[cfg(feature = "i128")]
+            N::NegInt128(i) => serializer.serialize_i128(i),
             N::NegInt(i) => serializer.serialize_i64(i),
             N::Float(f) => serializer.serialize_f64(f),
         }
@@ -405,9 +630,47 @@ impl<'de> Deserialize<'de> for Number {
                 Ok(value.into())
             }
 
+            serde_if_integer128! {
+                #[cfg(feature = "i128")]
+                #[inline]
+                fn visit_i128<E>(self, value: i128) -> Result<Number, E>
+                where
+                    E: SError,
+                {
+                    Ok(value.into())
+                }
+                #[cfg(not(feature = "i128"))]
+                #[inline]
+                fn visit_i128<E>(self, _value: i128) -> Result<Number, E>
+                where
+                    E: SError,
+                {
+                    Err(SError::custom("i128 is not supported.  Enable the `i128` feature of `serde-yaml`"))
+                }
+            }
+
             #[inline]
             fn visit_u64<E>(self, value: u64) -> Result<Number, E> {
                 Ok(value.into())
+            }
+
+            serde_if_integer128! {
+                #[cfg(feature = "i128")]
+                #[inline]
+                fn visit_u128<E>(self, value: u128) -> Result<Number, E>
+                where
+                    E: SError,
+                {
+                    Ok(value.into())
+                }
+                #[cfg(not(feature = "i128"))]
+                #[inline]
+                fn visit_u128<E>(self, _value: u128) -> Result<Number, E>
+                where
+                    E: SError,
+                {
+                    Err(SError::custom("u128 is not supported.  Enable the `i128` feature of `serde-yaml`"))
+                }
             }
 
             #[inline]
@@ -430,13 +693,17 @@ impl<'de> Deserializer<'de> for Number {
     {
         match self.n {
             N::PosInt(i) => visitor.visit_u64(i),
+            #[cfg(feature = "i128")]
+            N::PosInt128(i) => visitor.visit_u128(i),
+            #[cfg(feature = "i128")]
+            N::NegInt128(i) => visitor.visit_i128(i),
             N::NegInt(i) => visitor.visit_i64(i),
             N::Float(f) => visitor.visit_f64(f),
         }
     }
 
     forward_to_deserialize_any! {
-        bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string bytes
+        bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string bytes
         byte_buf option unit unit_struct newtype_struct seq tuple
         tuple_struct map struct enum identifier ignored_any
     }
@@ -452,13 +719,17 @@ impl<'de, 'a> Deserializer<'de> for &'a Number {
     {
         match self.n {
             N::PosInt(i) => visitor.visit_u64(i),
+            #[cfg(feature = "i128")]
+            N::PosInt128(i) => visitor.visit_u128(i),
+            #[cfg(feature = "i128")]
+            N::NegInt128(i) => visitor.visit_i128(i),
             N::NegInt(i) => visitor.visit_i64(i),
             N::Float(f) => visitor.visit_f64(f),
         }
     }
 
     forward_to_deserialize_any! {
-        bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string bytes
+        bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string bytes
         byte_buf option unit unit_struct newtype_struct seq tuple
         tuple_struct map struct enum identifier ignored_any
     }
@@ -470,6 +741,19 @@ macro_rules! from_signed {
             impl From<$signed_ty> for Number {
                 #[inline]
                 #[cfg_attr(feature = "cargo-clippy", allow(cast_sign_loss))]
+                #[cfg(feature = "i128")]
+                fn from(i: $signed_ty) -> Self {
+                    if i < 0 && i as i128 >= i64::MIN as i128 {
+                        Number { n: N::NegInt(i as i64) }
+                    } else if i < 0 {
+                        Number { n: N::NegInt128(i as i128) }
+                    } else if i as u128 <= u64::MAX as u128 {
+                        Number { n: N::PosInt(i as u64) }
+                    } else {
+                        Number { n: N::PosInt128(i as u128) }
+                    }
+                }
+                #[cfg(not(feature = "i128"))]
                 fn from(i: $signed_ty) -> Self {
                     if i < 0 {
                         Number { n: N::NegInt(i as i64) }
@@ -487,6 +771,15 @@ macro_rules! from_unsigned {
         $(
             impl From<$unsigned_ty> for Number {
                 #[inline]
+                #[cfg(feature = "i128")]
+                fn from(u: $unsigned_ty) -> Self {
+                    if u as u128 > u64::MAX as u128 {
+                        Number { n: N::PosInt128(u as u128) }
+                    } else {
+                        Number { n: N::PosInt(u as u64) }
+                    }
+                }
+                #[cfg(not(feature = "i128"))]
                 fn from(u: $unsigned_ty) -> Self {
                     Number { n: N::PosInt(u as u64) }
                 }
@@ -509,7 +802,11 @@ macro_rules! from_float {
 }
 
 from_signed!(i8 i16 i32 i64 isize);
+#[cfg(feature = "i128")]
+from_signed!(i128);
 from_unsigned!(u8 u16 u32 u64 usize);
+#[cfg(feature = "i128")]
+from_unsigned!(u128);
 from_float!(f32 f64);
 
 // This is fine, because we don't _really_ implement hash for floats
@@ -523,7 +820,11 @@ impl Hash for Number {
                 3.hash(state)
             }
             N::PosInt(u) => u.hash(state),
+            #[cfg(feature = "i128")]
+            N::PosInt128(u) => u.hash(state),
             N::NegInt(i) => i.hash(state),
+            #[cfg(feature = "i128")]
+            N::NegInt128(i) => i.hash(state),
         }
     }
 }
@@ -532,7 +833,11 @@ impl private {
     pub fn number_unexpected(number: &Number) -> Unexpected {
         match number.n {
             N::PosInt(u) => Unexpected::Unsigned(u),
+            #[cfg(feature = "i128")]
+            N::PosInt128(_) => unimplemented!(),
             N::NegInt(i) => Unexpected::Signed(i),
+            #[cfg(feature = "i128")]
+            N::NegInt128(_) => unimplemented!(),
             N::Float(f) => Unexpected::Float(f),
         }
     }
