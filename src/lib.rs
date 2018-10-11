@@ -62,13 +62,8 @@
 //!
 //! ## 128 bit numbers
 //!
-//! Support for `i128` and `u128` on Rust toolchains after `1.26.0` is enabled
-//! through the `i128` feature.  Add the following to `Cargo.toml`:
-//!
-//! ```toml,ignore
-//! [dependencies.serde-yaml]
-//! features = ["i128"]
-//! ```
+//! Support for `i128` and `u128` is automatically enabled when using Rust
+//! toolchains after `1.26.0`.
 
 #![doc(html_root_url = "https://docs.rs/serde_yaml/0.8.5")]
 #![deny(missing_docs)]

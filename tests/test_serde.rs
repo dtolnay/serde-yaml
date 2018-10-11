@@ -91,7 +91,7 @@ fn test_int_max_i64() {
     test_serde(&thing, &yaml);
 }
 
-#[cfg(feature = "i128")]
+#[cfg(integer128)]
 #[test]
 fn test_i128_small() {
     let thing: i128 = -256;
@@ -103,7 +103,7 @@ fn test_i128_small() {
     test_serde(&thing, &yaml);
 }
 
-#[cfg(feature = "i128")]
+#[cfg(integer128)]
 #[test]
 fn test_i128_big() {
     let thing: i128 = ::std::i64::MIN as i128 - 1;
@@ -115,7 +115,7 @@ fn test_i128_big() {
     test_serde(&thing, &yaml);
 }
 
-#[cfg(feature = "i128")]
+#[cfg(integer128)]
 #[test]
 fn test_u128_small() {
     let thing: u128 = 256;
@@ -127,7 +127,7 @@ fn test_u128_small() {
     test_serde(&thing, &yaml);
 }
 
-#[cfg(feature = "i128")]
+#[cfg(integer128)]
 #[test]
 fn test_u128_big() {
     let thing: u128 = ::std::u64::MAX as u128 + 1;

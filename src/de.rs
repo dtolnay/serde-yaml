@@ -696,19 +696,11 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
     }
 
     serde_if_integer128! {
-        #[cfg(feature = "i128")]
         fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value>
         where
             V: Visitor<'de>,
         {
             self.deserialize_scalar(visitor)
-        }
-        #[cfg(not(feature = "i128"))]
-        fn deserialize_i128<V>(self, _visitor: V) -> Result<V::Value>
-        where
-            V: Visitor<'de>,
-        {
-            Err(de::Error::custom("i128 is not supported.  Enable the `i128` feature of `serde-yaml`"))
         }
     }
 
@@ -741,19 +733,11 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
     }
 
     serde_if_integer128! {
-        #[cfg(feature = "i128")]
         fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value>
         where
             V: Visitor<'de>,
         {
             self.deserialize_scalar(visitor)
-        }
-        #[cfg(not(feature = "i128"))]
-        fn deserialize_u128<V>(self, _visitor: V) -> Result<V::Value>
-        where
-            V: Visitor<'de>,
-        {
-            Err(de::Error::custom("u128 is not supported.  Enable the `i128` feature of `serde-yaml`"))
         }
     }
 

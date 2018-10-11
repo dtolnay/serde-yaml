@@ -8,6 +8,7 @@ repository = "https://github.com/dtolnay/serde-yaml"
 documentation = "https://docs.rs/serde_yaml/"
 readme = "README.md"
 keywords = ["yaml", "serde"]
+build = "build.rs"
 
 [dependencies]
 cfg-if = "0.1"
@@ -20,9 +21,6 @@ yaml-rust = "0.4"
 serde_derive = "1.0"
 unindent = "0.1"
 version-sync = "0.5"
-
-[features]
-i128 = []
 
 [badges]
 travis-ci = { repository = "dtolnay/serde-yaml" }

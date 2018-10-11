@@ -8,7 +8,7 @@
 
 use std::f64;
 use std::hash::{Hash, Hasher};
-#[cfg(feature = "i128")]
+#[cfg(integer128)]
 use std::num::ParseIntError;
 use std::str::FromStr;
 
@@ -288,7 +288,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("null").unwrap();
     /// assert!(!v.is_i128());
     /// ```
-    #[cfg(feature = "i128")]
+    #[cfg(integer128)]
     pub fn is_i128(&self) -> bool {
         self.as_i128().is_some()
     }
@@ -328,7 +328,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_i128(), None);
     /// ```
-    #[cfg(feature = "i128")]
+    #[cfg(integer128)]
     pub fn as_i128(&self) -> Option<i128> {
         match *self {
             Value::Number(ref n) => n.as_i128(),
@@ -374,7 +374,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("null").unwrap();
     /// assert!(!v.is_u128());
     /// ```
-    #[cfg(feature = "i128")]
+    #[cfg(integer128)]
     pub fn is_u128(&self) -> bool {
         self.as_u128().is_some()
     }
@@ -414,7 +414,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_u128(), None);
     /// ```
-    #[cfg(feature = "i128")]
+    #[cfg(integer128)]
     pub fn as_u128(&self) -> Option<u128> {
         match *self {
             Value::Number(ref n) => n.as_u128(),
@@ -657,11 +657,13 @@ fn yaml_to_value(yaml: Yaml) -> Value {
                 Value::Number(n.into())
             } else {
                 cfg_if! {
-                    if #[cfg(feature = "i128")] {
-                        fn u128_from_str(f: &str) -> Result<u128, ParseIntError> {
+                    if #[cfg(integer128)] {
+                        fn u128_from_str(f: &str) -> Result<u128, ParseIntError>
+                        {
                             u128::from_str(f)
                         }
-                        fn i128_from_str(f: &str) -> Result<i128, ParseIntError> {
+                        fn i128_from_str(f: &str) -> Result<i128, ParseIntError>
+                        {
                             i128::from_str(f)
                         }
                     } else {
