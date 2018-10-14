@@ -311,7 +311,7 @@ impl Value {
         self.as_u64().is_some()
     }
 
-    /// If the `Value` is an integer, represent it as i64 if possible. Returns
+    /// If the `Value` is an integer, represent it as u64 if possible. Returns
     /// None otherwise.
     ///
     /// ```rust

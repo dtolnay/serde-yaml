@@ -9,7 +9,9 @@
 #[macro_use]
 extern crate serde_derive;
 
+#[macro_use]
 extern crate serde;
+
 extern crate serde_yaml;
 
 extern crate unindent;
@@ -169,12 +171,37 @@ fn test_number_as_string() {
     let yaml = unindent(
         "
         ---
-        value: 123456789012345678901234567890",
+        # Cannot be represented as u128
+        value: 340282366920938463463374607431768211457",
     );
     let expected = Num {
-        value: "123456789012345678901234567890".to_owned(),
+        value: "340282366920938463463374607431768211457".to_owned(),
     };
     test_de(&yaml, &expected);
+}
+
+serde_if_integer128! {
+    #[test]
+    fn test_i128_big() {
+        let expected: i128 = ::std::i64::MIN as i128 - 1;
+        let yaml = unindent(
+            "
+            ---
+            -9223372036854775809",
+        );
+        assert_eq!(expected, serde_yaml::from_str::<i128>(&yaml).unwrap());
+    }
+
+    #[test]
+    fn test_u128_big() {
+        let expected: u128 = ::std::u64::MAX as u128 + 1;
+        let yaml = unindent(
+            "
+            ---
+            18446744073709551616",
+        );
+        assert_eq!(expected, serde_yaml::from_str::<u128>(&yaml).unwrap());
+    }
 }
 
 #[test]

@@ -53,6 +53,17 @@ impl ser::Serializer for Serializer {
         Ok(Yaml::Integer(v))
     }
 
+    serde_if_integer128! {
+        #[cfg_attr(feature = "cargo-clippy", allow(cast_possible_truncation))]
+        fn serialize_i128(self, v: i128) -> Result<Yaml> {
+            if v <= i64::max_value() as i128 && v >= i64::min_value() as i128 {
+                self.serialize_i64(v as i64)
+            } else {
+                Ok(Yaml::Real(v.to_string()))
+            }
+        }
+    }
+
     fn serialize_u8(self, v: u8) -> Result<Yaml> {
         self.serialize_i64(v as i64)
     }
@@ -70,6 +81,17 @@ impl ser::Serializer for Serializer {
             self.serialize_i64(v as i64)
         } else {
             Ok(Yaml::Real(v.to_string()))
+        }
+    }
+
+    serde_if_integer128! {
+        #[cfg_attr(feature = "cargo-clippy", allow(cast_possible_truncation))]
+        fn serialize_u128(self, v: u128) -> Result<Yaml> {
+            if v <= i64::max_value() as u128 {
+                self.serialize_i64(v as i64)
+            } else {
+                Ok(Yaml::Real(v.to_string()))
+            }
         }
     }
 

@@ -213,6 +213,15 @@ impl<'de> Deserializer<'de> for Value {
         self.deserialize_number(visitor)
     }
 
+    serde_if_integer128! {
+        fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value, Error>
+        where
+            V: Visitor<'de>,
+        {
+            self.deserialize_number(visitor)
+        }
+    }
+
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Error>
     where
         V: Visitor<'de>,
@@ -239,6 +248,15 @@ impl<'de> Deserializer<'de> for Value {
         V: Visitor<'de>,
     {
         self.deserialize_number(visitor)
+    }
+
+    serde_if_integer128! {
+        fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value, Error>
+        where
+            V: Visitor<'de>,
+        {
+            self.deserialize_number(visitor)
+        }
     }
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Error>

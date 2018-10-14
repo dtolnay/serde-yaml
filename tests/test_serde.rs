@@ -14,7 +14,9 @@
 #[macro_use]
 extern crate serde_derive;
 
+#[macro_use]
 extern crate serde;
+
 extern crate serde_yaml;
 
 extern crate unindent;
@@ -89,6 +91,30 @@ fn test_int_max_i64() {
         9223372036854775807",
     );
     test_serde(&thing, &yaml);
+}
+
+serde_if_integer128! {
+    #[test]
+    fn test_i128_small() {
+        let thing: i128 = -256;
+        let yaml = unindent(
+            "
+            ---
+            -256",
+        );
+        test_serde(&thing, &yaml);
+    }
+
+    #[test]
+    fn test_u128_small() {
+        let thing: u128 = 256;
+        let yaml = unindent(
+            "
+            ---
+            256",
+        );
+        test_serde(&thing, &yaml);
+    }
 }
 
 #[test]
