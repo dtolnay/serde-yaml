@@ -8,10 +8,8 @@ repository = "https://github.com/dtolnay/serde-yaml"
 documentation = "https://docs.rs/serde_yaml/"
 readme = "README.md"
 keywords = ["yaml", "serde"]
-build = "build.rs"
 
 [dependencies]
-cfg-if = "0.1"
 dtoa = "0.4"
 linked-hash-map = "0.5"
 serde = "1.0.60"

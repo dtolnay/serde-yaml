@@ -59,11 +59,6 @@
 //! assert_eq!(point, deserialized_point);
 //! # }
 //! ```
-//!
-//! ## 128 bit numbers
-//!
-//! Support for `i128` and `u128` is automatically enabled when using Rust
-//! toolchains after `1.26.0`.
 
 #![doc(html_root_url = "https://docs.rs/serde_yaml/0.8.5")]
 #![deny(missing_docs)]
@@ -93,8 +88,6 @@
     result_unwrap_used,
 ))]
 
-#[macro_use]
-extern crate cfg_if;
 extern crate dtoa;
 extern crate linked_hash_map;
 #[macro_use]

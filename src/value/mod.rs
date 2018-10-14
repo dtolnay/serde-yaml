@@ -8,8 +8,6 @@
 
 use std::f64;
 use std::hash::{Hash, Hasher};
-#[cfg(integer128)]
-use std::num::ParseIntError;
 use std::str::FromStr;
 
 use serde::de::{Deserialize, DeserializeOwned};
@@ -271,28 +269,6 @@ impl Value {
         self.as_i64().is_some()
     }
 
-    /// Returns true if the `Value` is an integer between `i128::MIN` and
-    /// `i128::MAX`.
-    ///
-    /// For any Value on which `is_i128` returns true, `as_i128` is guaranteed to
-    /// return the integer value.
-    ///
-    /// ```rust
-    /// # use serde_yaml::Value;
-    /// let v: Value = serde_yaml::from_str("1337").unwrap();
-    /// assert!(v.is_i128());
-    /// ```
-    ///
-    /// ```rust
-    /// # use serde_yaml::Value;
-    /// let v: Value = serde_yaml::from_str("null").unwrap();
-    /// assert!(!v.is_i128());
-    /// ```
-    #[cfg(integer128)]
-    pub fn is_i128(&self) -> bool {
-        self.as_i128().is_some()
-    }
-
     /// If the `Value` is an integer, represent it as i64 if possible. Returns
     /// None otherwise.
     ///
@@ -311,28 +287,6 @@ impl Value {
         match *self {
             Value::Number(ref n) => n.as_i64(),
             _ => None,
-        }
-    }
-
-    /// If the `Value` is an integer, represent it as i128 if possible. Returns
-    /// None otherwise.
-    ///
-    /// ```rust
-    /// # use serde_yaml::Value;
-    /// let v: Value = serde_yaml::from_str("1337").unwrap();
-    /// assert_eq!(v.as_i128(), Some(1337));
-    /// ```
-    ///
-    /// ```rust
-    /// # use serde_yaml::Value;
-    /// let v: Value = serde_yaml::from_str("false").unwrap();
-    /// assert_eq!(v.as_i128(), None);
-    /// ```
-    #[cfg(integer128)]
-    pub fn as_i128(&self) -> Option<i128> {
-        match *self {
-            Value::Number(ref n) => n.as_i128(),
-            _ => None
         }
     }
 
@@ -357,28 +311,6 @@ impl Value {
         self.as_u64().is_some()
     }
 
-    /// Returns true if the `Value` is an integer between `u128::MIN` and
-    /// `u128::MAX`.
-    ///
-    /// For any Value on which `is_u128` returns true, `as_u128` is guaranteed to
-    /// return the integer value.
-    ///
-    /// ```rust
-    /// # use serde_yaml::Value;
-    /// let v: Value = serde_yaml::from_str("1337").unwrap();
-    /// assert!(v.is_u128());
-    /// ```
-    ///
-    /// ```rust
-    /// # use serde_yaml::Value;
-    /// let v: Value = serde_yaml::from_str("null").unwrap();
-    /// assert!(!v.is_u128());
-    /// ```
-    #[cfg(integer128)]
-    pub fn is_u128(&self) -> bool {
-        self.as_u128().is_some()
-    }
-
     /// If the `Value` is an integer, represent it as u64 if possible. Returns
     /// None otherwise.
     ///
@@ -397,28 +329,6 @@ impl Value {
         match *self {
             Value::Number(ref n) => n.as_u64(),
             _ => None,
-        }
-    }
-
-    /// If the `Value` is an integer, represent it as u128 if possible. Returns
-    /// None otherwise.
-    ///
-    /// ```rust
-    /// # use serde_yaml::Value;
-    /// let v: Value = serde_yaml::from_str("1337").unwrap();
-    /// assert_eq!(v.as_u128(), Some(1337));
-    /// ```
-    ///
-    /// ```rust
-    /// # use serde_yaml::Value;
-    /// let v: Value = serde_yaml::from_str("false").unwrap();
-    /// assert_eq!(v.as_u128(), None);
-    /// ```
-    #[cfg(integer128)]
-    pub fn as_u128(&self) -> Option<u128> {
-        match *self {
-            Value::Number(ref n) => n.as_u128(),
-            _ => None
         }
     }
 
@@ -655,35 +565,10 @@ fn yaml_to_value(yaml: Yaml) -> Value {
                 Value::Number(n.into())
             } else if let Ok(n) = i64::from_str(&f) {
                 Value::Number(n.into())
+            } else if let Ok(n) = f64::from_str(&f) {
+                Value::Number(n.into())
             } else {
-                cfg_if! {
-                    if #[cfg(integer128)] {
-                        fn u128_from_str(f: &str) -> Result<u128, ParseIntError>
-                        {
-                            u128::from_str(f)
-                        }
-                        fn i128_from_str(f: &str) -> Result<i128, ParseIntError>
-                        {
-                            i128::from_str(f)
-                        }
-                    } else {
-                        fn u128_from_str(_f: &str) -> Result<i32, ()> {
-                            Err(())
-                        }
-                        fn i128_from_str(_f: &str) -> Result<i32, ()> {
-                            Err(())
-                        }
-                    }
-                }
-                if let Ok(n) = u128_from_str(&f) {
-                    Value::Number(n.into())
-                } else if let Ok(n) = i128_from_str(&f) {
-                    Value::Number(n.into())
-                } else if let Ok(n) = f64::from_str(&f) {
-                    Value::Number(n.into())
-                } else {
-                    Value::String(f)
-                }
+                Value::String(f)
             }
         }
         Yaml::Integer(i) => Value::Number(i.into()),
