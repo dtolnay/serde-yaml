@@ -54,7 +54,6 @@ pub type Sequence = Vec<Value>;
 /// let val = serde_yaml::to_value("s").unwrap();
 /// assert_eq!(val, Value::String("s".to_owned()));
 /// ```
-#[cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
 pub fn to_value<T>(value: T) -> Result<Value, Error>
 where
     T: Serialize,

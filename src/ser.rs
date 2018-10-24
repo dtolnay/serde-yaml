@@ -453,7 +453,6 @@ where
     }
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
 fn to_yaml<T>(elem: T) -> Result<Yaml>
 where
     T: ser::Serialize,
