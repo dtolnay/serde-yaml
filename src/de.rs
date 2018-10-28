@@ -944,7 +944,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
                     .deserialize_enum(name, variants, visitor)
             }
             Event::Scalar(_, _, ref t) => {
-                if let Some(TokenType::Tag(ref handle, ref suffix)) = t {
+                if let Some(TokenType::Tag(ref handle, ref suffix)) = *t {
                     if handle == "!" {
                         if let Some(tag) = variants.iter().find(|v| *v == suffix) {
                             return visitor.visit_enum(EnumAccess {
