@@ -380,6 +380,7 @@ impl<'de, 'a, 'r> de::MapAccess<'de> for MapAccess<'a, 'r> {
 struct EnumAccess<'a: 'r, 'r> {
     de: &'r mut Deserializer<'a>,
     name: &'static str,
+    tag: Option<&'static str>,
 }
 
 impl<'de, 'a, 'r> de::EnumAccess<'de> for EnumAccess<'a, 'r> {
@@ -405,12 +406,16 @@ impl<'de, 'a, 'r> de::EnumAccess<'de> for EnumAccess<'a, 'r> {
             }
         }
 
-        let variant = match *self.de.next()?.0 {
-            Event::Scalar(ref s, _, _) => &**s,
-            _ => {
-                *self.de.pos -= 1;
-                let bad = BadKey { name: self.name };
-                return Err(de::Deserializer::deserialize_any(&mut *self.de, bad).unwrap_err());
+        let variant = if let Some(tag) = self.tag {
+            tag
+        } else {
+            match *self.de.next()?.0 {
+                Event::Scalar(ref s, _, _) => &**s,
+                _ => {
+                    *self.de.pos -= 1;
+                    let bad = BadKey { name: self.name };
+                    return Err(de::Deserializer::deserialize_any(&mut *self.de, bad).unwrap_err());
+                }
             }
         };
 
@@ -938,12 +943,26 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
                 self.jump(&mut pos)?
                     .deserialize_enum(name, variants, visitor)
             }
-            Event::Scalar(_, _, _) => visitor.visit_enum(UnitVariantAccess { de: self }),
+            Event::Scalar(_, _, ref t) => {
+                if let Some(TokenType::Tag(ref handle, ref suffix)) = t {
+                    if handle == "!" {
+                        if let Some(tag) = variants.iter().find(|v| *v == suffix) {
+                            return visitor.visit_enum(EnumAccess {
+                                de: self,
+                                name: name,
+                                tag: Some(tag),
+                            });
+                        }
+                    }
+                }
+                visitor.visit_enum(UnitVariantAccess { de: self })
+            },
             Event::MappingStart => {
                 *self.pos += 1;
                 let value = visitor.visit_enum(EnumAccess {
                     de: self,
                     name: name,
+                    tag: None,
                 })?;
                 self.end_mapping(1)?;
                 Ok(value)

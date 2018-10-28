@@ -163,6 +163,31 @@ fn test_enum_alias() {
 }
 
 #[test]
+fn test_enum_tag() {
+    #[derive(Deserialize, PartialEq, Debug)]
+    enum E {
+        A(String),
+        B(String),
+    }
+    #[derive(Deserialize, PartialEq, Debug)]
+    struct Data {
+        a: E,
+        b: E,
+    }
+    let yaml = unindent(
+        "
+        ---
+        a: !A foo
+        b: !B bar"
+    );
+    let expected = Data {
+        a: E::A("foo".into()),
+        b: E::B("bar".into()),
+    };
+    test_de(&yaml, &expected);
+}
+
+#[test]
 fn test_number_as_string() {
     #[derive(Deserialize, PartialEq, Debug)]
     struct Num {
