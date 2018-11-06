@@ -174,7 +174,7 @@ impl<'a, T: Clone + Into<Value>> From<&'a [T]> for Value {
     /// # }
     /// ```
     fn from(f: &'a [T]) -> Self {
-        Value::Sequence(f.into_iter().cloned().map(Into::into).collect())
+        Value::Sequence(f.iter().cloned().map(Into::into).collect())
     }
 }
 
