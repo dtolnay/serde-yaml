@@ -50,6 +50,11 @@ where
 }
 
 #[test]
+fn test_default() {
+    assert_eq!(Value::default(), Value::Null);
+}
+
+#[test]
 fn test_int() {
     let thing = 256;
     let yaml = unindent(
