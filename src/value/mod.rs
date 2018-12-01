@@ -40,6 +40,47 @@ pub enum Value {
     Mapping(Mapping),
 }
 
+/// The default value is `Value::Null`.
+///
+/// This is useful for handling omitted `Value` fields when deserializing.
+///
+/// # Examples
+///
+/// ```rust
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// #
+/// # extern crate serde_yaml;
+/// #
+/// use serde_yaml::Value;
+///
+/// #[derive(Deserialize)]
+/// struct Settings {
+///     level: i32,
+///     #[serde(default)]
+///     extras: Value,
+/// }
+///
+/// # fn try_main() -> Result<(), serde_yaml::Error> {
+/// let data = r#" { "level": 42 } "#;
+/// let s: Settings = serde_yaml::from_str(data)?;
+///
+/// assert_eq!(s.level, 42);
+/// assert_eq!(s.extras, Value::Null);
+/// #
+/// #     Ok(())
+/// # }
+/// #
+/// # fn main() {
+/// #     try_main().unwrap()
+/// # }
+/// ```
+impl Default for Value {
+    fn default() -> Value {
+        Value::Null
+    }
+}
+
 /// A YAML sequence in which the elements are `serde_yaml::Value`.
 pub type Sequence = Vec<Value>;
 
