@@ -72,8 +72,8 @@
     should_implement_trait,
 // things are often more readable this way
     cast_lossless,
+    module_name_repetitions,
     single_match_else,
-    stutter,
     use_self,
 // code is acceptable
     cast_possible_wrap,
