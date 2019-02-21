@@ -11,7 +11,7 @@ matrix:
     - rust: nightly
       env: CLIPPY
       script: |
-          if rustup component add clippy-preview; then
+          if rustup component add clippy; then
               cargo clippy
           fi
 
