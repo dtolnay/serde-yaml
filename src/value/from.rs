@@ -218,7 +218,7 @@ impl<T: Into<Value>> FromIterator<T> for Value {
     /// # }
     /// ```
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        let vec: Vec<Value> = iter.into_iter().map(|x| x.into()).collect();
+        let vec = iter.into_iter().map(T::into).collect();
 
         Value::Sequence(vec)
     }
