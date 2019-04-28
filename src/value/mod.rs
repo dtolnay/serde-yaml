@@ -8,7 +8,7 @@ use yaml_rust::Yaml;
 
 use error::Error;
 use mapping::Mapping;
-use ser::Serializer;
+use value::ser::Serializer;
 
 use self::index::Index;
 pub use number::Number;

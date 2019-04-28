@@ -66,7 +66,8 @@ enum Event {
     MappingEnd,
 }
 
-struct Deserializer<'a> {
+/// A structure that deserializes YAML into Rust values.
+pub struct Deserializer<'a> {
     events: &'a [(Event, Marker)],
     /// Map from alias id to index in events.
     aliases: &'a BTreeMap<usize, usize>,
