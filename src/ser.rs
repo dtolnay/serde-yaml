@@ -46,6 +46,16 @@ where
     type SerializeMap = &'a mut Serializer<W>;
     type SerializeStruct = &'a mut Serializer<W>;
     type SerializeStructVariant = &'a mut Serializer<W>;
+
+    #[inline]
+    fn serialize_bool(self, value: bool) -> Result<()> {
+        let s = if value {
+            b"true" as &[u8]
+        } else {
+            b"false" as &[u8]
+        };
+        self.writer.write_all(s)
+    }
 }
 
 impl<'a, W> ser::SerializeSeq for &'a mut Serializer<W>
@@ -153,6 +163,48 @@ where
         T: ser::Serialize,
     {
         value.serialize(&mut self)
+    }
+
+    #[inline]
+    fn end(self) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a, W> ser::SerializeStruct for &'a mut Serializer<W>
+where
+    W: io::Write,
+{
+    type Ok = ();
+    type Error = Error;
+
+    #[inline]
+    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<()>
+    where
+        T: ser::Serialize,
+    {
+        self.serialize_entry(key, value)
+    }
+
+    #[inline]
+    fn end(self) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a, W> ser::SerializeStructVariant for &'a mut Serializer<W>
+where
+    W: io::Write,
+{
+    type Ok = ();
+    type Error = Error;
+
+    #[inline]
+    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<()>
+    where
+        T: ser::Serialize,
+    {
+        self.serialize_entry(key, value)
     }
 
     #[inline]
