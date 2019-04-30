@@ -40,19 +40,20 @@ is:
 ```rust
 use std::collections::BTreeMap;
 
-fn main() {
+fn main() -> Result<(), serde_yaml::Error> {
     // You have some type.
     let mut map = BTreeMap::new();
     map.insert("x".to_string(), 1.0);
     map.insert("y".to_string(), 2.0);
 
     // Serialize it to a YAML string.
-    let s = serde_yaml::to_string(&map).unwrap();
+    let s = serde_yaml::to_string(&map)?;
     assert_eq!(s, "---\nx: 1\ny: 2");
 
     // Deserialize it back to a Rust type.
-    let deserialized_map: BTreeMap<String, f64> = serde_yaml::from_str(&s).unwrap();
+    let deserialized_map: BTreeMap<String, f64> = serde_yaml::from_str(&s)?;
     assert_eq!(map, deserialized_map);
+    Ok(())
 }
 ```
 
@@ -74,14 +75,15 @@ struct Point {
     y: f64,
 }
 
-fn main() {
+fn main() -> Result<(), serde_yaml::Error> {
     let point = Point { x: 1.0, y: 2.0 };
 
-    let s = serde_yaml::to_string(&point).unwrap();
+    let s = serde_yaml::to_string(&point)?;
     assert_eq!(s, "---\nx: 1\ny: 2");
 
-    let deserialized_point: Point = serde_yaml::from_str(&s).unwrap();
+    let deserialized_point: Point = serde_yaml::from_str(&s)?;
     assert_eq!(point, deserialized_point);
+    Ok(())
 }
 ```
 
