@@ -202,7 +202,7 @@ where
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # extern crate serde_yaml;
     /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
@@ -240,7 +240,7 @@ where
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # extern crate serde_yaml;
     /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }

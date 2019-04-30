@@ -18,7 +18,7 @@
 //!
 //! # Examples
 //!
-//! ```rust
+//! ```
 //! extern crate serde_yaml;
 //!
 //! use std::collections::BTreeMap;
@@ -42,7 +42,7 @@
 //! It can also be used with Serde's serialization code generator `serde_derive` to
 //! handle structs and enums defined in your own program.
 //!
-//! ```rust
+//! ```
 //! #[macro_use] extern crate serde_derive;
 //! extern crate serde_yaml;
 //!

@@ -27,7 +27,7 @@ impl From<bool> for Value {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # extern crate serde_yaml;
     /// #
     /// # fn main() {
@@ -47,7 +47,7 @@ impl From<String> for Value {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # extern crate serde_yaml;
     /// #
     /// # fn main() {
@@ -67,7 +67,7 @@ impl<'a> From<&'a str> for Value {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # extern crate serde_yaml;
     /// #
     /// # fn main() {
@@ -89,7 +89,7 @@ impl<'a> From<Cow<'a, str>> for Value {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # extern crate serde_yaml;
     /// #
     /// # fn main() {
@@ -101,7 +101,7 @@ impl<'a> From<Cow<'a, str>> for Value {
     /// # }
     /// ```
     ///
-    /// ```rust
+    /// ```
     /// # extern crate serde_yaml;
     /// #
     /// # fn main() {
@@ -122,7 +122,7 @@ impl From<Mapping> for Value {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # extern crate serde_yaml;
     /// #
     /// # fn main() {
@@ -143,7 +143,7 @@ impl<T: Into<Value>> From<Vec<T>> for Value {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # extern crate serde_yaml;
     /// #
     /// # fn main() {
@@ -163,7 +163,7 @@ impl<'a, T: Clone + Into<Value>> From<&'a [T]> for Value {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # extern crate serde_yaml;
     /// #
     /// # fn main() {
@@ -185,7 +185,7 @@ impl<T: Into<Value>> FromIterator<T> for Value {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # extern crate serde_yaml;
     /// #
     /// # fn main() {
@@ -196,7 +196,7 @@ impl<T: Into<Value>> FromIterator<T> for Value {
     /// # }
     /// ```
     ///
-    /// ```rust
+    /// ```
     /// # extern crate serde_yaml;
     /// #
     /// # fn main() {
@@ -207,7 +207,7 @@ impl<T: Into<Value>> FromIterator<T> for Value {
     /// # }
     /// ```
     ///
-    /// ```rust
+    /// ```
     /// # extern crate serde_yaml;
     /// #
     /// # fn main() {

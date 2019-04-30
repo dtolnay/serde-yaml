@@ -94,7 +94,7 @@ impl Error {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # extern crate serde_yaml;
     /// # use serde_yaml::{Value, Error};
     /// # fn main() {
