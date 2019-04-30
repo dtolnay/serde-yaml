@@ -63,23 +63,23 @@
 #![cfg_attr(feature = "cargo-clippy", allow(redundant_field_names))]
 // Whitelisted clippy_pedantic lints
 #![cfg_attr(feature = "cargo-clippy", allow(
-// private Deserializer::next
+    // private Deserializer::next
     should_implement_trait,
-// things are often more readable this way
+    // things are often more readable this way
     cast_lossless,
     module_name_repetitions,
     single_match_else,
     use_self,
-// code is acceptable
+    // code is acceptable
     cast_possible_wrap,
     cast_precision_loss,
     cast_sign_loss,
-// not practical
+    // not practical
     indexing_slicing,
     missing_docs_in_private_items,
-// not stable
+    // not stable
     empty_enum,
-// meh, some things won't fail
+    // meh, some things won't fail
     result_unwrap_used,
 ))]
 

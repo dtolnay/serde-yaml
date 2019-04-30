@@ -152,7 +152,8 @@ fn test_float() {
         "
         ---
         .nan",
-    )).unwrap();
+    ))
+    .unwrap();
     assert!(float.is_nan());
 }
 

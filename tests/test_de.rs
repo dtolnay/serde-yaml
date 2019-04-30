@@ -170,7 +170,7 @@ fn test_enum_tag() {
         "
         ---
         a: !A foo
-        b: !B bar"
+        b: !B bar",
     );
     let expected = Data {
         a: E::A("foo".into()),

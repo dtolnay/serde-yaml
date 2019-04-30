@@ -640,7 +640,8 @@ impl<'a> Deserializer<'a> {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_scalar(visitor),
             Event::Scalar(ref v, style, ref tag) => visit_scalar(v, style, tag, visitor),
             ref other => Err(invalid_type(other, &visitor)),
-        }.map_err(|err| private::fix_marker(err, marker, self.path))
+        }
+        .map_err(|err| private::fix_marker(err, marker, self.path))
     }
 }
 
@@ -776,7 +777,8 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
             Event::Scalar(ref v, _, _) => visitor.visit_str(v),
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_str(visitor),
             ref other => Err(invalid_type(other, &visitor)),
-        }.map_err(|err: Error| private::fix_marker(err, marker, self.path))
+        }
+        .map_err(|err: Error| private::fix_marker(err, marker, self.path))
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
@@ -870,7 +872,8 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_seq(visitor),
             Event::SequenceStart => self.visit_sequence(visitor),
             ref other => Err(invalid_type(other, &visitor)),
-        }.map_err(|err| private::fix_marker(err, marker, self.path))
+        }
+        .map_err(|err| private::fix_marker(err, marker, self.path))
     }
 
     fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
@@ -901,7 +904,8 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_map(visitor),
             Event::MappingStart => self.visit_mapping(visitor),
             ref other => Err(invalid_type(other, &visitor)),
-        }.map_err(|err| private::fix_marker(err, marker, self.path))
+        }
+        .map_err(|err| private::fix_marker(err, marker, self.path))
     }
 
     fn deserialize_struct<V>(
@@ -921,7 +925,8 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
             Event::SequenceStart => self.visit_sequence(visitor),
             Event::MappingStart => self.visit_mapping(visitor),
             ref other => Err(invalid_type(other, &visitor)),
-        }.map_err(|err| private::fix_marker(err, marker, self.path))
+        }
+        .map_err(|err| private::fix_marker(err, marker, self.path))
     }
 
     /// Parses an enum as a single key:value pair where the key identifies the
@@ -956,7 +961,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
                     }
                 }
                 visitor.visit_enum(UnitVariantAccess { de: self })
-            },
+            }
             Event::MappingStart => {
                 *self.pos += 1;
                 let value = visitor.visit_enum(EnumAccess {
