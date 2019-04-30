@@ -202,11 +202,9 @@ where
     ///
     /// # Examples
     ///
-    /// ```
-    /// # extern crate serde_yaml;
-    /// #
+    /// ```edition2018
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
-    /// # fn main() {
+    /// #
     /// let data = yaml(r#"{ x: { y: [z, zz] } }"#);
     ///
     /// assert_eq!(data["x"]["y"], yaml(r#"["z", "zz"]"#));
@@ -214,7 +212,6 @@ where
     ///
     /// assert_eq!(data["a"], yaml(r#"null"#)); // returns null for undefined values
     /// assert_eq!(data["a"]["b"], yaml(r#"null"#)); // does not panic
-    /// # }
     /// ```
     fn index(&self, index: I) -> &Value {
         static NULL: Value = Value::Null;
@@ -240,11 +237,9 @@ where
     ///
     /// # Examples
     ///
-    /// ```
-    /// # extern crate serde_yaml;
-    /// #
+    /// ```edition2018
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
-    /// # fn main() {
+    /// #
     /// let mut data = yaml(r#"{x: 0}"#);
     ///
     /// // replace an existing key
@@ -260,7 +255,6 @@ where
     /// data["a"]["b"]["c"]["d"] = yaml(r#"true"#);
     ///
     /// println!("{:?}", data);
-    /// # }
     /// ```
     fn index_mut(&mut self, index: I) -> &mut Value {
         index.index_or_insert(self)

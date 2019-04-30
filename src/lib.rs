@@ -18,46 +18,49 @@
 //!
 //! # Examples
 //!
-//! ```
-//! extern crate serde_yaml;
-//!
+//! ```edition2018
 //! use std::collections::BTreeMap;
 //!
-//! // You have some type.
-//! let mut map = BTreeMap::new();
-//! map.insert("x".to_string(), 1.0);
-//! map.insert("y".to_string(), 2.0);
+//! fn main() {
+//!     // You have some type.
+//!     let mut map = BTreeMap::new();
+//!     map.insert("x".to_string(), 1.0);
+//!     map.insert("y".to_string(), 2.0);
 //!
-//! // Serialize it to a YAML string.
-//! let s = serde_yaml::to_string(&map).unwrap();
-//! assert_eq!(s, "---\nx: 1.0\ny: 2.0");
+//!     // Serialize it to a YAML string.
+//!     let s = serde_yaml::to_string(&map).unwrap();
+//!     assert_eq!(s, "---\nx: 1.0\ny: 2.0");
 //!
-//! // Deserialize it back to a Rust type.
-//! let deserialized_map: BTreeMap<String, f64> = serde_yaml::from_str(&s).unwrap();
-//! assert_eq!(map, deserialized_map);
+//!     // Deserialize it back to a Rust type.
+//!     let deserialized_map: BTreeMap<String, f64> = serde_yaml::from_str(&s).unwrap();
+//!     assert_eq!(map, deserialized_map);
+//! }
 //! ```
 //!
-//! ## Using serde derive
+//! ## Using Serde derive
 //!
 //! It can also be used with Serde's serialization code generator `serde_derive` to
 //! handle structs and enums defined in your own program.
 //!
-//! ```
-//! #[macro_use] extern crate serde_derive;
-//! extern crate serde_yaml;
+//! ```edition2018
+//! # use serde_derive::{Serialize, Deserialize};
+//! use serde::{Serialize, Deserialize};
 //!
 //! #[derive(Debug, PartialEq, Serialize, Deserialize)]
-//! struct Point { x: f64, y: f64 }
+//! struct Point {
+//!     x: f64,
+//!     y: f64,
+//! }
 //!
-//! # fn main() {
-//! let point = Point { x: 1.0, y: 2.0 };
+//! fn main() {
+//!     let point = Point { x: 1.0, y: 2.0 };
 //!
-//! let s = serde_yaml::to_string(&point).unwrap();
-//! assert_eq!(s, "---\nx: 1.0\ny: 2.0");
+//!     let s = serde_yaml::to_string(&point).unwrap();
+//!     assert_eq!(s, "---\nx: 1.0\ny: 2.0");
 //!
-//! let deserialized_point: Point = serde_yaml::from_str(&s).unwrap();
-//! assert_eq!(point, deserialized_point);
-//! # }
+//!     let deserialized_point: Point = serde_yaml::from_str(&s).unwrap();
+//!     assert_eq!(point, deserialized_point);
+//! }
 //! ```
 
 #![doc(html_root_url = "https://docs.rs/serde_yaml/0.8.8")]

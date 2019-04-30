@@ -41,14 +41,11 @@ impl Number {
     /// For any Number on which `is_i64` returns true, `as_i64` is guaranteed to
     /// return the integer value.
     ///
-    /// ```
-    /// # #[macro_use]
-    /// # extern crate serde_yaml;
-    /// #
+    /// ```edition2018
     /// # use std::i64;
     /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
-    /// # fn main() {
+    /// #
     /// let big = i64::MAX as u64 + 10;
     /// let v = yaml(r#"
     /// a: 64
@@ -63,7 +60,6 @@ impl Number {
     ///
     /// // Numbers with a decimal point are not considered integers.
     /// assert!(!v["c"].is_i64());
-    /// # }
     /// ```
     #[inline]
     #[cfg_attr(feature = "cargo-clippy", allow(cast_sign_loss))]
@@ -80,12 +76,9 @@ impl Number {
     /// For any Number on which `is_u64` returns true, `as_u64` is guaranteed to
     /// return the integer value.
     ///
-    /// ```
-    /// # #[macro_use]
-    /// # extern crate serde_yaml;
-    /// #
+    /// ```edition2018
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
-    /// # fn main() {
+    /// #
     /// let v = yaml(r#"
     /// a: 64
     /// b: -64
@@ -99,7 +92,6 @@ impl Number {
     ///
     /// // Numbers with a decimal point are not considered integers.
     /// assert!(!v["c"].is_u64());
-    /// # }
     /// ```
     #[inline]
     pub fn is_u64(&self) -> bool {
@@ -117,12 +109,9 @@ impl Number {
     /// Currently this function returns true if and only if both `is_i64` and
     /// `is_u64` return false but this is not a guarantee in the future.
     ///
-    /// ```
-    /// # #[macro_use]
-    /// # extern crate serde_yaml;
-    /// #
+    /// ```edition2018
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
-    /// # fn main() {
+    /// #
     /// let v = yaml(r#"
     /// ---
     /// a: 256.0
@@ -135,7 +124,6 @@ impl Number {
     /// // Integers.
     /// assert!(!v["b"].is_f64());
     /// assert!(!v["c"].is_f64());
-    /// # }
     /// ```
     #[inline]
     pub fn is_f64(&self) -> bool {
@@ -148,14 +136,11 @@ impl Number {
     /// If the `Number` is an integer, represent it as i64 if possible. Returns
     /// None otherwise.
     ///
-    /// ```
-    /// # #[macro_use]
-    /// # extern crate serde_yaml;
-    /// #
+    /// ```edition2018
     /// # use std::i64;
     /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
-    /// # fn main() {
+    /// #
     /// let big = i64::MAX as u64 + 10;
     /// let v = yaml(r#"
     /// ---
@@ -167,7 +152,6 @@ impl Number {
     /// assert_eq!(v["a"].as_i64(), Some(64));
     /// assert_eq!(v["b"].as_i64(), None);
     /// assert_eq!(v["c"].as_i64(), None);
-    /// # }
     /// ```
     #[inline]
     pub fn as_i64(&self) -> Option<i64> {
@@ -185,12 +169,9 @@ impl Number {
     /// If the `Number` is an integer, represent it as u64 if possible. Returns
     /// None otherwise.
     ///
-    /// ```
-    /// # #[macro_use]
-    /// # extern crate serde_yaml;
-    /// #
+    /// ```edition2018
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
-    /// # fn main() {
+    /// #
     /// let v = yaml(r#"
     /// ---
     /// a: 64
@@ -201,7 +182,6 @@ impl Number {
     /// assert_eq!(v["a"].as_u64(), Some(64));
     /// assert_eq!(v["b"].as_u64(), None);
     /// assert_eq!(v["c"].as_u64(), None);
-    /// # }
     /// ```
     #[inline]
     pub fn as_u64(&self) -> Option<u64> {
@@ -213,11 +193,8 @@ impl Number {
 
     /// Represents the number as f64 if possible. Returns None otherwise.
     ///
-    /// ```
-    /// # #[macro_use]
-    /// # extern crate serde_yaml;
+    /// ```edition2018
     /// #
-    /// # fn main() {
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// let v = yaml(r#"
     /// ---
@@ -229,10 +206,9 @@ impl Number {
     /// assert_eq!(v["a"].as_f64(), Some(256.0));
     /// assert_eq!(v["b"].as_f64(), Some(64.0));
     /// assert_eq!(v["c"].as_f64(), Some(-64.0));
-    /// # }
     /// ```
     ///
-    /// ```
+    /// ```edition2018
     /// # use std::f64;
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// assert_eq!(yaml("inf").as_f64(), Some(f64::INFINITY));
@@ -250,7 +226,7 @@ impl Number {
 
     /// Returns true if this value is NaN and false otherwise.
     ///
-    /// ```
+    /// ```edition2018
     /// # use std::f64;
     /// #
     /// # use serde_yaml::Number;
@@ -276,7 +252,7 @@ impl Number {
     /// Returns true if this value is positive infinity or negative infinity and
     /// false otherwise.
     ///
-    /// ```
+    /// ```edition2018
     /// # use std::f64;
     /// #
     /// # use serde_yaml::Number;
@@ -301,7 +277,7 @@ impl Number {
 
     /// Returns true if this number is neither infinite nor NaN.
     ///
-    /// ```
+    /// ```edition2018
     /// # use std::f64;
     /// #
     /// # use serde_yaml::Number;

@@ -19,7 +19,7 @@ impl PartialEq<str> for Value {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```edition2018
     /// # use serde_yaml::Value;
     /// assert!(Value::String("lorem".into()) == *"lorem");
     /// ```
@@ -33,7 +33,7 @@ impl<'a> PartialEq<&'a str> for Value {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```edition2018
     /// # use serde_yaml::Value;
     /// assert!(Value::String("lorem".into()) == "lorem");
     /// ```
@@ -47,7 +47,7 @@ impl PartialEq<Value> for str {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```edition2018
     /// # use serde_yaml::Value;
     /// assert!(*"lorem" == Value::String("lorem".into()));
     /// ```
@@ -61,7 +61,7 @@ impl<'a> PartialEq<Value> for &'a str {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```edition2018
     /// # use serde_yaml::Value;
     /// assert!("lorem" == Value::String("lorem".into()));
     /// ```
@@ -75,7 +75,7 @@ impl PartialEq<String> for Value {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```edition2018
     /// # use serde_yaml::Value;
     /// assert!(Value::String("lorem".into()) == "lorem".to_string());
     /// ```
@@ -89,7 +89,7 @@ impl PartialEq<Value> for String {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```edition2018
     /// # use serde_yaml::Value;
     /// assert!("lorem".to_string() == Value::String("lorem".into()));
     /// ```

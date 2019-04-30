@@ -94,10 +94,8 @@ impl Error {
     ///
     /// # Examples
     ///
-    /// ```
-    /// # extern crate serde_yaml;
+    /// ```edition2018
     /// # use serde_yaml::{Value, Error};
-    /// # fn main() {
     /// #
     /// // The `@` character as the first character makes this invalid yaml
     /// let invalid_yaml: Result<Value, Error> = serde_yaml::from_str("@invalid_yaml");
@@ -106,8 +104,6 @@ impl Error {
     ///
     /// assert_eq!(location.line(), 1);
     /// assert_eq!(location.column(), 1);
-    ///
-    /// # }
     /// ```
     pub fn location(&self) -> Option<Location> {
         match *self.0 {

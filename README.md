@@ -38,8 +38,6 @@ Release notes are available under [GitHub releases].
 is:
 
 ```rust
-extern crate serde_yaml;
-
 use std::collections::BTreeMap;
 
 fn main() {
@@ -58,21 +56,17 @@ fn main() {
 }
 ```
 
-It can also be used with Serde's serialization code generator `serde_derive` to
-handle structs and enums defined in your own program.
+It can also be used with Serde's derive macros to handle structs and enums
+defined by your program.
 
 ```toml
 [dependencies]
-serde = "1.0"
-serde_derive = "1.0"
+serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
 ```
 
 ```rust
-#[macro_use]
-extern crate serde_derive;
-
-extern crate serde_yaml;
+use serde::{Serialize, Deserialize};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct Point {
