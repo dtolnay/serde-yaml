@@ -10,7 +10,7 @@ use error::Error;
 use mapping::Mapping;
 use ser::Serializer;
 
-use self::index::Index;
+pub use self::index::Index;
 pub use number::Number;
 
 /// Represents any valid YAML value.

@@ -95,7 +95,7 @@ pub use self::de::{from_reader, from_slice, from_str};
 pub use self::error::{Error, Location, Result};
 pub use self::mapping::Mapping;
 pub use self::ser::{to_string, to_vec, to_writer};
-pub use self::value::{from_value, to_value, Number, Sequence, Value};
+pub use self::value::{from_value, to_value, Index, Number, Sequence, Value};
 
 mod de;
 mod error;
