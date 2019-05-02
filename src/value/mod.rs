@@ -168,6 +168,18 @@ impl Value {
         index.index_into(self)
     }
 
+    /// Index into a YAML sequence or map. A string index can be used to access
+    /// a value in a map, and a usize index can be used to access an element of
+    /// an sequence.
+    ///
+    /// Returns `None` if the type of `self` does not match the type of the
+    /// index, for example if the index is a string and `self` is a sequence or
+    /// a number. Also returns `None` if the given key does not exist in the map
+    /// or the given index is not within the bounds of the sequence.
+    pub fn get_mut<I: Index>(&mut self, index: I) -> Option<&mut Value> {
+        index.index_into_mut(self)
+    }
+
     /// Returns true if the `Value` is a Null. Returns false otherwise.
     ///
     /// For any Value on which `is_null` returns true, `as_null` is guaranteed
