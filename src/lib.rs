@@ -59,6 +59,7 @@
 
 #![doc(html_root_url = "https://docs.rs/serde_yaml/0.8.9")]
 #![deny(missing_docs)]
+#![allow(unknown_lints, bare_trait_objects)]
 #![cfg_attr(feature = "cargo-clippy", allow(renamed_and_removed_lints))]
 #![cfg_attr(feature = "cargo-clippy", deny(clippy, clippy_pedantic))]
 // Whitelisted clippy lints
