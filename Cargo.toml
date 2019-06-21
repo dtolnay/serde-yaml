@@ -18,7 +18,7 @@ yaml-rust = "0.4"
 [dev-dependencies]
 serde_derive = "1.0"
 unindent = "0.1"
-version-sync = "0.5"
+version-sync = "0.8"
 
 [badges]
 travis-ci = { repository = "dtolnay/serde-yaml" }
