@@ -997,6 +997,56 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
     }
 }
 
+fn from_str_with<F, U>(s: &str, op: F) -> Result<U>
+where
+    F: FnOnce(&mut Deserializer) -> Result<U>,
+{
+    let mut parser = Parser::new(s.chars());
+    let mut loader = Loader {
+        events: Vec::new(),
+        aliases: BTreeMap::new(),
+    };
+    parser
+        .load(&mut loader, true)
+        .map_err(private::error_scanner)?;
+    if loader.events.is_empty() {
+        Err(private::error_end_of_stream())
+    } else {
+        let mut pos = 0;
+        let t = op(&mut Deserializer {
+            events: &loader.events,
+            aliases: &loader.aliases,
+            pos: &mut pos,
+            path: Path::Root,
+            remaining_depth: 128,
+        })?;
+        if pos == loader.events.len() {
+            Ok(t)
+        } else {
+            Err(private::error_more_than_one_document())
+        }
+    }
+}
+
+fn from_reader_with<R, F, U>(mut rdr: R, op: F) -> Result<U>
+where
+    R: io::Read,
+    F: FnOnce(&str) -> Result<U>,
+{
+    let mut bytes = Vec::new();
+    rdr.read_to_end(&mut bytes).map_err(private::error_io)?;
+    let s = str::from_utf8(&bytes).map_err(private::error_str_utf8)?;
+    op(s)
+}
+
+fn from_slice_with<F, U>(v: &[u8], op: F) -> Result<U>
+where
+    F: FnOnce(&str) -> Result<U>,
+{
+    let s = str::from_utf8(v).map_err(private::error_str_utf8)?;
+    op(s)
+}
+
 /// Deserialize an instance of type `T` from a string of YAML text.
 ///
 /// This conversion can fail if the structure of the Value does not match the
@@ -1012,31 +1062,28 @@ pub fn from_str<T>(s: &str) -> Result<T>
 where
     T: DeserializeOwned,
 {
-    let mut parser = Parser::new(s.chars());
-    let mut loader = Loader {
-        events: Vec::new(),
-        aliases: BTreeMap::new(),
-    };
-    parser
-        .load(&mut loader, true)
-        .map_err(private::error_scanner)?;
-    if loader.events.is_empty() {
-        Err(private::error_end_of_stream())
-    } else {
-        let mut pos = 0;
-        let t = Deserialize::deserialize(&mut Deserializer {
-            events: &loader.events,
-            aliases: &loader.aliases,
-            pos: &mut pos,
-            path: Path::Root,
-            remaining_depth: 128,
-        })?;
-        if pos == loader.events.len() {
-            Ok(t)
-        } else {
-            Err(private::error_more_than_one_document())
-        }
-    }
+    // This closure is required because Rust can't currently seem to understand
+    // that a for<T: Trait> fn(T) is also a FnOnce(Type) where Type: Trait.
+    #[allow(redundant_closure)]
+    from_str_with(s, |de| Deserialize::deserialize(de))
+}
+
+/// Deserialize an instance of type `T` from a string of YAML text with a seed.
+///
+/// This conversion can fail if the structure of the Value does not match the
+/// structure expected by `T`, for example if `T` is a struct type but the Value
+/// contains something other than a YAML map. It can also fail if the structure
+/// is correct but `T`'s implementation of `Deserialize` decides that something
+/// is wrong with the data, for example required struct fields are missing from
+/// the YAML map or some number is too big to fit in the expected primitive
+/// type.
+///
+/// YAML currently does not support zero-copy deserialization.
+pub fn from_str_seed<T, S>(s: &str, seed: S) -> Result<T>
+where
+    S: for<'de> DeserializeSeed<'de, Value = T>,
+{
+    from_str_with(s, |de| seed.deserialize(de))
 }
 
 /// Deserialize an instance of type `T` from an IO stream of YAML.
@@ -1048,15 +1095,29 @@ where
 /// is wrong with the data, for example required struct fields are missing from
 /// the YAML map or some number is too big to fit in the expected primitive
 /// type.
-pub fn from_reader<R, T>(mut rdr: R) -> Result<T>
+pub fn from_reader<R, T>(rdr: R) -> Result<T>
 where
     R: io::Read,
     T: DeserializeOwned,
 {
-    let mut bytes = Vec::new();
-    rdr.read_to_end(&mut bytes).map_err(private::error_io)?;
-    let s = str::from_utf8(&bytes).map_err(private::error_str_utf8)?;
-    from_str(s)
+    from_reader_with(rdr, from_str)
+}
+
+/// Deserialize an instance of type `T` from an IO stream of YAML with a seed.
+///
+/// This conversion can fail if the structure of the Value does not match the
+/// structure expected by `T`, for example if `T` is a struct type but the Value
+/// contains something other than a YAML map. It can also fail if the structure
+/// is correct but `T`'s implementation of `Deserialize` decides that something
+/// is wrong with the data, for example required struct fields are missing from
+/// the YAML map or some number is too big to fit in the expected primitive
+/// type.
+pub fn from_reader_seed<R, T, S>(rdr: R, seed: S) -> Result<T>
+where
+    R: io::Read,
+    S: for<'de> DeserializeSeed<'de, Value = T>,
+{
+    from_reader_with(rdr, |s| from_str_seed(s, seed))
 }
 
 /// Deserialize an instance of type `T` from bytes of YAML text.
@@ -1074,6 +1135,23 @@ pub fn from_slice<T>(v: &[u8]) -> Result<T>
 where
     T: DeserializeOwned,
 {
-    let s = str::from_utf8(v).map_err(private::error_str_utf8)?;
-    from_str(s)
+    from_slice_with(v, from_str)
+}
+
+/// Deserialize an instance of type `T` from bytes of YAML text with a seed.
+///
+/// This conversion can fail if the structure of the Value does not match the
+/// structure expected by `T`, for example if `T` is a struct type but the Value
+/// contains something other than a YAML map. It can also fail if the structure
+/// is correct but `T`'s implementation of `Deserialize` decides that something
+/// is wrong with the data, for example required struct fields are missing from
+/// the YAML map or some number is too big to fit in the expected primitive
+/// type.
+///
+/// YAML currently does not support zero-copy deserialization.
+pub fn from_slice_seed<T, S>(v: &[u8], seed: S) -> Result<T>
+where
+    S: for<'de> DeserializeSeed<'de, Value = T>,
+{
+    from_slice_with(v, |s| from_str_seed(s, seed))
 }
