@@ -567,11 +567,11 @@ impl Value {
     /// # use serde_yaml::{Value, Mapping, Number};
     /// let mut v: Value = serde_yaml::from_str("a: 42").unwrap();
     /// let m = v.as_mapping_mut().unwrap();
-    /// m.insert(Value::String("b".into()),Value::Number(Number::from(21)));
+    /// m.insert(Value::String("b".into()), Value::Number(Number::from(21)));
     ///
     /// let mut expected = Mapping::new();
-    /// expected.insert(Value::String("a".into()),Value::Number(Number::from(42)));
-    /// expected.insert(Value::String("b".into()),Value::Number(Number::from(21)));
+    /// expected.insert(Value::String("a".into()), Value::Number(Number::from(42)));
+    /// expected.insert(Value::String("b".into()), Value::Number(Number::from(21)));
     ///
     /// assert_eq!(m, &expected);
     /// ```
