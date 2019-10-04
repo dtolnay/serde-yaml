@@ -98,6 +98,20 @@ impl PartialEq<Value> for String {
     }
 }
 
+impl PartialEq<bool> for Value {
+    /// Compare YAML value with bool
+    ///
+    /// # Examples
+    ///
+    /// ```edition2018
+    /// # use serde_yaml::Value;
+    /// assert!(Value::Bool(true) == true);
+    /// ```
+    fn eq(&self, other: &bool) -> bool {
+        self.as_bool().map_or(false, |b| b == *other)
+    }
+}
+
 macro_rules! partialeq_numeric {
     ($([$($ty:ty)*], $conversion:ident, $base:ty)*) => {
         $($(
