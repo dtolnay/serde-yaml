@@ -200,7 +200,7 @@ where
     ///
     /// # Examples
     ///
-    /// ```edition2018
+    /// ```
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// #
     /// let data = yaml(r#"{ x: { y: [z, zz] } }"#);
@@ -235,7 +235,7 @@ where
     ///
     /// # Examples
     ///
-    /// ```edition2018
+    /// ```
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// #
     /// let mut data = yaml(r#"{x: 0}"#);

@@ -10,7 +10,7 @@
 //!
 //! # Examples
 //!
-//! ```edition2018
+//! ```
 //! use std::collections::BTreeMap;
 //!
 //! fn main() -> Result<(), serde_yaml::Error> {
@@ -35,7 +35,7 @@
 //! It can also be used with Serde's serialization code generator `serde_derive` to
 //! handle structs and enums defined in your own program.
 //!
-//! ```edition2018
+//! ```
 //! # use serde_derive::{Serialize, Deserialize};
 //! use serde::{Serialize, Deserialize};
 //!

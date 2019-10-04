@@ -35,7 +35,7 @@ pub enum Value {
 ///
 /// # Examples
 ///
-/// ```edition2018
+/// ```
 /// # use serde_derive::Deserialize;
 /// use serde::Deserialize;
 /// use serde_yaml::Value;
@@ -76,7 +76,7 @@ pub type Sequence = Vec<Value>;
 /// This conversion can fail if `T`'s implementation of `Serialize` decides to
 /// return an error.
 ///
-/// ```edition2018
+/// ```
 /// # use serde_yaml::Value;
 /// let val = serde_yaml::to_value("s").unwrap();
 /// assert_eq!(val, Value::String("s".to_owned()));
@@ -98,7 +98,7 @@ where
 /// the YAML map or some number is too big to fit in the expected primitive
 /// type.
 ///
-/// ```edition2018
+/// ```
 /// # use serde_yaml::Value;
 /// let val = Value::String("foo".to_owned());
 /// let s: String = serde_yaml::from_value(val).unwrap();
@@ -121,7 +121,7 @@ impl Value {
     /// a number. Also returns `None` if the given key does not exist in the map
     /// or the given index is not within the bounds of the sequence.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
@@ -141,7 +141,7 @@ impl Value {
     /// way. This returns `Value::Null` in cases where `get` would have returned
     /// `None`.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
@@ -182,13 +182,13 @@ impl Value {
     /// For any Value on which `is_null` returns true, `as_null` is guaranteed
     /// to return `Some(())`.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("null").unwrap();
     /// assert!(v.is_null());
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert!(!v.is_null());
@@ -203,13 +203,13 @@ impl Value {
 
     /// If the `Value` is a Null, returns (). Returns None otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("null").unwrap();
     /// assert_eq!(v.as_null(), Some(()));
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_null(), None);
@@ -226,13 +226,13 @@ impl Value {
     /// For any Value on which `is_boolean` returns true, `as_bool` is
     /// guaranteed to return the boolean value.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert!(v.is_bool());
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("42").unwrap();
     /// assert!(!v.is_bool());
@@ -244,13 +244,13 @@ impl Value {
     /// If the `Value` is a Boolean, returns the associated bool. Returns None
     /// otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert_eq!(v.as_bool(), Some(true));
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("42").unwrap();
     /// assert_eq!(v.as_bool(), None);
@@ -264,13 +264,13 @@ impl Value {
 
     /// Returns true if the `Value` is a Number. Returns false otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("5").unwrap();
     /// assert!(v.is_number());
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert!(!v.is_number());
@@ -288,13 +288,13 @@ impl Value {
     /// For any Value on which `is_i64` returns true, `as_i64` is guaranteed to
     /// return the integer value.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("1337").unwrap();
     /// assert!(v.is_i64());
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("null").unwrap();
     /// assert!(!v.is_i64());
@@ -306,13 +306,13 @@ impl Value {
     /// If the `Value` is an integer, represent it as i64 if possible. Returns
     /// None otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("1337").unwrap();
     /// assert_eq!(v.as_i64(), Some(1337));
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_i64(), None);
@@ -330,13 +330,13 @@ impl Value {
     /// For any Value on which `is_u64` returns true, `as_u64` is guaranteed to
     /// return the integer value.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("1337").unwrap();
     /// assert!(v.is_u64());
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("null").unwrap();
     /// assert!(!v.is_u64());
@@ -348,13 +348,13 @@ impl Value {
     /// If the `Value` is an integer, represent it as u64 if possible. Returns
     /// None otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("1337").unwrap();
     /// assert_eq!(v.as_u64(), Some(1337));
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_u64(), None);
@@ -374,13 +374,13 @@ impl Value {
     /// Currently this function returns true if and only if both `is_i64` and
     /// `is_u64` return false but this is not a guarantee in the future.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("256.01").unwrap();
     /// assert!(v.is_f64());
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert!(!v.is_f64());
@@ -395,13 +395,13 @@ impl Value {
     /// If the `Value` is a number, represent it as f64 if possible. Returns
     /// None otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("13.37").unwrap();
     /// assert_eq!(v.as_f64(), Some(13.37));
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_f64(), None);
@@ -418,13 +418,13 @@ impl Value {
     /// For any Value on which `is_string` returns true, `as_str` is guaranteed
     /// to return the string slice.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("'lorem ipsum'").unwrap();
     /// assert!(v.is_string());
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("42").unwrap();
     /// assert!(!v.is_string());
@@ -436,13 +436,13 @@ impl Value {
     /// If the `Value` is a String, returns the associated str. Returns None
     /// otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("'lorem ipsum'").unwrap();
     /// assert_eq!(v.as_str(), Some("lorem ipsum"));
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_str(), None);
@@ -456,13 +456,13 @@ impl Value {
 
     /// Returns true if the `Value` is a sequence. Returns false otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("[1, 2, 3]").unwrap();
     /// assert!(v.is_sequence());
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert!(!v.is_sequence());
@@ -474,13 +474,13 @@ impl Value {
     /// If the `Value` is a sequence, return a reference to it if possible.
     /// Returns None otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::{Value, Number};
     /// let v: Value = serde_yaml::from_str("[1, 2]").unwrap();
     /// assert_eq!(v.as_sequence(), Some(&vec![Value::Number(Number::from(1)), Value::Number(Number::from(2))]));
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_sequence(), None);
@@ -495,7 +495,7 @@ impl Value {
     /// If the `Value` is a sequence, return a mutable reference to it if
     /// possible. Returns None otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::{Value, Number};
     /// let mut v: Value = serde_yaml::from_str("[1]").unwrap();
     /// let s = v.as_sequence_mut().unwrap();
@@ -503,7 +503,7 @@ impl Value {
     /// assert_eq!(s, &vec![Value::Number(Number::from(1)), Value::Number(Number::from(2))]);
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let mut v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_sequence_mut(), None);
@@ -517,13 +517,13 @@ impl Value {
 
     /// Returns true if the `Value` is a mapping. Returns false otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("a: 42").unwrap();
     /// assert!(v.is_mapping());
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert!(!v.is_mapping());
@@ -535,7 +535,7 @@ impl Value {
     /// If the `Value` is a mapping, return a reference to it if possible.
     /// Returns None otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::{Value, Mapping, Number};
     /// let v: Value = serde_yaml::from_str("a: 42").unwrap();
     ///
@@ -545,7 +545,7 @@ impl Value {
     /// assert_eq!(v.as_mapping(), Some(&expected));
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_mapping(), None);
@@ -560,7 +560,7 @@ impl Value {
     /// If the `Value` is a mapping, return a reference to it if possible.
     /// Returns None otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::{Value, Mapping, Number};
     /// let mut v: Value = serde_yaml::from_str("a: 42").unwrap();
     /// let m = v.as_mapping_mut().unwrap();
@@ -573,7 +573,7 @@ impl Value {
     /// assert_eq!(m, &expected);
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::{Value, Mapping};
     /// let mut v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_mapping_mut(), None);

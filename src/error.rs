@@ -83,7 +83,7 @@ impl Error {
     ///
     /// # Examples
     ///
-    /// ```edition2018
+    /// ```
     /// # use serde_yaml::{Value, Error};
     /// #
     /// // The `@` character as the first character makes this invalid yaml

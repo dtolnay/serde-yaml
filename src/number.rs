@@ -31,7 +31,7 @@ impl Number {
     /// For any Number on which `is_i64` returns true, `as_i64` is guaranteed to
     /// return the integer value.
     ///
-    /// ```edition2018
+    /// ```
     /// # use std::i64;
     /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
@@ -66,7 +66,7 @@ impl Number {
     /// For any Number on which `is_u64` returns true, `as_u64` is guaranteed to
     /// return the integer value.
     ///
-    /// ```edition2018
+    /// ```
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// #
     /// let v = yaml(r#"
@@ -99,7 +99,7 @@ impl Number {
     /// Currently this function returns true if and only if both `is_i64` and
     /// `is_u64` return false but this is not a guarantee in the future.
     ///
-    /// ```edition2018
+    /// ```
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// #
     /// let v = yaml(r#"
@@ -126,7 +126,7 @@ impl Number {
     /// If the `Number` is an integer, represent it as i64 if possible. Returns
     /// None otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use std::i64;
     /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
@@ -161,7 +161,7 @@ impl Number {
     /// If the `Number` is an integer, represent it as u64 if possible. Returns
     /// None otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// #
     /// let v = yaml(r#"
@@ -185,7 +185,7 @@ impl Number {
 
     /// Represents the number as f64 if possible. Returns None otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// let v = yaml(r#"
@@ -200,7 +200,7 @@ impl Number {
     /// assert_eq!(v["c"].as_f64(), Some(-64.0));
     /// ```
     ///
-    /// ```edition2018
+    /// ```
     /// # use std::f64;
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// assert_eq!(yaml("inf").as_f64(), Some(f64::INFINITY));
@@ -218,7 +218,7 @@ impl Number {
 
     /// Returns true if this value is NaN and false otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use std::f64;
     /// #
     /// # use serde_yaml::Number;
@@ -244,7 +244,7 @@ impl Number {
     /// Returns true if this value is positive infinity or negative infinity and
     /// false otherwise.
     ///
-    /// ```edition2018
+    /// ```
     /// # use std::f64;
     /// #
     /// # use serde_yaml::Number;
@@ -269,7 +269,7 @@ impl Number {
 
     /// Returns true if this number is neither infinite nor NaN.
     ///
-    /// ```edition2018
+    /// ```
     /// # use std::f64;
     /// #
     /// # use serde_yaml::Number;
