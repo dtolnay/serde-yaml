@@ -2,24 +2,20 @@
 //!
 //! This module provides YAML deserialization with the type `Deserializer`.
 
+use crate::path::Path;
+use crate::{private, Error, Result};
+use serde::de::{
+    self, Deserialize, DeserializeOwned, DeserializeSeed, Expected, IgnoredAny as Ignore,
+    IntoDeserializer, Unexpected, Visitor,
+};
+use serde::serde_if_integer128;
 use std::collections::BTreeMap;
 use std::f64;
 use std::fmt;
 use std::io;
 use std::str;
-
 use yaml_rust::parser::{Event as YamlEvent, MarkedEventReceiver, Parser};
 use yaml_rust::scanner::{Marker, TScalarStyle, TokenType};
-
-use serde::de::IgnoredAny as Ignore;
-use serde::de::{
-    self, Deserialize, DeserializeOwned, DeserializeSeed, Expected, IntoDeserializer, Unexpected,
-    Visitor,
-};
-
-use error::{Error, Result};
-use path::Path;
-use private;
 
 pub struct Loader {
     events: Vec<(Event, Marker)>,

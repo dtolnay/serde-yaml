@@ -1,4 +1,4 @@
-use super::Value;
+use crate::Value;
 
 impl PartialEq for Value {
     fn eq(&self, other: &Value) -> bool {

@@ -1,17 +1,14 @@
+use crate::ser::Serializer;
+use crate::{Error, Mapping};
+use serde::de::{Deserialize, DeserializeOwned};
+use serde::Serialize;
 use std::f64;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
-
-use serde::de::{Deserialize, DeserializeOwned};
-use serde::Serialize;
 use yaml_rust::Yaml;
 
-use error::Error;
-use mapping::Mapping;
-use ser::Serializer;
-
 pub use self::index::Index;
-pub use number::Number;
+pub use crate::number::Number;
 
 /// Represents any valid YAML value.
 #[derive(Clone, PartialOrd, Debug)]

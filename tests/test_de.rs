@@ -1,18 +1,9 @@
-#[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
-extern crate serde;
-
-extern crate serde_yaml;
-
-extern crate unindent;
-use unindent::unindent;
-
+use serde::serde_if_integer128;
+use serde_derive::Deserialize;
+use serde_yaml::Value;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-
-use serde_yaml::Value;
+use unindent::unindent;
 
 fn test_de<T>(yaml: &str, expected: &T)
 where

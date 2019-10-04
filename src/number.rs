@@ -1,12 +1,10 @@
-use error::Error;
+use crate::{private, Error};
 use serde::de::{Unexpected, Visitor};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{forward_to_deserialize_any, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Debug, Display};
 use std::hash::{Hash, Hasher};
 use std::i64;
 use std::mem;
-
-use private;
 
 /// Represents a YAML number, whether integer or floating point.
 #[derive(Clone, PartialEq, PartialOrd)]

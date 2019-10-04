@@ -1,17 +1,14 @@
+use crate::path::Path;
+use crate::private;
+use serde::{de, ser};
 use std::error;
 use std::fmt::{self, Debug, Display};
 use std::io;
 use std::result;
 use std::str;
 use std::string;
-
 use yaml_rust::emitter;
 use yaml_rust::scanner::{self, Marker, ScanError};
-
-use serde::{de, ser};
-
-use path::Path;
-use private;
 
 /// This type represents all possible errors that can occur when serializing or
 /// deserializing YAML data.

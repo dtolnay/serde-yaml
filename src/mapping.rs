@@ -1,11 +1,9 @@
+use crate::Value;
+use linked_hash_map::LinkedHashMap;
+use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt;
 use std::iter::FromIterator;
 use std::ops::{Index, IndexMut};
-
-use linked_hash_map::{self, LinkedHashMap};
-use serde::{self, Deserialize, Deserializer, Serialize};
-
-use value::Value;
 
 /// A YAML mapping in which the keys and values are both `serde_yaml::Value`.
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq, PartialOrd)]

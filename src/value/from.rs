@@ -1,5 +1,4 @@
-use super::Value;
-use mapping::Mapping;
+use crate::{Mapping, Value};
 
 // Implement a bunch of conversion to make it easier to create YAML values
 // on the fly.

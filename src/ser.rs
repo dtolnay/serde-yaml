@@ -2,14 +2,10 @@
 //!
 //! This module provides YAML serialization with the type `Serializer`.
 
+use crate::{private, Error, Result};
+use serde::{ser, serde_if_integer128};
 use std::{fmt, io, num, str};
-
 use yaml_rust::{yaml, Yaml, YamlEmitter};
-
-use serde::ser;
-
-use super::error::{Error, Result};
-use private;
 
 pub struct Serializer;
 

@@ -1,13 +1,6 @@
-#[macro_use]
-extern crate serde_derive;
-
-extern crate serde;
-extern crate serde_yaml;
-
-extern crate unindent;
-use unindent::unindent;
-
+use serde_derive::Deserialize;
 use std::fmt::Debug;
+use unindent::unindent;
 
 fn test_error<T>(yaml: &str, expected: &str)
 where

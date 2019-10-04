@@ -87,17 +87,11 @@
     result_unwrap_used,
 ))]
 
-extern crate dtoa;
-extern crate linked_hash_map;
-#[macro_use]
-extern crate serde;
-extern crate yaml_rust;
-
-pub use self::de::{from_reader, from_slice, from_str};
-pub use self::error::{Error, Location, Result};
-pub use self::mapping::Mapping;
-pub use self::ser::{to_string, to_vec, to_writer};
-pub use self::value::{from_value, to_value, Index, Number, Sequence, Value};
+pub use crate::de::{from_reader, from_slice, from_str};
+pub use crate::error::{Error, Location, Result};
+pub use crate::mapping::Mapping;
+pub use crate::ser::{to_string, to_vec, to_writer};
+pub use crate::value::{from_value, to_value, Index, Number, Sequence, Value};
 
 /// Deserialization with seeds
 pub mod seed {

@@ -1,8 +1,6 @@
+use crate::{Mapping, Value};
 use std::fmt;
 use std::ops;
-
-use super::Value;
-use mapping::Mapping;
 
 /// A type that can be used to index into a `serde_yaml::Value`. See the `get`
 /// and `get_mut` methods of `Value`.
