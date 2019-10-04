@@ -25,6 +25,18 @@ where
     serde_yaml::from_str::<serde::de::IgnoredAny>(yaml).unwrap();
 }
 
+fn test_de_seed<T, S>(yaml: &str, seed: S, expected: &T)
+where
+    T: PartialEq + Debug,
+    S: for<'de> serde::de::DeserializeSeed<'de, Value = T>,
+{
+    let deserialized: T = serde_yaml::seed::from_str_seed(yaml, seed).unwrap();
+    assert_eq!(*expected, deserialized);
+
+    serde_yaml::from_str::<serde_yaml::Value>(yaml).unwrap();
+    serde_yaml::from_str::<serde::de::IgnoredAny>(yaml).unwrap();
+}
+
 #[test]
 fn test_alias() {
     let yaml = unindent(
@@ -350,5 +362,42 @@ fn test_numbers() {
             Value::Number(number) => assert_eq!(number.to_string(), expected),
             _ => panic!("expected number"),
         }
+    }
+}
+
+#[test]
+fn test_stateful() {
+    struct Seed(i64);
+
+    impl<'de> serde::de::DeserializeSeed<'de> for Seed {
+        type Value = i64;
+        fn deserialize<D>(self, deserializer: D) -> Result<i64, D::Error>
+        where
+            D: serde::de::Deserializer<'de>,
+        {
+            struct Visitor(i64);
+            impl<'de> serde::de::Visitor<'de> for Visitor {
+                type Value = i64;
+
+                fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    write!(formatter, "an integer")
+                }
+
+                fn visit_i64<E: serde::de::Error>(self, v: i64) -> Result<i64, E> {
+                    Ok(v * self.0)
+                }
+
+                fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<i64, E> {
+                    Ok(v as i64 * self.0)
+                }
+            }
+
+            deserializer.deserialize_any(Visitor(self.0))
+        }
+    }
+
+    let cases = [("3", 5, 15), ("6", 7, 42), ("-5", 9, -45)];
+    for &(yaml, seed, expected) in &cases {
+        test_de_seed(yaml, Seed(seed), &expected);
     }
 }
