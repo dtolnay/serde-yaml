@@ -57,7 +57,7 @@
 //! }
 //! ```
 
-#![doc(html_root_url = "https://docs.rs/serde_yaml/0.8.10")]
+#![doc(html_root_url = "https://docs.rs/serde_yaml/0.8.11")]
 #![deny(missing_docs)]
 #![allow(unknown_lints, bare_trait_objects)]
 #![cfg_attr(feature = "cargo-clippy", allow(renamed_and_removed_lints))]
