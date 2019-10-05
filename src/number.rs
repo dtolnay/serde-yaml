@@ -1,4 +1,4 @@
-use crate::{private, Error};
+use crate::Error;
 use serde::de::{Unexpected, Visitor};
 use serde::{forward_to_deserialize_any, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Debug, Display};
@@ -496,12 +496,10 @@ impl Hash for Number {
     }
 }
 
-impl private {
-    pub fn number_unexpected(number: &Number) -> Unexpected {
-        match number.n {
-            N::PosInt(u) => Unexpected::Unsigned(u),
-            N::NegInt(i) => Unexpected::Signed(i),
-            N::Float(f) => Unexpected::Float(f),
-        }
+pub(crate) fn unexpected(number: &Number) -> Unexpected {
+    match number.n {
+        N::PosInt(u) => Unexpected::Unsigned(u),
+        N::NegInt(i) => Unexpected::Signed(i),
+        N::Float(f) => Unexpected::Float(f),
     }
 }

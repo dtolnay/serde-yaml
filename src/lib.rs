@@ -109,6 +109,3 @@ mod number;
 mod path;
 mod ser;
 mod value;
-
-#[allow(non_camel_case_types)]
-enum private {}

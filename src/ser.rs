@@ -2,7 +2,7 @@
 //!
 //! This module provides YAML serialization with the type `Serializer`.
 
-use crate::{private, Error, Result};
+use crate::{error, Error, Result};
 use serde::{ser, serde_if_integer128};
 use std::{fmt, io, num, str};
 use yaml_rust::{yaml, Yaml, YamlEmitter};
@@ -395,7 +395,7 @@ where
     let mut writer_adapter = FmtToIoWriter { writer: writer };
     YamlEmitter::new(&mut writer_adapter)
         .dump(&doc)
-        .map_err(private::error_emitter)?;
+        .map_err(error::emitter)?;
     Ok(())
 }
 
@@ -420,7 +420,7 @@ pub fn to_string<T: ?Sized>(value: &T) -> Result<String>
 where
     T: ser::Serialize,
 {
-    Ok(String::from_utf8(to_vec(value)?).map_err(private::error_string_utf8)?)
+    Ok(String::from_utf8(to_vec(value)?).map_err(error::string_utf8)?)
 }
 
 /// The yaml-rust library uses `fmt::Write` intead of `io::Write` so this is a

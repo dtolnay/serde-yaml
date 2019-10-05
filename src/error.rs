@@ -1,5 +1,4 @@
 use crate::path::Path;
-use crate::private;
 use serde::{de, ser};
 use std::error;
 use std::fmt::{self, Debug, Display};
@@ -103,48 +102,46 @@ impl Error {
     }
 }
 
-impl private {
-    pub fn error_end_of_stream() -> Error {
-        Error(Box::new(ErrorImpl::EndOfStream))
-    }
+pub(crate) fn end_of_stream() -> Error {
+    Error(Box::new(ErrorImpl::EndOfStream))
+}
 
-    pub fn error_more_than_one_document() -> Error {
-        Error(Box::new(ErrorImpl::MoreThanOneDocument))
-    }
+pub(crate) fn more_than_one_document() -> Error {
+    Error(Box::new(ErrorImpl::MoreThanOneDocument))
+}
 
-    pub fn error_io(err: io::Error) -> Error {
-        Error(Box::new(ErrorImpl::Io(err)))
-    }
+pub(crate) fn io(err: io::Error) -> Error {
+    Error(Box::new(ErrorImpl::Io(err)))
+}
 
-    pub fn error_emitter(err: emitter::EmitError) -> Error {
-        Error(Box::new(ErrorImpl::Emit(err)))
-    }
+pub(crate) fn emitter(err: emitter::EmitError) -> Error {
+    Error(Box::new(ErrorImpl::Emit(err)))
+}
 
-    pub fn error_scanner(err: scanner::ScanError) -> Error {
-        Error(Box::new(ErrorImpl::Scan(err)))
-    }
+pub(crate) fn scanner(err: scanner::ScanError) -> Error {
+    Error(Box::new(ErrorImpl::Scan(err)))
+}
 
-    pub fn error_str_utf8(err: str::Utf8Error) -> Error {
-        Error(Box::new(ErrorImpl::Utf8(err)))
-    }
+pub(crate) fn str_utf8(err: str::Utf8Error) -> Error {
+    Error(Box::new(ErrorImpl::Utf8(err)))
+}
 
-    pub fn error_string_utf8(err: string::FromUtf8Error) -> Error {
-        Error(Box::new(ErrorImpl::FromUtf8(err)))
-    }
+pub(crate) fn string_utf8(err: string::FromUtf8Error) -> Error {
+    Error(Box::new(ErrorImpl::FromUtf8(err)))
+}
 
-    pub fn error_recursion_limit_exceeded() -> Error {
-        Error(Box::new(ErrorImpl::RecursionLimitExceeded))
-    }
+pub(crate) fn recursion_limit_exceeded() -> Error {
+    Error(Box::new(ErrorImpl::RecursionLimitExceeded))
+}
 
-    pub fn fix_marker(mut error: Error, marker: Marker, path: Path) -> Error {
-        if let ErrorImpl::Message(_, ref mut none @ None) = *error.0.as_mut() {
-            *none = Some(Pos {
-                marker: marker,
-                path: path.to_string(),
-            });
-        }
-        error
+pub(crate) fn fix_marker(mut error: Error, marker: Marker, path: Path) -> Error {
+    if let ErrorImpl::Message(_, ref mut none @ None) = *error.0.as_mut() {
+        *none = Some(Pos {
+            marker: marker,
+            path: path.to_string(),
+        });
     }
+    error
 }
 
 impl error::Error for Error {

@@ -1,4 +1,4 @@
-use crate::{private, Error, Mapping, Sequence, Value};
+use crate::{number, Error, Mapping, Sequence, Value};
 use serde::de::{
     self, Deserialize, DeserializeSeed, Deserializer, EnumAccess, Error as SError, Expected,
     MapAccess, SeqAccess, Unexpected, VariantAccess, Visitor,
@@ -705,7 +705,7 @@ impl Value {
         match *self {
             Value::Null => Unexpected::Unit,
             Value::Bool(b) => Unexpected::Bool(b),
-            Value::Number(ref n) => private::number_unexpected(n),
+            Value::Number(ref n) => number::unexpected(n),
             Value::String(ref s) => Unexpected::Str(s),
             Value::Sequence(_) => Unexpected::Seq,
             Value::Mapping(_) => Unexpected::Map,
