@@ -13,6 +13,7 @@ use std::collections::BTreeMap;
 use std::f64;
 use std::fmt;
 use std::io;
+use std::marker::PhantomData;
 use std::str;
 use yaml_rust::parser::{Event as YamlEvent, MarkedEventReceiver, Parser};
 use yaml_rust::scanner::{Marker, TScalarStyle, TokenType};
@@ -993,56 +994,6 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
     }
 }
 
-fn from_str_with<F, U>(s: &str, op: F) -> Result<U>
-where
-    F: FnOnce(&mut Deserializer) -> Result<U>,
-{
-    let mut parser = Parser::new(s.chars());
-    let mut loader = Loader {
-        events: Vec::new(),
-        aliases: BTreeMap::new(),
-    };
-    parser
-        .load(&mut loader, true)
-        .map_err(private::error_scanner)?;
-    if loader.events.is_empty() {
-        Err(private::error_end_of_stream())
-    } else {
-        let mut pos = 0;
-        let t = op(&mut Deserializer {
-            events: &loader.events,
-            aliases: &loader.aliases,
-            pos: &mut pos,
-            path: Path::Root,
-            remaining_depth: 128,
-        })?;
-        if pos == loader.events.len() {
-            Ok(t)
-        } else {
-            Err(private::error_more_than_one_document())
-        }
-    }
-}
-
-fn from_reader_with<R, F, U>(mut rdr: R, op: F) -> Result<U>
-where
-    R: io::Read,
-    F: FnOnce(&str) -> Result<U>,
-{
-    let mut bytes = Vec::new();
-    rdr.read_to_end(&mut bytes).map_err(private::error_io)?;
-    let s = str::from_utf8(&bytes).map_err(private::error_str_utf8)?;
-    op(s)
-}
-
-fn from_slice_with<F, U>(v: &[u8], op: F) -> Result<U>
-where
-    F: FnOnce(&str) -> Result<U>,
-{
-    let s = str::from_utf8(v).map_err(private::error_str_utf8)?;
-    op(s)
-}
-
 /// Deserialize an instance of type `T` from a string of YAML text.
 ///
 /// This conversion can fail if the structure of the Value does not match the
@@ -1058,10 +1009,7 @@ pub fn from_str<T>(s: &str) -> Result<T>
 where
     T: DeserializeOwned,
 {
-    // This closure is required because Rust can't currently seem to understand
-    // that a for<T: Trait> fn(T) is also a FnOnce(Type) where Type: Trait.
-    #[allow(redundant_closure)]
-    from_str_with(s, |de| Deserialize::deserialize(de))
+    from_str_seed(s, PhantomData)
 }
 
 /// Deserialize an instance of type `T` from a string of YAML text with a seed.
@@ -1079,7 +1027,31 @@ pub fn from_str_seed<T, S>(s: &str, seed: S) -> Result<T>
 where
     S: for<'de> DeserializeSeed<'de, Value = T>,
 {
-    from_str_with(s, |de| seed.deserialize(de))
+    let mut parser = Parser::new(s.chars());
+    let mut loader = Loader {
+        events: Vec::new(),
+        aliases: BTreeMap::new(),
+    };
+    parser
+        .load(&mut loader, true)
+        .map_err(private::error_scanner)?;
+    if loader.events.is_empty() {
+        Err(private::error_end_of_stream())
+    } else {
+        let mut pos = 0;
+        let t = seed.deserialize(&mut Deserializer {
+            events: &loader.events,
+            aliases: &loader.aliases,
+            pos: &mut pos,
+            path: Path::Root,
+            remaining_depth: 128,
+        })?;
+        if pos == loader.events.len() {
+            Ok(t)
+        } else {
+            Err(private::error_more_than_one_document())
+        }
+    }
 }
 
 /// Deserialize an instance of type `T` from an IO stream of YAML.
@@ -1096,7 +1068,7 @@ where
     R: io::Read,
     T: DeserializeOwned,
 {
-    from_reader_with(rdr, from_str)
+    from_reader_seed(rdr, PhantomData)
 }
 
 /// Deserialize an instance of type `T` from an IO stream of YAML with a seed.
@@ -1108,12 +1080,14 @@ where
 /// is wrong with the data, for example required struct fields are missing from
 /// the YAML map or some number is too big to fit in the expected primitive
 /// type.
-pub fn from_reader_seed<R, T, S>(rdr: R, seed: S) -> Result<T>
+pub fn from_reader_seed<R, T, S>(mut rdr: R, seed: S) -> Result<T>
 where
     R: io::Read,
     S: for<'de> DeserializeSeed<'de, Value = T>,
 {
-    from_reader_with(rdr, |s| from_str_seed(s, seed))
+    let mut bytes = Vec::new();
+    rdr.read_to_end(&mut bytes).map_err(private::error_io)?;
+    from_slice_seed(&bytes, seed)
 }
 
 /// Deserialize an instance of type `T` from bytes of YAML text.
@@ -1131,7 +1105,7 @@ pub fn from_slice<T>(v: &[u8]) -> Result<T>
 where
     T: DeserializeOwned,
 {
-    from_slice_with(v, from_str)
+    from_slice_seed(v, PhantomData)
 }
 
 /// Deserialize an instance of type `T` from bytes of YAML text with a seed.
@@ -1149,5 +1123,6 @@ pub fn from_slice_seed<T, S>(v: &[u8], seed: S) -> Result<T>
 where
     S: for<'de> DeserializeSeed<'de, Value = T>,
 {
-    from_slice_with(v, |s| from_str_seed(s, seed))
+    let s = str::from_utf8(v).map_err(private::error_str_utf8)?;
+    from_str_seed(s, seed)
 }
