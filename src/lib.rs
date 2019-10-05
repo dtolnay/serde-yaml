@@ -93,7 +93,11 @@ pub use crate::mapping::Mapping;
 pub use crate::ser::{to_string, to_vec, to_writer};
 pub use crate::value::{from_value, to_value, Index, Number, Sequence, Value};
 
-/// Deserialization with seeds
+/// Entry points for deserializing with pre-existing state.
+///
+/// These functions are only exposed this way because we don't yet expose a
+/// Deserializer type. Data formats that have a public Deserializer should not
+/// copy these signatures.
 pub mod seed {
     pub use super::de::{from_reader_seed, from_slice_seed, from_str_seed};
 }
