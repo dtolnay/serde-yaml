@@ -57,9 +57,7 @@ pub enum Value {
 /// #     Ok(())
 /// # }
 /// #
-/// # fn main() {
-/// #     try_main().unwrap()
-/// # }
+/// # try_main().unwrap()
 /// ```
 impl Default for Value {
     fn default() -> Value {
