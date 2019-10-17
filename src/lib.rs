@@ -85,6 +85,8 @@
     empty_enum,
     // meh, some things won't fail
     result_unwrap_used,
+    // noisy
+    must_use_candidate,
 ))]
 
 pub use crate::de::{from_reader, from_slice, from_str};
