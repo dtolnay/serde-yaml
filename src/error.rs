@@ -11,7 +11,7 @@ use yaml_rust::scanner::{self, Marker, ScanError};
 
 /// This type represents all possible errors that can occur when serializing or
 /// deserializing YAML data.
-pub struct Error(Box<ErrorImpl>);
+pub struct Error(pub Box<ErrorImpl>);
 
 /// Alias for a `Result` with the error type `serde_yaml::Error`.
 pub type Result<T> = result::Result<T, Error>;
@@ -20,16 +20,31 @@ pub type Result<T> = result::Result<T, Error>;
 /// deserializing a value using YAML.
 #[derive(Debug)]
 pub enum ErrorImpl {
+    /// Custom error
     Message(String, Option<Pos>),
 
+    /// Emit error
     Emit(emitter::EmitError),
+
+    /// Scan error
     Scan(scanner::ScanError),
+
+    /// `io::Error`
     Io(io::Error),
+
+    /// `str::Utf8Error`
     Utf8(str::Utf8Error),
+
+    /// `string::FromUtf8Error`
     FromUtf8(string::FromUtf8Error),
 
+    /// EOF while parsing a value
     EndOfStream,
+
+    /// Multiple documents (not supported)
     MoreThanOneDocument,
+
+    /// Recursion limit exceeded
     RecursionLimitExceeded,
 }
 
