@@ -86,6 +86,7 @@
     // meh, some things won't fail
     result_unwrap_used,
     // noisy
+    missing_errors_doc,
     must_use_candidate,
 ))]
 
