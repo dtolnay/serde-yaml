@@ -59,35 +59,34 @@
 
 #![doc(html_root_url = "https://docs.rs/serde_yaml/0.8.11")]
 #![deny(missing_docs)]
-#![cfg_attr(feature = "cargo-clippy", allow(renamed_and_removed_lints))]
-#![cfg_attr(feature = "cargo-clippy", deny(clippy, clippy_pedantic))]
+#![deny(clippy::all, clippy::pedantic)]
 // Suppressed clippy lints
-#![cfg_attr(feature = "cargo-clippy", allow(redundant_field_names))]
+#![allow(clippy::redundant_field_names)]
 // Suppressed clippy_pedantic lints
-#![cfg_attr(feature = "cargo-clippy", allow(
+#![allow(
     // private Deserializer::next
-    should_implement_trait,
+    clippy::should_implement_trait,
     // things are often more readable this way
-    cast_lossless,
-    module_name_repetitions,
-    single_match_else,
-    use_self,
+    clippy::cast_lossless,
+    clippy::module_name_repetitions,
+    clippy::single_match_else,
+    clippy::use_self,
     // code is acceptable
-    cast_possible_wrap,
-    cast_precision_loss,
-    cast_sign_loss,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
     // not practical
-    indexing_slicing,
-    missing_docs_in_private_items,
+    clippy::indexing_slicing,
+    clippy::missing_docs_in_private_items,
     // not stable
-    checked_conversions,
-    empty_enum,
+    clippy::checked_conversions,
+    clippy::empty_enum,
     // meh, some things won't fail
-    result_unwrap_used,
+    clippy::result_unwrap_used,
     // noisy
-    missing_errors_doc,
-    must_use_candidate,
-))]
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate,
+)]
 
 pub use crate::de::{from_reader, from_slice, from_str};
 pub use crate::error::{Error, Location, Result};

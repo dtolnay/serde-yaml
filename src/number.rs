@@ -13,7 +13,7 @@ pub struct Number {
 
 // "N" is a prefix of "NegInt"... this is a false positive.
 // https://github.com/Manishearth/rust-clippy/issues/1241
-#[cfg_attr(feature = "cargo-clippy", allow(enum_variant_names))]
+#[allow(clippy::enum_variant_names)]
 #[derive(Copy, Clone, Debug, PartialOrd)]
 enum N {
     PosInt(u64),
@@ -51,7 +51,7 @@ impl Number {
     /// assert!(!v["c"].is_i64());
     /// ```
     #[inline]
-    #[cfg_attr(feature = "cargo-clippy", allow(cast_sign_loss))]
+    #[allow(clippy::cast_sign_loss)]
     pub fn is_i64(&self) -> bool {
         match self.n {
             N::PosInt(v) => v <= i64::max_value() as u64,
@@ -432,7 +432,7 @@ macro_rules! from_signed {
         $(
             impl From<$signed_ty> for Number {
                 #[inline]
-                #[cfg_attr(feature = "cargo-clippy", allow(cast_sign_loss))]
+                #[allow(clippy::cast_sign_loss)]
                 fn from(i: $signed_ty) -> Self {
                     if i < 0 {
                         Number { n: N::NegInt(i as i64) }
@@ -477,7 +477,7 @@ from_float!(f32 f64);
 
 // This is fine, because we don't _really_ implement hash for floats
 // all other hash functions should work as expected
-#[cfg_attr(feature = "cargo-clippy", allow(derive_hash_xor_eq))]
+#[allow(clippy::derive_hash_xor_eq)]
 impl Hash for Number {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self.n {

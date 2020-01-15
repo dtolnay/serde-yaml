@@ -1,7 +1,4 @@
-#![cfg_attr(
-    feature = "cargo-clippy",
-    allow(unreadable_literal, decimal_literal_representation)
-)]
+#![allow(clippy::decimal_literal_representation, clippy::unreadable_literal)]
 
 use serde::serde_if_integer128;
 use serde_derive::{Deserialize, Serialize};
