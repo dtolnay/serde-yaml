@@ -213,7 +213,7 @@ impl Value {
     /// assert_eq!(v.as_null(), None);
     /// ```
     pub fn as_null(&self) -> Option<()> {
-        match *self {
+        match self {
             Value::Null => Some(()),
             _ => None,
         }
@@ -254,8 +254,8 @@ impl Value {
     /// assert_eq!(v.as_bool(), None);
     /// ```
     pub fn as_bool(&self) -> Option<bool> {
-        match *self {
-            Value::Bool(b) => Some(b),
+        match self {
+            Value::Bool(b) => Some(*b),
             _ => None,
         }
     }
@@ -274,7 +274,7 @@ impl Value {
     /// assert!(!v.is_number());
     /// ```
     pub fn is_number(&self) -> bool {
-        match *self {
+        match self {
             Value::Number(_) => true,
             _ => false,
         }
@@ -316,8 +316,8 @@ impl Value {
     /// assert_eq!(v.as_i64(), None);
     /// ```
     pub fn as_i64(&self) -> Option<i64> {
-        match *self {
-            Value::Number(ref n) => n.as_i64(),
+        match self {
+            Value::Number(n) => n.as_i64(),
             _ => None,
         }
     }
@@ -358,8 +358,8 @@ impl Value {
     /// assert_eq!(v.as_u64(), None);
     /// ```
     pub fn as_u64(&self) -> Option<u64> {
-        match *self {
-            Value::Number(ref n) => n.as_u64(),
+        match self {
+            Value::Number(n) => n.as_u64(),
             _ => None,
         }
     }
@@ -384,8 +384,8 @@ impl Value {
     /// assert!(!v.is_f64());
     /// ```
     pub fn is_f64(&self) -> bool {
-        match *self {
-            Value::Number(ref n) => n.is_f64(),
+        match self {
+            Value::Number(n) => n.is_f64(),
             _ => false,
         }
     }
@@ -405,8 +405,8 @@ impl Value {
     /// assert_eq!(v.as_f64(), None);
     /// ```
     pub fn as_f64(&self) -> Option<f64> {
-        match *self {
-            Value::Number(ref i) => i.as_f64(),
+        match self {
+            Value::Number(i) => i.as_f64(),
             _ => None,
         }
     }
@@ -446,8 +446,8 @@ impl Value {
     /// assert_eq!(v.as_str(), None);
     /// ```
     pub fn as_str(&self) -> Option<&str> {
-        match *self {
-            Value::String(ref s) => Some(s),
+        match self {
+            Value::String(s) => Some(s),
             _ => None,
         }
     }
@@ -484,8 +484,8 @@ impl Value {
     /// assert_eq!(v.as_sequence(), None);
     /// ```
     pub fn as_sequence(&self) -> Option<&Sequence> {
-        match *self {
-            Value::Sequence(ref seq) => Some(seq),
+        match self {
+            Value::Sequence(seq) => Some(seq),
             _ => None,
         }
     }
@@ -507,8 +507,8 @@ impl Value {
     /// assert_eq!(v.as_sequence_mut(), None);
     /// ```
     pub fn as_sequence_mut(&mut self) -> Option<&mut Sequence> {
-        match *self {
-            Value::Sequence(ref mut seq) => Some(seq),
+        match self {
+            Value::Sequence(seq) => Some(seq),
             _ => None,
         }
     }
@@ -549,8 +549,8 @@ impl Value {
     /// assert_eq!(v.as_mapping(), None);
     /// ```
     pub fn as_mapping(&self) -> Option<&Mapping> {
-        match *self {
-            Value::Mapping(ref map) => Some(map),
+        match self {
+            Value::Mapping(map) => Some(map),
             _ => None,
         }
     }
@@ -577,8 +577,8 @@ impl Value {
     /// assert_eq!(v.as_mapping_mut(), None);
     /// ```
     pub fn as_mapping_mut(&mut self) -> Option<&mut Mapping> {
-        match *self {
-            Value::Mapping(ref mut map) => Some(map),
+        match self {
+            Value::Mapping(map) => Some(map),
             _ => None,
         }
     }
@@ -622,13 +622,13 @@ impl Eq for Value {}
 
 impl Hash for Value {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        match *self {
+        match self {
             Value::Null => 0.hash(state),
             Value::Bool(b) => (1, b).hash(state),
-            Value::Number(ref i) => (2, i).hash(state),
-            Value::String(ref s) => (3, s).hash(state),
-            Value::Sequence(ref seq) => (4, seq).hash(state),
-            Value::Mapping(ref map) => (5, map).hash(state),
+            Value::Number(i) => (2, i).hash(state),
+            Value::String(s) => (3, s).hash(state),
+            Value::Sequence(seq) => (4, seq).hash(state),
+            Value::Mapping(map) => (5, map).hash(state),
         }
     }
 }

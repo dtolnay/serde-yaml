@@ -702,11 +702,11 @@ impl Value {
 
     #[cold]
     fn unexpected(&self) -> Unexpected {
-        match *self {
+        match self {
             Value::Null => Unexpected::Unit,
-            Value::Bool(b) => Unexpected::Bool(b),
-            Value::Number(ref n) => number::unexpected(n),
-            Value::String(ref s) => Unexpected::Str(s),
+            Value::Bool(b) => Unexpected::Bool(*b),
+            Value::Number(n) => number::unexpected(n),
+            Value::String(s) => Unexpected::Str(s),
             Value::Sequence(_) => Unexpected::Seq,
             Value::Mapping(_) => Unexpected::Map,
         }

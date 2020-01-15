@@ -3,12 +3,12 @@ use crate::Value;
 impl PartialEq for Value {
     fn eq(&self, other: &Value) -> bool {
         match (self, other) {
-            (&Value::Null, &Value::Null) => true,
-            (&Value::Bool(a), &Value::Bool(b)) => a == b,
-            (&Value::Number(ref a), &Value::Number(ref b)) => a == b,
-            (&Value::String(ref a), &Value::String(ref b)) => a == b,
-            (&Value::Sequence(ref a), &Value::Sequence(ref b)) => a == b,
-            (&Value::Mapping(ref a), &Value::Mapping(ref b)) => a == b,
+            (Value::Null, Value::Null) => true,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Number(a), Value::Number(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Sequence(a), Value::Sequence(b)) => a == b,
+            (Value::Mapping(a), Value::Mapping(b)) => a == b,
             _ => false,
         }
     }
