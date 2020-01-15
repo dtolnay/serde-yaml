@@ -163,7 +163,7 @@ impl error::Error for Error {
         }
     }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match *self.0 {
             ErrorImpl::Scan(ref err) => Some(err),
             ErrorImpl::Io(ref err) => Some(err),
