@@ -596,11 +596,11 @@ fn trim_start_matches(s: &str, pat: char) -> &str {
     s.trim_left_matches(pat)
 }
 
-fn invalid_type(event: &Event, exp: &Expected) -> Error {
+fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
     enum Void {}
 
     struct InvalidType<'a> {
-        exp: &'a Expected,
+        exp: &'a dyn Expected,
     }
 
     impl<'de, 'a> Visitor<'de> for InvalidType<'a> {

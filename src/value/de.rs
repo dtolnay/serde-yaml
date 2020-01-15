@@ -693,7 +693,7 @@ impl<'de> Deserializer<'de> for MapDeserializer {
 
 impl Value {
     #[cold]
-    fn invalid_type<E>(&self, exp: &Expected) -> E
+    fn invalid_type<E>(&self, exp: &dyn Expected) -> E
     where
         E: de::Error,
     {
