@@ -4,7 +4,6 @@ use serde::{forward_to_deserialize_any, Deserialize, Deserializer, Serialize, Se
 use std::fmt::{self, Debug, Display};
 use std::hash::{Hash, Hasher};
 use std::i64;
-use std::mem;
 
 /// Represents a YAML number, whether integer or floating point.
 #[derive(Clone, PartialEq, PartialOrd)]
@@ -325,11 +324,7 @@ impl PartialEq for N {
             (N::Float(a), N::Float(b)) => {
                 if a.is_nan() && b.is_nan() {
                     // Compare NaN for bitwise equality.
-                    // The unsafe code is equivalent to f64::to_bits which was
-                    // stabilized in 1.20.0.
-                    let a = unsafe { mem::transmute::<f64, u64>(a) };
-                    let b = unsafe { mem::transmute::<f64, u64>(b) };
-                    a == b
+                    a.to_bits() == b.to_bits()
                 } else {
                     a == b
                 }
