@@ -61,9 +61,9 @@
 #![deny(missing_docs)]
 #![cfg_attr(feature = "cargo-clippy", allow(renamed_and_removed_lints))]
 #![cfg_attr(feature = "cargo-clippy", deny(clippy, clippy_pedantic))]
-// Whitelisted clippy lints
+// Suppressed clippy lints
 #![cfg_attr(feature = "cargo-clippy", allow(redundant_field_names))]
-// Whitelisted clippy_pedantic lints
+// Suppressed clippy_pedantic lints
 #![cfg_attr(feature = "cargo-clippy", allow(
     // private Deserializer::next
     should_implement_trait,
