@@ -145,6 +145,8 @@ pub(crate) fn fix_marker(mut error: Error, marker: Marker, path: Path) -> Error 
 }
 
 impl error::Error for Error {
+    // TODO: deprecated, remove in next major version.
+    #[allow(deprecated)]
     fn description(&self) -> &str {
         match *self.0 {
             ErrorImpl::Message(ref msg, _) => msg,
