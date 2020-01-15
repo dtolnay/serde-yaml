@@ -1032,9 +1032,7 @@ where
         events: Vec::new(),
         aliases: BTreeMap::new(),
     };
-    parser
-        .load(&mut loader, true)
-        .map_err(error::scanner)?;
+    parser.load(&mut loader, true).map_err(error::scanner)?;
     if loader.events.is_empty() {
         Err(error::end_of_stream())
     } else {
