@@ -98,7 +98,7 @@ impl<'a> Deserializer<'a> {
                 Ok(Deserializer {
                     events: self.events,
                     aliases: self.aliases,
-                    pos: pos,
+                    pos,
                     path: Path::Alias { parent: &self.path },
                     remaining_depth: self.remaining_depth,
                 })
@@ -154,7 +154,7 @@ impl<'a> Deserializer<'a> {
         V: Visitor<'de>,
     {
         let (value, len) = self.recursion_check(|de| {
-            let mut seq = SeqAccess { de: de, len: 0 };
+            let mut seq = SeqAccess { de, len: 0 };
             let value = visitor.visit_seq(&mut seq)?;
             Ok((value, seq.len))
         })?;
@@ -168,7 +168,7 @@ impl<'a> Deserializer<'a> {
     {
         let (value, len) = self.recursion_check(|de| {
             let mut map = MapAccess {
-                de: de,
+                de,
                 len: 0,
                 key: None,
             };
@@ -181,7 +181,7 @@ impl<'a> Deserializer<'a> {
 
     fn end_sequence(&mut self, len: usize) -> Result<()> {
         let total = {
-            let mut seq = SeqAccess { de: self, len: len };
+            let mut seq = SeqAccess { de: self, len };
             while de::SeqAccess::next_element::<Ignore>(&mut seq)?.is_some() {}
             seq.len
         };
@@ -207,7 +207,7 @@ impl<'a> Deserializer<'a> {
         let total = {
             let mut map = MapAccess {
                 de: self,
-                len: len,
+                len,
                 key: None,
             };
             while de::MapAccess::next_entry::<Ignore, Ignore>(&mut map)?.is_some() {}
@@ -353,7 +353,7 @@ impl<'de, 'a, 'r> de::MapAccess<'de> for MapAccess<'a, 'r> {
             path: if let Some(key) = self.key {
                 Path::Map {
                     parent: &self.de.path,
-                    key: key,
+                    key,
                 }
             } else {
                 Path::Unknown {
@@ -614,7 +614,7 @@ fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
     match event {
         Event::Alias(_) => unreachable!(),
         Event::Scalar(v, style, tag) => {
-            let get_type = InvalidType { exp: exp };
+            let get_type = InvalidType { exp };
             match visit_scalar(v, *style, tag, get_type) {
                 Ok(void) => match void {},
                 Err(invalid_type) => invalid_type,
@@ -951,7 +951,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
                         if let Some(tag) = variants.iter().find(|v| *v == suffix) {
                             return visitor.visit_enum(EnumAccess {
                                 de: self,
-                                name: name,
+                                name,
                                 tag: Some(tag),
                             });
                         }
@@ -963,7 +963,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
                 *self.pos += 1;
                 let value = visitor.visit_enum(EnumAccess {
                     de: self,
-                    name: name,
+                    name,
                     tag: None,
                 })?;
                 self.end_mapping(1)?;

@@ -137,7 +137,7 @@ pub(crate) fn recursion_limit_exceeded() -> Error {
 pub(crate) fn fix_marker(mut error: Error, marker: Marker, path: Path) -> Error {
     if let ErrorImpl::Message(_, none @ None) = error.0.as_mut() {
         *none = Some(Pos {
-            marker: marker,
+            marker,
             path: path.to_string(),
         });
     }

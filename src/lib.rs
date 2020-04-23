@@ -60,8 +60,6 @@
 #![doc(html_root_url = "https://docs.rs/serde_yaml/0.8.11")]
 #![deny(missing_docs)]
 #![deny(clippy::all, clippy::pedantic)]
-// Suppressed clippy lints
-#![allow(clippy::redundant_field_names)]
 // Suppressed clippy_pedantic lints
 #![allow(
     // private Deserializer::next

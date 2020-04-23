@@ -443,10 +443,7 @@ impl<'de> Deserializer<'de> for Value {
             }
         };
 
-        visitor.visit_enum(EnumDeserializer {
-            variant: variant,
-            value: value,
-        })
+        visitor.visit_enum(EnumDeserializer { variant, value })
     }
 
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Error>

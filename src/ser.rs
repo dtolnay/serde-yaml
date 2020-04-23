@@ -166,7 +166,7 @@ impl ser::Serializer for Serializer {
             None => yaml::Array::new(),
             Some(len) => yaml::Array::with_capacity(len),
         };
-        Ok(SerializeArray { array: array })
+        Ok(SerializeArray { array })
     }
 
     fn serialize_tuple(self, len: usize) -> Result<SerializeArray> {
@@ -392,7 +392,7 @@ where
     T: ser::Serialize,
 {
     let doc = to_yaml(value)?;
-    let mut writer_adapter = FmtToIoWriter { writer: writer };
+    let mut writer_adapter = FmtToIoWriter { writer };
     YamlEmitter::new(&mut writer_adapter)
         .dump(&doc)
         .map_err(error::emitter)?;
