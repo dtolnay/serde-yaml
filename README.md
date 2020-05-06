@@ -1,11 +1,11 @@
 Serde YAML
 ==========
 
-[![Build Status](https://api.travis-ci.org/dtolnay/serde-yaml.svg?branch=master)][travis]
+[![Build Status](https://img.shields.io/github/workflow/status/dtolnay/serde-yaml/CI/master)][actions]
 [![Latest Version](https://img.shields.io/crates/v/serde_yaml.svg)][crates.io]
 [![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)][docs.rs]
 
-[travis]: https://travis-ci.org/dtolnay/serde-yaml
+[actions]: https://github.com/dtolnay/serde-yaml/actions?query=branch%3Amaster
 [crates.io]: https://crates.io/crates/serde_yaml
 [docs.rs]: https://docs.rs/serde_yaml
 
