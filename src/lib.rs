@@ -103,7 +103,7 @@ pub mod seed {
 
 mod de;
 mod error;
-mod mapping;
+pub mod mapping;
 mod number;
 mod path;
 mod ser;
