@@ -202,9 +202,9 @@ impl Number {
     /// ```
     /// # use std::f64;
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
-    /// assert_eq!(yaml("inf").as_f64(), Some(f64::INFINITY));
-    /// assert_eq!(yaml("-inf").as_f64(), Some(f64::NEG_INFINITY));
-    /// assert!(yaml("NaN").as_f64().unwrap().is_nan());
+    /// assert_eq!(yaml(".inf").as_f64(), Some(f64::INFINITY));
+    /// assert_eq!(yaml("-.inf").as_f64(), Some(f64::NEG_INFINITY));
+    /// assert!(yaml(".nan").as_f64().unwrap().is_nan());
     /// ```
     #[inline]
     pub fn as_f64(&self) -> Option<f64> {
@@ -323,9 +323,9 @@ impl PartialEq for N {
             (N::NegInt(a), N::NegInt(b)) => a == b,
             (N::Float(a), N::Float(b)) => {
                 if a.is_nan() && b.is_nan() {
-                    // YAML only has two NaNs;
+                    // YAML only has one NaN;
                     // the bit representation isn't preserved
-                    a.is_sign_positive() == b.is_sign_positive()
+                    true
                 } else {
                     a == b
                 }
