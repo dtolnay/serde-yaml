@@ -582,8 +582,10 @@ where
     if v == ".nan" || v == ".NaN" || v == ".NAN" {
         return visitor.visit_f64(f64::NAN);
     }
-    if let Ok(n) = v.parse() {
-        return visitor.visit_f64(n);
+    if let Ok(n) = v.parse::<f64>() {
+        if n.is_finite() {
+            return visitor.visit_f64(n);
+        }
     }
     visitor.visit_str(v)
 }

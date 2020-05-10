@@ -3,11 +3,12 @@ use std::f64;
 
 #[test]
 fn test_nan() {
-    let pos_nan = serde_yaml::from_str::<Value>("NaN").unwrap();
-    let neg_nan = serde_yaml::from_str::<Value>("-NaN").unwrap();
+    let pos_nan = serde_yaml::from_str::<Value>(".nan").unwrap();
+    assert!(pos_nan.is_f64());
     assert_eq!(pos_nan, pos_nan);
-    assert_eq!(neg_nan, neg_nan);
-    assert_ne!(pos_nan, neg_nan);
+
+    let neg_fake_nan = serde_yaml::from_str::<Value>("-.nan").unwrap();
+    assert!(neg_fake_nan.is_string());
 
     let significand_mask = 0xF_FFFF_FFFF_FFFF;
     let bits = (f64::NAN.to_bits() ^ significand_mask) | 1;
