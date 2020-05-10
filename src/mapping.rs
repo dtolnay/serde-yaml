@@ -1,3 +1,5 @@
+//! A YAML mapping and its iterator types.
+
 use crate::Value;
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -175,6 +177,7 @@ macro_rules! delegate_iterator {
     }
 }
 
+/// Iterator over `&serde_yaml::Mapping`.
 pub struct Iter<'a> {
     iter: linked_hash_map::Iter<'a, Value, Value>,
 }
@@ -192,6 +195,7 @@ impl<'a> IntoIterator for &'a Mapping {
     }
 }
 
+/// Iterator over `&mut serde_yaml::Mapping`.
 pub struct IterMut<'a> {
     iter: linked_hash_map::IterMut<'a, Value, Value>,
 }
@@ -209,6 +213,7 @@ impl<'a> IntoIterator for &'a mut Mapping {
     }
 }
 
+/// Iterator over `serde_yaml::Mapping` by value.
 pub struct IntoIter {
     iter: linked_hash_map::IntoIter<Value, Value>,
 }
