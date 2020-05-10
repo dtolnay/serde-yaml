@@ -323,8 +323,9 @@ impl PartialEq for N {
             (N::NegInt(a), N::NegInt(b)) => a == b,
             (N::Float(a), N::Float(b)) => {
                 if a.is_nan() && b.is_nan() {
-                    // Compare NaN for bitwise equality.
-                    a.to_bits() == b.to_bits()
+                    // YAML only has two NaNs;
+                    // the bit representation isn't preserved
+                    a.is_sign_positive() == b.is_sign_positive()
                 } else {
                     a == b
                 }
