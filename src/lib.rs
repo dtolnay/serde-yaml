@@ -88,9 +88,11 @@
 
 pub use crate::de::{from_reader, from_slice, from_str};
 pub use crate::error::{Error, Location, Result};
-pub use crate::mapping::Mapping;
 pub use crate::ser::{to_string, to_vec, to_writer};
 pub use crate::value::{from_value, to_value, Index, Number, Sequence, Value};
+
+#[doc(inline)]
+pub use crate::mapping::Mapping;
 
 /// Entry points for deserializing with pre-existing state.
 ///
@@ -103,7 +105,7 @@ pub mod seed {
 
 mod de;
 mod error;
-mod mapping;
+pub mod mapping;
 mod number;
 mod path;
 mod ser;
