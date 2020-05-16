@@ -1086,7 +1086,7 @@ where
     S: for<'de> DeserializeSeed<'de, Value = T>,
 {
     let mut bytes = Vec::new();
-    rdr.read_to_end(&mut bytes).map_err(error::io)?;
+    rdr.read_to_end(&mut bytes)?;
     from_slice_seed(&bytes, seed)
 }
 

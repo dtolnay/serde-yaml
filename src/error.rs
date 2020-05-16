@@ -144,6 +144,13 @@ pub(crate) fn fix_marker(mut error: Error, marker: Marker, path: Path) -> Error 
     error
 }
 
+impl From<io::Error> for Error {
+    #[inline]
+    fn from(err: io::Error) -> Self {
+        io(err)
+    }
+}
+
 impl error::Error for Error {
     // TODO: deprecated, remove in next major version.
     #[allow(deprecated)]
