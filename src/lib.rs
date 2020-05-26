@@ -80,7 +80,7 @@
     clippy::checked_conversions,
     clippy::empty_enum,
     // meh, some things won't fail
-    clippy::result_unwrap_used,
+    clippy::unwrap_used,
     // noisy
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
