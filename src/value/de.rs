@@ -536,7 +536,7 @@ impl<'de> VariantAccess<'de> for VariantDeserializer {
                 Deserializer::deserialize_any(MapDeserializer::new(v), visitor)
             }
             Some(other) => Err(Error::invalid_type(other.unexpected(), &"struct variant")),
-            _ => Err(Error::invalid_type(
+            None => Err(Error::invalid_type(
                 Unexpected::UnitVariant,
                 &"struct variant",
             )),
