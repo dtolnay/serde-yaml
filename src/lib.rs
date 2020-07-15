@@ -75,6 +75,7 @@
     // things are often more readable this way
     clippy::cast_lossless,
     clippy::module_name_repetitions,
+    clippy::option_if_let_else,
     clippy::single_match_else,
     clippy::use_self,
     // code is acceptable
