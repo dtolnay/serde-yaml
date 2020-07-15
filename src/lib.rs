@@ -92,6 +92,8 @@
     // noisy
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
+    // we support older compilers
+    clippy::match_like_matches_macro,
 )]
 
 pub use crate::de::{from_reader, from_slice, from_str};
