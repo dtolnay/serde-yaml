@@ -582,6 +582,62 @@ impl Value {
             _ => None,
         }
     }
+
+    /// Looks up a value by a JSON Pointer.
+    ///
+    /// JSON Pointer defines a string syntax for identifying a specific value
+    /// within a JavaScript Object Notation (JSON) document.
+    ///
+    /// A Pointer is a Unicode string with the reference tokens separated by `/`.
+    /// Inside tokens `/` is replaced by `~1` and `~` is replaced by `~0`. The
+    /// addressed value is returned and if there is no such value `None` is
+    /// returned.
+    ///
+    /// For more information read [RFC6901](https://tools.ietf.org/html/rfc6901).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use serde_yaml::Value;
+    /// #
+    /// let data: Value = serde_yaml::from_str(r#"
+    /// x:
+    ///   y:
+    ///     - z
+    ///     - zz
+    ///
+    /// "#).unwrap();
+    ///
+    /// assert_eq!(data.pointer("/x/y/1").unwrap().as_str(), Some("zz"));
+    /// assert_eq!(data.pointer("/a/b/c"), None);
+    /// ```
+    pub fn pointer(&self, pointer: &str) -> Option<&Value> {
+        if pointer == "" {
+            return Some(self);
+        }
+        if !pointer.starts_with('/') {
+            return None;
+        }
+        let tokens = pointer
+            .split('/')
+            .skip(1)
+            .map(|x| x.replace("~1", "/").replace("~0", "~"));
+        let mut target = self;
+
+        for token in tokens {
+            let target_opt = match *target {
+                Value::Mapping(ref map) => map.get(&Value::String(token)),
+                Value::Sequence(ref list) => parse_index(&token).and_then(|x| list.get(x)),
+                _ => return None,
+            };
+            if let Some(t) = target_opt {
+                target = t;
+            } else {
+                return None;
+            }
+        }
+        Some(target)
+    }
 }
 
 fn yaml_to_value(yaml: Yaml) -> Value {
@@ -616,6 +672,13 @@ fn yaml_to_value(yaml: Yaml) -> Value {
         Yaml::Null => Value::Null,
         Yaml::BadValue => panic!("bad value"),
     }
+}
+
+fn parse_index(s: &str) -> Option<usize> {
+    if s.starts_with('+') || (s.starts_with('0') && s.len() != 1) {
+        return None;
+    }
+    s.parse().ok()
 }
 
 impl Eq for Value {}
