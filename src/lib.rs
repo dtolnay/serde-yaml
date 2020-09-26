@@ -94,6 +94,7 @@
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
     // we support older compilers
+    clippy::manual_strip,
     clippy::match_like_matches_macro,
 )]
 
