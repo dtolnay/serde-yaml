@@ -73,6 +73,15 @@ struct Deserializer<'a> {
 }
 
 impl<'a> Deserializer<'a> {
+    fn from_loader(loader: &'a Loader, pos: &'a mut usize) -> Deserializer<'a> {
+        Deserializer {
+            events: &loader.events,
+            aliases: &loader.aliases,
+            pos,
+            path: Path::Root,
+            remaining_depth: 128,
+        }
+    }
     fn peek(&self) -> Result<(&'a Event, Marker)> {
         match self.events.get(*self.pos) {
             Some(event) => Ok((&event.0, event.1)),
@@ -996,6 +1005,20 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
     }
 }
 
+pub fn loader(s: &str) -> Result<Loader> {
+    let mut parser = Parser::new(s.chars());
+    let mut loader = Loader {
+        events: Vec::new(),
+        aliases: BTreeMap::new(),
+    };
+    parser.load(&mut loader, true).map_err(error::scanner)?;
+    if loader.events.is_empty() {
+        Err(error::end_of_stream())
+    } else {
+        Ok(loader)
+    }
+}
+
 /// Deserialize an instance of type `T` from a string of YAML text.
 ///
 /// This conversion can fail if the structure of the Value does not match the
@@ -1014,6 +1037,25 @@ where
     from_str_seed(s, PhantomData)
 }
 
+/// Deserialize an sequence of  `T` from a string of YAML text, possibly containing
+/// multipe documents
+///
+/// This conversion can fail if the structure of the Value does not match the
+/// structure expected by `T`, for example if `T` is a struct type but the Value
+/// contains something other than a YAML map. It can also fail if the structure
+/// is correct but `T`'s implementation of `Deserialize` decides that something
+/// is wrong with the data, for example required struct fields are missing from
+/// the YAML map or some number is too big to fit in the expected primitive
+/// type.
+///
+/// YAML currently does not support zero-copy deserialization.
+pub fn from_str_multidoc<T>(s: &str) -> Result<Vec<T>>
+where
+    T: DeserializeOwned,
+{
+    from_str_seed_multidoc(s, || PhantomData)
+}
+
 /// Deserialize an instance of type `T` from a string of YAML text with a seed.
 ///
 /// This conversion can fail if the structure of the Value does not match the
@@ -1029,27 +1071,43 @@ pub fn from_str_seed<T, S>(s: &str, seed: S) -> Result<T>
 where
     S: for<'de> DeserializeSeed<'de, Value = T>,
 {
-    let mut parser = Parser::new(s.chars());
-    let mut loader = Loader {
-        events: Vec::new(),
-        aliases: BTreeMap::new(),
-    };
-    parser.load(&mut loader, true).map_err(error::scanner)?;
-    if loader.events.is_empty() {
-        Err(error::end_of_stream())
+    let loader = loader(s)?;
+    let mut pos = 0;
+    let mut d = Deserializer::from_loader(&loader, &mut pos);
+    let t = seed.deserialize(&mut d)?;
+    if pos == loader.events.len() {
+        Ok(t)
     } else {
-        let mut pos = 0;
-        let t = seed.deserialize(&mut Deserializer {
-            events: &loader.events,
-            aliases: &loader.aliases,
-            pos: &mut pos,
-            path: Path::Root,
-            remaining_depth: 128,
-        })?;
-        if pos == loader.events.len() {
-            Ok(t)
-        } else {
-            Err(error::more_than_one_document())
+        Err(error::more_than_one_document())
+    }
+}
+
+/// Deserialize an a sequenc of documents into instances of type `T` from a string
+/// of YAML text with a seed. The seed is provided via factory method.
+///
+/// This conversion can fail if the structure of the Value does not match the
+/// structure expected by `T`, for example if `T` is a struct type but the Value
+/// contains something other than a YAML map. It can also fail if the structure
+/// is correct but `T`'s implementation of `Deserialize` decides that something
+/// is wrong with the data, for example required struct fields are missing from
+/// the YAML map or some number is too big to fit in the expected primitive
+/// type.
+///
+/// YAML currently does not support zero-copy deserialization.
+pub fn from_str_seed_multidoc<T, SF, S>(s: &str, mut seed_factory: SF) -> Result<Vec<T>>
+where
+    SF: FnMut() -> S,
+    S: for<'de> DeserializeSeed<'de, Value = T>,
+{
+    let loader = loader(s)?;
+    let mut pos = 0;
+    let mut d = Deserializer::from_loader(&loader, &mut pos);
+    let mut res = vec![];
+
+    loop {
+        res.push(seed_factory().deserialize(&mut d)?);
+        if *d.pos >= d.events.len() {
+            return Ok(res);
         }
     }
 }

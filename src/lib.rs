@@ -98,7 +98,7 @@
     clippy::match_like_matches_macro,
 )]
 
-pub use crate::de::{from_reader, from_slice, from_str};
+pub use crate::de::{from_reader, from_slice, from_str, from_str_multidoc};
 pub use crate::error::{Error, Location, Result};
 pub use crate::ser::{to_string, to_vec, to_writer};
 pub use crate::value::{from_value, to_value, Index, Number, Sequence, Value};
@@ -112,7 +112,7 @@ pub use crate::mapping::Mapping;
 /// Deserializer type. Data formats that have a public Deserializer should not
 /// copy these signatures.
 pub mod seed {
-    pub use super::de::{from_reader_seed, from_slice_seed, from_str_seed};
+    pub use super::de::{from_reader_seed, from_slice_seed, from_str_seed, from_str_seed_multidoc};
 }
 
 mod de;

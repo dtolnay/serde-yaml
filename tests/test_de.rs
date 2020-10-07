@@ -72,6 +72,26 @@ fn test_option() {
 }
 
 #[test]
+fn test_multidoc() {
+    #[derive(Deserialize, PartialEq, Debug)]
+    struct Data {
+        a: bool,
+    }
+    let yaml = unindent(
+        "
+        ---
+        a: true
+        ...
+        ---
+        a: false
+        ...",
+    );
+    let expected = vec![Data { a: true }, Data { a: false }];
+    let deserialized: Vec<Data> = serde_yaml::from_str_multidoc(&yaml).unwrap();
+    assert_eq!(&expected, &deserialized);
+}
+
+#[test]
 fn test_option_alias() {
     #[derive(Deserialize, PartialEq, Debug)]
     struct Data {
