@@ -17,8 +17,8 @@ serde = "1.0.60"
 yaml-rust = "0.4"
 
 [dev-dependencies]
+indoc = "1.0"
 serde_derive = "1.0"
-unindent = "0.1"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
