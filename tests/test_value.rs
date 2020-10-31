@@ -10,6 +10,9 @@ fn test_nan() {
     let neg_fake_nan = serde_yaml::from_str::<Value>("-.nan").unwrap();
     assert!(neg_fake_nan.is_string());
 
+    let num_string = serde_yaml::from_str::<Value>("01").unwrap();
+    assert!(num_string.is_string());
+
     let significand_mask = 0xF_FFFF_FFFF_FFFF;
     let bits = (f64::NAN.to_bits() ^ significand_mask) | 1;
     let different_pos_nan = Value::Number(Number::from(f64::from_bits(bits)));

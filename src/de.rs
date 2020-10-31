@@ -556,6 +556,13 @@ where
             return visitor.visit_i64(n);
         }
     }
+    // After handling the different number encodings above
+    // if we are left with leading zero(s) followed by numeric characters
+    // this is in fact a string according to the YAML 1.2 spec
+    // https://yaml.org/spec/1.2/spec.html#id2761292
+    if v.len() > 1 &&  v.starts_with('0') && v.chars().all(char::is_numeric) {
+        return visitor.visit_str(v);
+    }
     if let Ok(n) = v.parse() {
         return visitor.visit_u64(n);
     }
