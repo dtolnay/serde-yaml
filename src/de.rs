@@ -107,7 +107,7 @@ impl<'a> Deserializer<'a> {
         }
     }
 
-    fn ignore_any(&mut self) -> Result<()> {
+    fn ignore_any(&mut self) {
         enum Nest {
             Sequence,
             Mapping,
@@ -138,15 +138,13 @@ impl<'a> Deserializer<'a> {
                 },
             }
             if stack.is_empty() {
-                return Ok(());
+                return;
             }
         }
 
         if !stack.is_empty() {
             panic!("missing end event");
         }
-
-        Ok(())
     }
 
     fn visit_sequence<'de, V>(&mut self, visitor: V) -> Result<V::Value>
@@ -998,7 +996,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
     where
         V: Visitor<'de>,
     {
-        self.ignore_any()?;
+        self.ignore_any();
         visitor.visit_unit()
     }
 }
