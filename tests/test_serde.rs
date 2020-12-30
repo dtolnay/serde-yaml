@@ -1,4 +1,8 @@
-#![allow(clippy::decimal_literal_representation, clippy::unreadable_literal)]
+#![allow(
+    clippy::decimal_literal_representation,
+    clippy::unreadable_literal,
+    clippy::shadow_unrelated
+)]
 
 use indoc::indoc;
 use serde::serde_if_integer128;

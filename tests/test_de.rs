@@ -1,3 +1,5 @@
+#![allow(clippy::cast_lossless, clippy::cast_possible_wrap)]
+
 use indoc::indoc;
 use serde::serde_if_integer128;
 use serde_derive::Deserialize;

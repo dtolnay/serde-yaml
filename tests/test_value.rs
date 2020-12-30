@@ -1,3 +1,5 @@
+#![allow(clippy::eq_op)]
+
 use serde_yaml::{Number, Value};
 use std::f64;
 
