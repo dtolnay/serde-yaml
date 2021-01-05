@@ -35,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: dtolnay/rust-toolchain@clippy
-      - run: cargo clippy --tests -- -Dclippy::pedantic
+      - run: cargo clippy --tests -- -Dclippy::all -Dclippy::pedantic
 
   fuzz:
     name: Fuzz
