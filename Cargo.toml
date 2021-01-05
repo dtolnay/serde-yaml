@@ -13,8 +13,8 @@ keywords = ["yaml", "serde"]
 [dependencies]
 dtoa = "0.4"
 linked-hash-map = "0.5.3"
-serde = "1.0.60"
-yaml-rust = "0.4"
+serde = "1.0.69"
+yaml-rust = "0.4.5"
 
 [dev-dependencies]
 indoc = "1.0"
