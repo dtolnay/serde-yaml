@@ -420,7 +420,7 @@ pub fn to_string<T: ?Sized>(value: &T) -> Result<String>
 where
     T: ser::Serialize,
 {
-    Ok(String::from_utf8(to_vec(value)?).map_err(error::string_utf8)?)
+    String::from_utf8(to_vec(value)?).map_err(error::string_utf8)
 }
 
 /// The yaml-rust library uses `fmt::Write` intead of `io::Write` so this is a
