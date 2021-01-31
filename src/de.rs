@@ -14,6 +14,323 @@ use std::str;
 use yaml_rust::parser::{Event as YamlEvent, MarkedEventReceiver, Parser};
 use yaml_rust::scanner::{Marker, TScalarStyle, TokenType};
 
+pub struct Deserializer<'a> {
+    input: Input<'a>,
+}
+
+enum Input<'a> {
+    Str(&'a str),
+    Slice(&'a [u8]),
+    Read(Box<dyn io::Read + 'a>),
+}
+
+impl<'a> Deserializer<'a> {
+    pub fn from_str(s: &'a str) -> Self {
+        let input = Input::Str(s);
+        Deserializer { input }
+    }
+
+    pub fn from_slice(v: &'a [u8]) -> Self {
+        let input = Input::Slice(v);
+        Deserializer { input }
+    }
+
+    pub fn from_reader<R>(rdr: R) -> Self
+    where
+        R: io::Read + 'a,
+    {
+        let input = Input::Read(Box::new(rdr));
+        Deserializer { input }
+    }
+
+    fn de<T>(self, f: impl FnOnce(&mut DeserializerFromEvents) -> Result<T>) -> Result<T> {
+        enum Input2<'a> {
+            Str(&'a str),
+            Slice(&'a [u8]),
+        }
+
+        let mut buffer;
+        let input = match self.input {
+            Input::Str(s) => Input2::Str(s),
+            Input::Slice(bytes) => Input2::Slice(bytes),
+            Input::Read(mut rdr) => {
+                buffer = Vec::new();
+                rdr.read_to_end(&mut buffer).map_err(error::io)?;
+                Input2::Slice(&buffer)
+            }
+        };
+
+        let input = match input {
+            Input2::Str(s) => s,
+            Input2::Slice(bytes) => str::from_utf8(bytes).map_err(error::str_utf8)?,
+        };
+
+        let mut parser = Parser::new(input.chars());
+        let mut loader = Loader {
+            events: Vec::new(),
+            aliases: BTreeMap::new(),
+        };
+        parser.load(&mut loader, true).map_err(error::scanner)?;
+        if loader.events.is_empty() {
+            Err(error::end_of_stream())
+        } else {
+            let mut pos = 0;
+            let t = f(&mut DeserializerFromEvents {
+                events: &loader.events,
+                aliases: &loader.aliases,
+                pos: &mut pos,
+                path: Path::Root,
+                remaining_depth: 128,
+            })?;
+            if pos == loader.events.len() {
+                Ok(t)
+            } else {
+                Err(error::more_than_one_document())
+            }
+        }
+    }
+}
+
+impl<'de> de::Deserializer<'de> for Deserializer<'de> {
+    type Error = Error;
+
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_any(visitor))
+    }
+
+    fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_bool(visitor))
+    }
+
+    fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_i8(visitor))
+    }
+
+    fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_i16(visitor))
+    }
+
+    fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_i32(visitor))
+    }
+
+    fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_i64(visitor))
+    }
+
+    serde_if_integer128! {
+        fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value>
+        where
+            V: Visitor<'de>,
+        {
+            self.de(|state| state.deserialize_i128(visitor))
+        }
+    }
+
+    fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_u8(visitor))
+    }
+
+    fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_u16(visitor))
+    }
+
+    fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_u32(visitor))
+    }
+
+    fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_u64(visitor))
+    }
+
+    serde_if_integer128! {
+        fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value>
+        where
+            V: Visitor<'de>,
+        {
+            self.de(|state| state.deserialize_u128(visitor))
+        }
+    }
+
+    fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_f32(visitor))
+    }
+
+    fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_f64(visitor))
+    }
+
+    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_char(visitor))
+    }
+
+    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_str(visitor))
+    }
+
+    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_string(visitor))
+    }
+
+    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_bytes(visitor))
+    }
+
+    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_byte_buf(visitor))
+    }
+
+    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_option(visitor))
+    }
+
+    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_unit(visitor))
+    }
+
+    fn deserialize_unit_struct<V>(self, name: &'static str, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_unit_struct(name, visitor))
+    }
+
+    fn deserialize_newtype_struct<V>(self, name: &'static str, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_newtype_struct(name, visitor))
+    }
+
+    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_seq(visitor))
+    }
+
+    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_tuple(len, visitor))
+    }
+
+    fn deserialize_tuple_struct<V>(
+        self,
+        name: &'static str,
+        len: usize,
+        visitor: V,
+    ) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_tuple_struct(name, len, visitor))
+    }
+
+    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_map(visitor))
+    }
+
+    fn deserialize_struct<V>(
+        self,
+        name: &'static str,
+        fields: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_struct(name, fields, visitor))
+    }
+
+    fn deserialize_enum<V>(
+        self,
+        name: &'static str,
+        variants: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_enum(name, variants, visitor))
+    }
+
+    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_identifier(visitor))
+    }
+
+    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        self.de(|state| state.deserialize_ignored_any(visitor))
+    }
+}
+
 pub struct Loader {
     events: Vec<(Event, Marker)>,
     /// Map from alias id to index in events.
