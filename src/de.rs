@@ -1,7 +1,3 @@
-//! YAML Deserialization
-//!
-//! This module provides YAML deserialization with the type `Deserializer`.
-
 use crate::path::Path;
 use crate::{error, Error, Result};
 use serde::de::{
@@ -63,7 +59,7 @@ enum Event {
     MappingEnd,
 }
 
-struct Deserializer<'a> {
+struct DeserializerFromEvents<'a> {
     events: &'a [(Event, Marker)],
     /// Map from alias id to index in events.
     aliases: &'a BTreeMap<usize, usize>,
@@ -72,7 +68,7 @@ struct Deserializer<'a> {
     remaining_depth: u8,
 }
 
-impl<'a> Deserializer<'a> {
+impl<'a> DeserializerFromEvents<'a> {
     fn peek(&self) -> Result<(&'a Event, Marker)> {
         match self.events.get(*self.pos) {
             Some(event) => Ok((&event.0, event.1)),
@@ -91,11 +87,11 @@ impl<'a> Deserializer<'a> {
         })
     }
 
-    fn jump(&'a self, pos: &'a mut usize) -> Result<Deserializer<'a>> {
+    fn jump(&'a self, pos: &'a mut usize) -> Result<DeserializerFromEvents<'a>> {
         match self.aliases.get(pos) {
             Some(&found) => {
                 *pos = found;
-                Ok(Deserializer {
+                Ok(DeserializerFromEvents {
                     events: self.events,
                     aliases: self.aliases,
                     pos,
@@ -281,7 +277,7 @@ where
 }
 
 struct SeqAccess<'a: 'r, 'r> {
-    de: &'r mut Deserializer<'a>,
+    de: &'r mut DeserializerFromEvents<'a>,
     len: usize,
 }
 
@@ -295,7 +291,7 @@ impl<'de, 'a, 'r> de::SeqAccess<'de> for SeqAccess<'a, 'r> {
         match self.de.peek()?.0 {
             Event::SequenceEnd => Ok(None),
             _ => {
-                let mut element_de = Deserializer {
+                let mut element_de = DeserializerFromEvents {
                     events: self.de.events,
                     aliases: self.de.aliases,
                     pos: self.de.pos,
@@ -313,7 +309,7 @@ impl<'de, 'a, 'r> de::SeqAccess<'de> for SeqAccess<'a, 'r> {
 }
 
 struct MapAccess<'a: 'r, 'r> {
-    de: &'r mut Deserializer<'a>,
+    de: &'r mut DeserializerFromEvents<'a>,
     len: usize,
     key: Option<&'a str>,
 }
@@ -344,7 +340,7 @@ impl<'de, 'a, 'r> de::MapAccess<'de> for MapAccess<'a, 'r> {
     where
         V: DeserializeSeed<'de>,
     {
-        let mut value_de = Deserializer {
+        let mut value_de = DeserializerFromEvents {
             events: self.de.events,
             aliases: self.de.aliases,
             pos: self.de.pos,
@@ -365,14 +361,14 @@ impl<'de, 'a, 'r> de::MapAccess<'de> for MapAccess<'a, 'r> {
 }
 
 struct EnumAccess<'a: 'r, 'r> {
-    de: &'r mut Deserializer<'a>,
+    de: &'r mut DeserializerFromEvents<'a>,
     name: &'static str,
     tag: Option<&'static str>,
 }
 
 impl<'de, 'a, 'r> de::EnumAccess<'de> for EnumAccess<'a, 'r> {
     type Error = Error;
-    type Variant = Deserializer<'r>;
+    type Variant = DeserializerFromEvents<'r>;
 
     fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant)>
     where
@@ -408,7 +404,7 @@ impl<'de, 'a, 'r> de::EnumAccess<'de> for EnumAccess<'a, 'r> {
 
         let str_de = IntoDeserializer::<Error>::into_deserializer(variant);
         let ret = seed.deserialize(str_de)?;
-        let variant_visitor = Deserializer {
+        let variant_visitor = DeserializerFromEvents {
             events: self.de.events,
             aliases: self.de.aliases,
             pos: self.de.pos,
@@ -422,7 +418,7 @@ impl<'de, 'a, 'r> de::EnumAccess<'de> for EnumAccess<'a, 'r> {
     }
 }
 
-impl<'de, 'a> de::VariantAccess<'de> for Deserializer<'a> {
+impl<'de, 'a> de::VariantAccess<'de> for DeserializerFromEvents<'a> {
     type Error = Error;
 
     fn unit_variant(mut self) -> Result<()> {
@@ -452,7 +448,7 @@ impl<'de, 'a> de::VariantAccess<'de> for Deserializer<'a> {
 }
 
 struct UnitVariantAccess<'a: 'r, 'r> {
-    de: &'r mut Deserializer<'a>,
+    de: &'r mut DeserializerFromEvents<'a>,
 }
 
 impl<'de, 'a, 'r> de::EnumAccess<'de> for UnitVariantAccess<'a, 'r> {
@@ -634,7 +630,7 @@ fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
     }
 }
 
-impl<'a> Deserializer<'a> {
+impl<'a> DeserializerFromEvents<'a> {
     fn deserialize_scalar<'de, V>(&mut self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -649,7 +645,7 @@ impl<'a> Deserializer<'a> {
     }
 }
 
-impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut Deserializer<'a> {
+impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     type Error = Error;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
@@ -1044,7 +1040,7 @@ where
         Err(error::end_of_stream())
     } else {
         let mut pos = 0;
-        let t = seed.deserialize(&mut Deserializer {
+        let t = seed.deserialize(&mut DeserializerFromEvents {
             events: &loader.events,
             aliases: &loader.aliases,
             pos: &mut pos,
