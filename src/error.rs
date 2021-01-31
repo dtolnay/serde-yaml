@@ -9,15 +9,12 @@ use std::string;
 use yaml_rust::emitter;
 use yaml_rust::scanner::{self, Marker, ScanError};
 
-/// This type represents all possible errors that can occur when serializing or
-/// deserializing YAML data.
+/// An error that happened serializing or deserializing YAML data.
 pub struct Error(Box<ErrorImpl>);
 
 /// Alias for a `Result` with the error type `serde_yaml::Error`.
 pub type Result<T> = result::Result<T, Error>;
 
-/// This type represents all possible errors that can occur when serializing or
-/// deserializing a value using YAML.
 #[derive(Debug)]
 pub enum ErrorImpl {
     Message(String, Option<Pos>),
@@ -39,7 +36,7 @@ pub struct Pos {
     path: String,
 }
 
-/// This type represents the location that an error occured.
+/// The input location that an error occured.
 #[derive(Debug)]
 pub struct Location {
     index: usize,
