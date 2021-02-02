@@ -74,6 +74,7 @@
     // things are often more readable this way
     clippy::cast_lossless,
     clippy::module_name_repetitions,
+    clippy::needless_pass_by_value,
     clippy::option_if_let_else,
     clippy::single_match_else,
     clippy::use_self,
@@ -99,7 +100,7 @@
 
 pub use crate::de::{from_reader, from_slice, from_str, Deserializer};
 pub use crate::error::{Error, Location, Result};
-pub use crate::ser::{to_string, to_vec, to_writer};
+pub use crate::ser::{to_string, to_vec, to_writer, Serializer};
 pub use crate::value::{from_value, to_value, Index, Number, Sequence, Value};
 
 #[doc(inline)]
