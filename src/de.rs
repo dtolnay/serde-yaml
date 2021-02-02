@@ -18,6 +18,43 @@ use yaml_rust::parser::{Event as YamlEvent, MarkedEventReceiver, Parser};
 use yaml_rust::scanner::{Marker, TScalarStyle, TokenType};
 
 /// A structure that deserializes YAML into Rust values.
+///
+/// # Examples
+///
+/// Deserializing a single document:
+///
+/// ```
+/// use anyhow::Result;
+/// use serde::Deserialize;
+/// use serde_yaml::Value;
+///
+/// fn main() -> Result<()> {
+///     let input = "---\nk: 107\n";
+///     let de = serde_yaml::Deserializer::from_str(input);
+///     let value = Value::deserialize(de)?;
+///     println!("{:?}", value);
+///     Ok(())
+/// }
+/// ```
+///
+/// Deserializing multi-doc YAML:
+///
+/// ```
+/// use anyhow::Result;
+/// use serde::Deserialize;
+/// use serde_yaml::Value;
+///
+/// fn main() -> Result<()> {
+///     let input = "---\nk: 107\n...\n---\nj: 106\n";
+///
+///     for document in serde_yaml::Deserializer::from_str(input) {
+///         let value = Value::deserialize(document)?;
+///         println!("{:?}", value);
+///     }
+///
+///     Ok(())
+/// }
+/// ```
 pub struct Deserializer<'a> {
     input: Input<'a>,
 }
