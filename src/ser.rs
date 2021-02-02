@@ -7,6 +7,410 @@ use serde::{ser, serde_if_integer128};
 use std::{fmt, io, num, str};
 use yaml_rust::{yaml, Yaml, YamlEmitter};
 
+pub struct Serializer<W> {
+    writer: W,
+}
+
+impl<W> Serializer<W>
+where
+    W: io::Write,
+{
+    pub fn new(writer: W) -> Self {
+        Serializer { writer }
+    }
+
+    pub fn into_inner(self) -> W {
+        self.writer
+    }
+
+    fn write(&mut self, doc: Yaml) -> Result<()> {
+        let mut writer_adapter = FmtToIoWriter {
+            writer: &mut self.writer,
+        };
+        YamlEmitter::new(&mut writer_adapter)
+            .dump(&doc)
+            .map_err(error::emitter)?;
+        writer_adapter.writer.write_all(b"\n").map_err(error::io)?;
+        Ok(())
+    }
+}
+
+impl<'a, W> ser::Serializer for &'a mut Serializer<W>
+where
+    W: io::Write,
+{
+    type Ok = ();
+    type Error = Error;
+
+    type SerializeSeq = ThenWrite<'a, W, SerializeArray>;
+    type SerializeTuple = ThenWrite<'a, W, SerializeArray>;
+    type SerializeTupleStruct = ThenWrite<'a, W, SerializeArray>;
+    type SerializeTupleVariant = ThenWrite<'a, W, SerializeTupleVariant>;
+    type SerializeMap = ThenWrite<'a, W, SerializeMap>;
+    type SerializeStruct = ThenWrite<'a, W, SerializeStruct>;
+    type SerializeStructVariant = ThenWrite<'a, W, SerializeStructVariant>;
+
+    fn serialize_bool(self, v: bool) -> Result<()> {
+        let doc = SerializerToYaml.serialize_bool(v)?;
+        self.write(doc)
+    }
+
+    fn serialize_i8(self, v: i8) -> Result<()> {
+        let doc = SerializerToYaml.serialize_i8(v)?;
+        self.write(doc)
+    }
+
+    fn serialize_i16(self, v: i16) -> Result<()> {
+        let doc = SerializerToYaml.serialize_i16(v)?;
+        self.write(doc)
+    }
+
+    fn serialize_i32(self, v: i32) -> Result<()> {
+        let doc = SerializerToYaml.serialize_i32(v)?;
+        self.write(doc)
+    }
+
+    fn serialize_i64(self, v: i64) -> Result<()> {
+        let doc = SerializerToYaml.serialize_i64(v)?;
+        self.write(doc)
+    }
+
+    serde_if_integer128! {
+        fn serialize_i128(self, v: i128) -> Result<()> {
+            let doc = SerializerToYaml.serialize_i128(v)?;
+            self.write(doc)
+        }
+    }
+
+    fn serialize_u8(self, v: u8) -> Result<()> {
+        let doc = SerializerToYaml.serialize_u8(v)?;
+        self.write(doc)
+    }
+
+    fn serialize_u16(self, v: u16) -> Result<()> {
+        let doc = SerializerToYaml.serialize_u16(v)?;
+        self.write(doc)
+    }
+
+    fn serialize_u32(self, v: u32) -> Result<()> {
+        let doc = SerializerToYaml.serialize_u32(v)?;
+        self.write(doc)
+    }
+
+    fn serialize_u64(self, v: u64) -> Result<()> {
+        let doc = SerializerToYaml.serialize_u64(v)?;
+        self.write(doc)
+    }
+
+    serde_if_integer128! {
+        fn serialize_u128(self, v: u128) -> Result<()> {
+            let doc = SerializerToYaml.serialize_u128(v)?;
+            self.write(doc)
+        }
+    }
+
+    fn serialize_f32(self, v: f32) -> Result<()> {
+        let doc = SerializerToYaml.serialize_f32(v)?;
+        self.write(doc)
+    }
+
+    fn serialize_f64(self, v: f64) -> Result<()> {
+        let doc = SerializerToYaml.serialize_f64(v)?;
+        self.write(doc)
+    }
+
+    fn serialize_char(self, value: char) -> Result<()> {
+        let doc = SerializerToYaml.serialize_char(value)?;
+        self.write(doc)
+    }
+
+    fn serialize_str(self, value: &str) -> Result<()> {
+        let doc = SerializerToYaml.serialize_str(value)?;
+        self.write(doc)
+    }
+
+    fn serialize_bytes(self, value: &[u8]) -> Result<()> {
+        let doc = SerializerToYaml.serialize_bytes(value)?;
+        self.write(doc)
+    }
+
+    fn serialize_unit(self) -> Result<()> {
+        let doc = SerializerToYaml.serialize_unit()?;
+        self.write(doc)
+    }
+
+    fn serialize_unit_struct(self, name: &'static str) -> Result<()> {
+        let doc = SerializerToYaml.serialize_unit_struct(name)?;
+        self.write(doc)
+    }
+
+    fn serialize_unit_variant(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+    ) -> Result<()> {
+        let doc = SerializerToYaml.serialize_unit_variant(name, variant_index, variant)?;
+        self.write(doc)
+    }
+
+    fn serialize_newtype_struct<T: ?Sized>(self, name: &'static str, value: &T) -> Result<()>
+    where
+        T: ser::Serialize,
+    {
+        let doc = SerializerToYaml.serialize_newtype_struct(name, value)?;
+        self.write(doc)
+    }
+
+    fn serialize_newtype_variant<T: ?Sized>(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+        value: &T,
+    ) -> Result<()>
+    where
+        T: ser::Serialize,
+    {
+        let doc =
+            SerializerToYaml.serialize_newtype_variant(name, variant_index, variant, value)?;
+        self.write(doc)
+    }
+
+    fn serialize_none(self) -> Result<()> {
+        let doc = SerializerToYaml.serialize_none()?;
+        self.write(doc)
+    }
+
+    fn serialize_some<V: ?Sized>(self, value: &V) -> Result<()>
+    where
+        V: ser::Serialize,
+    {
+        let doc = SerializerToYaml.serialize_some(value)?;
+        self.write(doc)
+    }
+
+    fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq> {
+        let delegate = SerializerToYaml.serialize_seq(len)?;
+        Ok(ThenWrite::new(self, delegate))
+    }
+
+    fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple> {
+        let delegate = SerializerToYaml.serialize_tuple(len)?;
+        Ok(ThenWrite::new(self, delegate))
+    }
+
+    fn serialize_tuple_struct(
+        self,
+        name: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeTupleStruct> {
+        let delegate = SerializerToYaml.serialize_tuple_struct(name, len)?;
+        Ok(ThenWrite::new(self, delegate))
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        enm: &'static str,
+        idx: u32,
+        variant: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeTupleVariant> {
+        let delegate = SerializerToYaml.serialize_tuple_variant(enm, idx, variant, len)?;
+        Ok(ThenWrite::new(self, delegate))
+    }
+
+    fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
+        let delegate = SerializerToYaml.serialize_map(len)?;
+        Ok(ThenWrite::new(self, delegate))
+    }
+
+    fn serialize_struct(self, name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
+        let delegate = SerializerToYaml.serialize_struct(name, len)?;
+        Ok(ThenWrite::new(self, delegate))
+    }
+
+    fn serialize_struct_variant(
+        self,
+        enm: &'static str,
+        idx: u32,
+        variant: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeStructVariant> {
+        let delegate = SerializerToYaml.serialize_struct_variant(enm, idx, variant, len)?;
+        Ok(ThenWrite::new(self, delegate))
+    }
+}
+
+pub struct ThenWrite<'a, W, D> {
+    serializer: &'a mut Serializer<W>,
+    delegate: D,
+}
+
+impl<'a, W, D> ThenWrite<'a, W, D> {
+    fn new(serializer: &'a mut Serializer<W>, delegate: D) -> Self {
+        ThenWrite {
+            serializer,
+            delegate,
+        }
+    }
+}
+
+impl<'a, W> ser::SerializeSeq for ThenWrite<'a, W, SerializeArray>
+where
+    W: io::Write,
+{
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_element<T: ?Sized>(&mut self, elem: &T) -> Result<()>
+    where
+        T: ser::Serialize,
+    {
+        self.delegate.serialize_element(elem)
+    }
+
+    fn end(self) -> Result<()> {
+        let doc = self.delegate.end()?;
+        self.serializer.write(doc)
+    }
+}
+
+impl<'a, W> ser::SerializeTuple for ThenWrite<'a, W, SerializeArray>
+where
+    W: io::Write,
+{
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_element<T: ?Sized>(&mut self, elem: &T) -> Result<()>
+    where
+        T: ser::Serialize,
+    {
+        self.delegate.serialize_element(elem)
+    }
+
+    fn end(self) -> Result<()> {
+        let doc = self.delegate.end()?;
+        self.serializer.write(doc)
+    }
+}
+
+impl<'a, W> ser::SerializeTupleStruct for ThenWrite<'a, W, SerializeArray>
+where
+    W: io::Write,
+{
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<V: ?Sized>(&mut self, value: &V) -> Result<()>
+    where
+        V: ser::Serialize,
+    {
+        self.delegate.serialize_field(value)
+    }
+
+    fn end(self) -> Result<()> {
+        let doc = self.delegate.end()?;
+        self.serializer.write(doc)
+    }
+}
+
+impl<'a, W> ser::SerializeTupleVariant for ThenWrite<'a, W, SerializeTupleVariant>
+where
+    W: io::Write,
+{
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<V: ?Sized>(&mut self, v: &V) -> Result<()>
+    where
+        V: ser::Serialize,
+    {
+        self.delegate.serialize_field(v)
+    }
+
+    fn end(self) -> Result<()> {
+        let doc = self.delegate.end()?;
+        self.serializer.write(doc)
+    }
+}
+
+impl<'a, W> ser::SerializeMap for ThenWrite<'a, W, SerializeMap>
+where
+    W: io::Write,
+{
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<()>
+    where
+        T: ser::Serialize,
+    {
+        self.delegate.serialize_key(key)
+    }
+
+    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<()>
+    where
+        T: ser::Serialize,
+    {
+        self.delegate.serialize_value(value)
+    }
+
+    fn serialize_entry<K: ?Sized, V: ?Sized>(&mut self, key: &K, value: &V) -> Result<()>
+    where
+        K: ser::Serialize,
+        V: ser::Serialize,
+    {
+        self.delegate.serialize_entry(key, value)
+    }
+
+    fn end(self) -> Result<()> {
+        let doc = self.delegate.end()?;
+        self.serializer.write(doc)
+    }
+}
+
+impl<'a, W> ser::SerializeStruct for ThenWrite<'a, W, SerializeStruct>
+where
+    W: io::Write,
+{
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<V: ?Sized>(&mut self, key: &'static str, value: &V) -> Result<()>
+    where
+        V: ser::Serialize,
+    {
+        self.delegate.serialize_field(key, value)
+    }
+
+    fn end(self) -> Result<()> {
+        let doc = self.delegate.end()?;
+        self.serializer.write(doc)
+    }
+}
+
+impl<'a, W> ser::SerializeStructVariant for ThenWrite<'a, W, SerializeStructVariant>
+where
+    W: io::Write,
+{
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<V: ?Sized>(&mut self, field: &'static str, v: &V) -> Result<()>
+    where
+        V: ser::Serialize,
+    {
+        self.delegate.serialize_field(field, v)
+    }
+
+    fn end(self) -> Result<()> {
+        let doc = self.delegate.end()?;
+        self.serializer.write(doc)
+    }
+}
+
 pub struct SerializerToYaml;
 
 impl ser::Serializer for SerializerToYaml {
