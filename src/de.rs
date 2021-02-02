@@ -44,50 +44,55 @@ impl<'a> Deserializer<'a> {
     }
 
     fn de<T>(self, f: impl FnOnce(&mut DeserializerFromEvents) -> Result<T>) -> Result<T> {
-        enum Input2<'a> {
-            Str(&'a str),
-            Slice(&'a [u8]),
-        }
-
-        let mut buffer;
-        let input = match self.input {
-            Input::Str(s) => Input2::Str(s),
-            Input::Slice(bytes) => Input2::Slice(bytes),
-            Input::Read(mut rdr) => {
-                buffer = Vec::new();
-                rdr.read_to_end(&mut buffer).map_err(error::io)?;
-                Input2::Slice(&buffer)
-            }
-        };
-
-        let input = match input {
-            Input2::Str(s) => s,
-            Input2::Slice(bytes) => str::from_utf8(bytes).map_err(error::str_utf8)?,
-        };
-
-        let mut parser = Parser::new(input.chars());
-        let mut loader = Loader {
-            events: Vec::new(),
-            aliases: BTreeMap::new(),
-        };
-        parser.load(&mut loader, true).map_err(error::scanner)?;
-        if loader.events.is_empty() {
-            Err(error::end_of_stream())
+        let loader = loader(self.input)?;
+        let mut pos = 0;
+        let t = f(&mut DeserializerFromEvents {
+            events: &loader.events,
+            aliases: &loader.aliases,
+            pos: &mut pos,
+            path: Path::Root,
+            remaining_depth: 128,
+        })?;
+        if pos == loader.events.len() {
+            Ok(t)
         } else {
-            let mut pos = 0;
-            let t = f(&mut DeserializerFromEvents {
-                events: &loader.events,
-                aliases: &loader.aliases,
-                pos: &mut pos,
-                path: Path::Root,
-                remaining_depth: 128,
-            })?;
-            if pos == loader.events.len() {
-                Ok(t)
-            } else {
-                Err(error::more_than_one_document())
-            }
+            Err(error::more_than_one_document())
         }
+    }
+}
+
+fn loader(input: Input) -> Result<Loader> {
+    enum Input2<'a> {
+        Str(&'a str),
+        Slice(&'a [u8]),
+    }
+
+    let mut buffer;
+    let input = match input {
+        Input::Str(s) => Input2::Str(s),
+        Input::Slice(bytes) => Input2::Slice(bytes),
+        Input::Read(mut rdr) => {
+            buffer = Vec::new();
+            rdr.read_to_end(&mut buffer).map_err(error::io)?;
+            Input2::Slice(&buffer)
+        }
+    };
+
+    let input = match input {
+        Input2::Str(s) => s,
+        Input2::Slice(bytes) => str::from_utf8(bytes).map_err(error::str_utf8)?,
+    };
+
+    let mut parser = Parser::new(input.chars());
+    let mut loader = Loader {
+        events: Vec::new(),
+        aliases: BTreeMap::new(),
+    };
+    parser.load(&mut loader, true).map_err(error::scanner)?;
+    if loader.events.is_empty() {
+        Err(error::end_of_stream())
+    } else {
+        Ok(loader)
     }
 }
 
