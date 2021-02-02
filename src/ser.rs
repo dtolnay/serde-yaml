@@ -24,10 +24,10 @@ use yaml_rust::{yaml, Yaml, YamlEmitter};
 ///     object.insert("k", 107);
 ///     object.serialize(&mut ser)?;
 ///
-///     object.insert("j", 106);
+///     object.insert("J", 74);
 ///     object.serialize(&mut ser)?;
 ///
-///     assert_eq!(buffer, b"---\nk: 107\n...\n---\nj: 106\nk: 107\n");
+///     assert_eq!(buffer, b"---\nk: 107\n...\n---\nJ: 74\nk: 107\n");
 ///     Ok(())
 /// }
 /// ```
