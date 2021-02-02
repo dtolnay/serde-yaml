@@ -9,6 +9,7 @@ use yaml_rust::{yaml, Yaml, YamlEmitter};
 
 /// A structure for serializing Rust values into YAML.
 pub struct Serializer<W> {
+    documents: usize,
     writer: W,
 }
 
@@ -18,7 +19,10 @@ where
 {
     /// Creates a new YAML serializer.
     pub fn new(writer: W) -> Self {
-        Serializer { writer }
+        Serializer {
+            documents: 0,
+            writer,
+        }
     }
 
     /// Unwrap the underlying `io::Write` object from the `Serializer`.
@@ -27,6 +31,10 @@ where
     }
 
     fn write(&mut self, doc: Yaml) -> Result<()> {
+        if self.documents > 0 {
+            self.writer.write_all(b"...\n").map_err(error::io)?;
+        }
+        self.documents += 1;
         let mut writer_adapter = FmtToIoWriter {
             writer: &mut self.writer,
         };
