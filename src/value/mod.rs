@@ -1,4 +1,4 @@
-use crate::ser::Serializer;
+use crate::ser::SerializerToYaml;
 use crate::{Error, Mapping};
 use serde::de::{Deserialize, DeserializeOwned};
 use serde::Serialize;
@@ -83,7 +83,7 @@ pub fn to_value<T>(value: T) -> Result<Value, Error>
 where
     T: Serialize,
 {
-    value.serialize(Serializer).map(yaml_to_value)
+    value.serialize(SerializerToYaml).map(yaml_to_value)
 }
 
 /// Interpret a `serde_yaml::Value` as an instance of type `T`.

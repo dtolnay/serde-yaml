@@ -7,9 +7,9 @@ use serde::{ser, serde_if_integer128};
 use std::{fmt, io, num, str};
 use yaml_rust::{yaml, Yaml, YamlEmitter};
 
-pub struct Serializer;
+pub struct SerializerToYaml;
 
-impl ser::Serializer for Serializer {
+impl ser::Serializer for SerializerToYaml {
     type Ok = Yaml;
     type Error = Error;
 
@@ -446,7 +446,7 @@ fn to_yaml<T>(elem: T) -> Result<Yaml>
 where
     T: ser::Serialize,
 {
-    elem.serialize(Serializer)
+    elem.serialize(SerializerToYaml)
 }
 
 fn singleton_hash(k: Yaml, v: Yaml) -> Yaml {
