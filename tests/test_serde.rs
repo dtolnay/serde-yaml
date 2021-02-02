@@ -16,7 +16,6 @@ fn test_serde<T>(thing: &T, yaml: &str)
 where
     T: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug,
 {
-    let yaml = yaml.trim_end_matches('\n');
     let serialized = serde_yaml::to_string(&thing).unwrap();
     assert_eq!(yaml, serialized);
 

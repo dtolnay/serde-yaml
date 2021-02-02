@@ -396,6 +396,7 @@ where
     YamlEmitter::new(&mut writer_adapter)
         .dump(&doc)
         .map_err(error::emitter)?;
+    writer_adapter.writer.write_all(b"\n").map_err(error::io)?;
     Ok(())
 }
 
