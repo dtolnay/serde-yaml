@@ -30,6 +30,7 @@ pub enum ErrorImpl {
     MoreThanOneDocument,
     RecursionLimitExceeded,
 
+    #[allow(dead_code)] // to be used for multi-doc deserialization
     Shared(Arc<ErrorImpl>),
 }
 
