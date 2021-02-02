@@ -1347,29 +1347,7 @@ pub fn from_str_seed<T, S>(s: &str, seed: S) -> Result<T>
 where
     S: for<'de> DeserializeSeed<'de, Value = T>,
 {
-    let mut parser = Parser::new(s.chars());
-    let mut loader = Loader {
-        events: Vec::new(),
-        aliases: BTreeMap::new(),
-    };
-    parser.load(&mut loader, true).map_err(error::scanner)?;
-    if loader.events.is_empty() {
-        Err(error::end_of_stream())
-    } else {
-        let mut pos = 0;
-        let t = seed.deserialize(&mut DeserializerFromEvents {
-            events: &loader.events,
-            aliases: &loader.aliases,
-            pos: &mut pos,
-            path: Path::Root,
-            remaining_depth: 128,
-        })?;
-        if pos == loader.events.len() {
-            Ok(t)
-        } else {
-            Err(error::more_than_one_document())
-        }
-    }
+    seed.deserialize(Deserializer::from_str(s))
 }
 
 /// Deserialize an instance of type `T` from an IO stream of YAML.
@@ -1398,14 +1376,12 @@ where
 /// is wrong with the data, for example required struct fields are missing from
 /// the YAML map or some number is too big to fit in the expected primitive
 /// type.
-pub fn from_reader_seed<R, T, S>(mut rdr: R, seed: S) -> Result<T>
+pub fn from_reader_seed<R, T, S>(rdr: R, seed: S) -> Result<T>
 where
     R: io::Read,
     S: for<'de> DeserializeSeed<'de, Value = T>,
 {
-    let mut bytes = Vec::new();
-    rdr.read_to_end(&mut bytes).map_err(error::io)?;
-    from_slice_seed(&bytes, seed)
+    seed.deserialize(Deserializer::from_reader(rdr))
 }
 
 /// Deserialize an instance of type `T` from bytes of YAML text.
@@ -1441,6 +1417,5 @@ pub fn from_slice_seed<T, S>(v: &[u8], seed: S) -> Result<T>
 where
     S: for<'de> DeserializeSeed<'de, Value = T>,
 {
-    let s = str::from_utf8(v).map_err(error::str_utf8)?;
-    from_str_seed(s, seed)
+    seed.deserialize(Deserializer::from_slice(v))
 }
