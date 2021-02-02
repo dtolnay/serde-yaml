@@ -8,6 +8,29 @@ use std::{fmt, io, num, str};
 use yaml_rust::{yaml, Yaml, YamlEmitter};
 
 /// A structure for serializing Rust values into YAML.
+///
+/// # Example
+///
+/// ```
+/// use anyhow::Result;
+/// use serde::Serialize;
+/// use std::collections::BTreeMap;
+///
+/// fn main() -> Result<()> {
+///     let mut buffer = Vec::new();
+///     let mut ser = serde_yaml::Serializer::new(&mut buffer);
+///
+///     let mut object = BTreeMap::new();
+///     object.insert("k", 107);
+///     object.serialize(&mut ser)?;
+///
+///     object.insert("J", 74);
+///     object.serialize(&mut ser)?;
+///
+///     assert_eq!(buffer, b"---\nk: 107\n...\n---\nJ: 74\nk: 107\n");
+///     Ok(())
+/// }
+/// ```
 pub struct Serializer<W> {
     documents: usize,
     writer: W,
