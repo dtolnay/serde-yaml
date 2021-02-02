@@ -6,6 +6,7 @@ use std::io;
 use std::result;
 use std::str;
 use std::string;
+use std::sync::Arc;
 use yaml_rust::emitter;
 use yaml_rust::scanner::{self, Marker, ScanError};
 
@@ -28,6 +29,8 @@ pub enum ErrorImpl {
     EndOfStream,
     MoreThanOneDocument,
     RecursionLimitExceeded,
+
+    Shared(Arc<ErrorImpl>),
 }
 
 #[derive(Debug)]
@@ -193,6 +196,7 @@ impl ErrorImpl {
                 "deserializing from YAML containing more than one document is not supported"
             }
             ErrorImpl::RecursionLimitExceeded => "recursion limit exceeded",
+            ErrorImpl::Shared(err) => err.description(),
         }
     }
 
@@ -202,6 +206,7 @@ impl ErrorImpl {
             ErrorImpl::Io(err) => Some(err),
             ErrorImpl::Utf8(err) => Some(err),
             ErrorImpl::FromUtf8(err) => Some(err),
+            ErrorImpl::Shared(err) => err.source(),
             _ => None,
         }
     }
@@ -227,6 +232,7 @@ impl ErrorImpl {
                 "deserializing from YAML containing more than one document is not supported",
             ),
             ErrorImpl::RecursionLimitExceeded => f.write_str("recursion limit exceeded"),
+            ErrorImpl::Shared(err) => err.display(f),
         }
     }
 
@@ -241,6 +247,7 @@ impl ErrorImpl {
             ErrorImpl::EndOfStream => f.debug_tuple("EndOfStream").finish(),
             ErrorImpl::MoreThanOneDocument => f.debug_tuple("MoreThanOneDocument").finish(),
             ErrorImpl::RecursionLimitExceeded => f.debug_tuple("RecursionLimitExceeded").finish(),
+            ErrorImpl::Shared(err) => err.debug(f),
         }
     }
 }
