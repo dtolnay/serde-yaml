@@ -30,7 +30,6 @@ pub enum ErrorImpl {
     MoreThanOneDocument,
     RecursionLimitExceeded,
 
-    #[allow(dead_code)] // to be used for multi-doc deserialization
     Shared(Arc<ErrorImpl>),
 }
 
@@ -135,6 +134,10 @@ pub(crate) fn recursion_limit_exceeded() -> Error {
     Error(Box::new(ErrorImpl::RecursionLimitExceeded))
 }
 
+pub(crate) fn shared(shared: Arc<ErrorImpl>) -> Error {
+    Error(Box::new(ErrorImpl::Shared(shared)))
+}
+
 pub(crate) fn fix_marker(mut error: Error, marker: Marker, path: Path) -> Error {
     if let ErrorImpl::Message(_, none @ None) = error.0.as_mut() {
         *none = Some(Pos {
@@ -143,6 +146,16 @@ pub(crate) fn fix_marker(mut error: Error, marker: Marker, path: Path) -> Error 
         });
     }
     error
+}
+
+impl Error {
+    pub(crate) fn shared(self) -> Arc<ErrorImpl> {
+        if let ErrorImpl::Shared(err) = *self.0 {
+            err
+        } else {
+            Arc::from(self.0)
+        }
+    }
 }
 
 impl error::Error for Error {

@@ -1,5 +1,5 @@
+use crate::error::{self, Error, ErrorImpl, Result};
 use crate::path::Path;
-use crate::{error, Error, Result};
 use serde::de::{
     self, Deserialize, DeserializeOwned, DeserializeSeed, Expected, IgnoredAny as Ignore,
     IntoDeserializer, Unexpected, Visitor,
@@ -10,7 +10,10 @@ use std::f64;
 use std::fmt;
 use std::io;
 use std::marker::PhantomData;
+use std::mem;
 use std::str;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 use yaml_rust::parser::{Event as YamlEvent, MarkedEventReceiver, Parser};
 use yaml_rust::scanner::{Marker, TScalarStyle, TokenType};
 
@@ -23,6 +26,8 @@ enum Input<'a> {
     Str(&'a str),
     Slice(&'a [u8]),
     Read(Box<dyn io::Read + 'a>),
+    Multidoc(Arc<Multidoc>),
+    Fail(Arc<ErrorImpl>),
 }
 
 impl<'a> Deserializer<'a> {
@@ -52,7 +57,23 @@ impl<'a> Deserializer<'a> {
     }
 
     fn de<T>(self, f: impl FnOnce(&mut DeserializerFromEvents) -> Result<T>) -> Result<T> {
+        if let Input::Multidoc(multidoc) = &self.input {
+            let mut pos = multidoc.pos.load(Ordering::Relaxed);
+            let t = f(&mut DeserializerFromEvents {
+                events: &multidoc.loader.events,
+                aliases: &multidoc.loader.aliases,
+                pos: &mut pos,
+                path: Path::Root,
+                remaining_depth: 128,
+            })?;
+            multidoc.pos.store(pos, Ordering::Relaxed);
+            return Ok(t);
+        }
+
         let loader = loader(self.input)?;
+        if loader.events.is_empty() {
+            return Err(error::end_of_stream());
+        }
         let mut pos = 0;
         let t = f(&mut DeserializerFromEvents {
             events: &loader.events,
@@ -84,6 +105,8 @@ fn loader(input: Input) -> Result<Loader> {
             rdr.read_to_end(&mut buffer).map_err(error::io)?;
             Input2::Slice(&buffer)
         }
+        Input::Multidoc(_) => unreachable!(),
+        Input::Fail(err) => return Err(error::shared(err)),
     };
 
     let input = match input {
@@ -97,10 +120,62 @@ fn loader(input: Input) -> Result<Loader> {
         aliases: BTreeMap::new(),
     };
     parser.load(&mut loader, true).map_err(error::scanner)?;
-    if loader.events.is_empty() {
-        Err(error::end_of_stream())
-    } else {
-        Ok(loader)
+    Ok(loader)
+}
+
+struct Multidoc {
+    loader: Loader,
+    pos: AtomicUsize,
+}
+
+impl<'de> Iterator for Deserializer<'de> {
+    type Item = Self;
+
+    fn next(&mut self) -> Option<Self> {
+        match &self.input {
+            Input::Multidoc(multidoc) => {
+                let pos = multidoc.pos.load(Ordering::Relaxed);
+                return if pos < multidoc.loader.events.len() {
+                    Some(Deserializer {
+                        input: Input::Multidoc(Arc::clone(multidoc)),
+                    })
+                } else {
+                    None
+                };
+            }
+            Input::Fail(err) => {
+                return Some(Deserializer {
+                    input: Input::Fail(Arc::clone(err)),
+                });
+            }
+            _ => {}
+        }
+
+        let dummy = Input::Str("");
+        let input = mem::replace(&mut self.input, dummy);
+        match loader(input) {
+            Ok(loader) => {
+                let multidoc = Arc::new(Multidoc {
+                    loader,
+                    pos: AtomicUsize::new(0),
+                });
+                self.input = Input::Multidoc(Arc::clone(&multidoc));
+                if multidoc.loader.events.is_empty() {
+                    None
+                } else {
+                    Some(Deserializer {
+                        input: Input::Multidoc(multidoc),
+                    })
+                }
+            }
+            Err(err) => {
+                let fail = err.shared();
+                self.input = Input::Fail(Arc::clone(&fail));
+                Some(Deserializer {
+                    input: Input::Fail(fail),
+                })
+            }
+        }
     }
 }
 
