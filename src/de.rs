@@ -14,6 +14,7 @@ use std::str;
 use yaml_rust::parser::{Event as YamlEvent, MarkedEventReceiver, Parser};
 use yaml_rust::scanner::{Marker, TScalarStyle, TokenType};
 
+/// A structure that deserializes YAML into Rust values.
 pub struct Deserializer<'a> {
     input: Input<'a>,
 }
@@ -25,16 +26,23 @@ enum Input<'a> {
 }
 
 impl<'a> Deserializer<'a> {
+    /// Creates a YAML deserializer from a `&str`.
     pub fn from_str(s: &'a str) -> Self {
         let input = Input::Str(s);
         Deserializer { input }
     }
 
+    /// Creates a YAML deserializer from a `&[u8]`.
     pub fn from_slice(v: &'a [u8]) -> Self {
         let input = Input::Slice(v);
         Deserializer { input }
     }
 
+    /// Creates a YAML deserializer from an `io::Read`.
+    ///
+    /// Reader-based deserializers do not support deserializing borrowed types
+    /// like `&str`, since the `std::io::Read` trait has no non-copying methods
+    /// -- everything it does involves copying bytes out of the data source.
     pub fn from_reader<R>(rdr: R) -> Self
     where
         R: io::Read + 'a,
