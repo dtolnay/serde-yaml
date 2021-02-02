@@ -7,6 +7,7 @@ use serde::{ser, serde_if_integer128};
 use std::{fmt, io, num, str};
 use yaml_rust::{yaml, Yaml, YamlEmitter};
 
+/// A structure for serializing Rust values into YAML.
 pub struct Serializer<W> {
     writer: W,
 }
@@ -15,10 +16,12 @@ impl<W> Serializer<W>
 where
     W: io::Write,
 {
+    /// Creates a new YAML serializer.
     pub fn new(writer: W) -> Self {
         Serializer { writer }
     }
 
+    /// Unwrap the underlying `io::Write` object from the `Serializer`.
     pub fn into_inner(self) -> W {
         self.writer
     }

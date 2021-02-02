@@ -100,7 +100,7 @@
 
 pub use crate::de::{from_reader, from_slice, from_str, Deserializer};
 pub use crate::error::{Error, Location, Result};
-pub use crate::ser::{to_string, to_vec, to_writer};
+pub use crate::ser::{to_string, to_vec, to_writer, Serializer};
 pub use crate::value::{from_value, to_value, Index, Number, Sequence, Value};
 
 #[doc(inline)]
