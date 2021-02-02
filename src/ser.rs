@@ -795,13 +795,7 @@ where
     W: io::Write,
     T: ser::Serialize,
 {
-    let doc = to_yaml(value)?;
-    let mut writer_adapter = FmtToIoWriter { writer };
-    YamlEmitter::new(&mut writer_adapter)
-        .dump(&doc)
-        .map_err(error::emitter)?;
-    writer_adapter.writer.write_all(b"\n").map_err(error::io)?;
-    Ok(())
+    value.serialize(&mut Serializer::new(writer))
 }
 
 /// Serialize the given data structure as a YAML byte vector.
