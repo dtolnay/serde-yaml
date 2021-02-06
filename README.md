@@ -47,7 +47,7 @@ fn main() -> Result<(), serde_yaml::Error> {
 
     // Serialize it to a YAML string.
     let s = serde_yaml::to_string(&map)?;
-    assert_eq!(s, "---\nx: 1.0\ny: 2.0");
+    assert_eq!(s, "---\nx: 1.0\ny: 2.0\n");
 
     // Deserialize it back to a Rust type.
     let deserialized_map: BTreeMap<String, f64> = serde_yaml::from_str(&s)?;
