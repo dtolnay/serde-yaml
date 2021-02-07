@@ -77,25 +77,12 @@
     clippy::needless_pass_by_value,
     clippy::option_if_let_else,
     clippy::single_match_else,
-    clippy::use_self,
     // code is acceptable
     clippy::cast_possible_wrap,
     clippy::cast_precision_loss,
-    clippy::cast_sign_loss,
-    // not practical
-    clippy::indexing_slicing,
-    clippy::missing_docs_in_private_items,
-    // not stable
-    clippy::checked_conversions,
-    clippy::empty_enum,
-    // meh, some things won't fail
-    clippy::unwrap_used,
     // noisy
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
-    // we support older compilers
-    clippy::manual_strip,
-    clippy::match_like_matches_macro,
 )]
 
 pub use crate::de::{from_reader, from_slice, from_str, Deserializer};
