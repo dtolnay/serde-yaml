@@ -29,6 +29,12 @@ fn test_digits() {
 
 #[test]
 fn test_into_deserializer() {
+    #[derive(Debug, Deserialize, PartialEq)]
+    struct Test {
+        first: String,
+        second: u32,
+    }
+
     let value = serde_yaml::from_str::<Value>("xyz").unwrap();
     let s = String::deserialize(value.into_deserializer()).unwrap();
     assert_eq!(s, "xyz");
@@ -36,12 +42,6 @@ fn test_into_deserializer() {
     let value = serde_yaml::from_str::<Value>("- first\n- second\n- third").unwrap();
     let arr = Vec::<String>::deserialize(value.into_deserializer()).unwrap();
     assert_eq!(arr, &["first", "second", "third"]);
-
-    #[derive(Debug, Deserialize, PartialEq)]
-    struct Test {
-        first: String,
-        second: u32,
-    }
 
     let value = serde_yaml::from_str::<Value>("first: abc\nsecond: 99").unwrap();
     let test = Test::deserialize(value.into_deserializer()).unwrap();
