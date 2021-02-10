@@ -1,5 +1,8 @@
 #![allow(clippy::eq_op)]
 
+use serde::de::IntoDeserializer;
+use serde::Deserialize;
+use serde_derive::Deserialize;
 use serde_yaml::{Number, Value};
 use std::f64;
 
@@ -22,4 +25,31 @@ fn test_nan() {
 fn test_digits() {
     let num_string = serde_yaml::from_str::<Value>("01").unwrap();
     assert!(num_string.is_string());
+}
+
+#[test]
+fn test_into_deserializer() {
+    #[derive(Debug, Deserialize, PartialEq)]
+    struct Test {
+        first: String,
+        second: u32,
+    }
+
+    let value = serde_yaml::from_str::<Value>("xyz").unwrap();
+    let s = String::deserialize(value.into_deserializer()).unwrap();
+    assert_eq!(s, "xyz");
+
+    let value = serde_yaml::from_str::<Value>("- first\n- second\n- third").unwrap();
+    let arr = Vec::<String>::deserialize(value.into_deserializer()).unwrap();
+    assert_eq!(arr, &["first", "second", "third"]);
+
+    let value = serde_yaml::from_str::<Value>("first: abc\nsecond: 99").unwrap();
+    let test = Test::deserialize(value.into_deserializer()).unwrap();
+    assert_eq!(
+        test,
+        Test {
+            first: "abc".to_string(),
+            second: 99
+        }
+    )
 }
