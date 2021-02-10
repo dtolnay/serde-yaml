@@ -1,3 +1,9 @@
+mod de;
+mod from;
+mod index;
+mod partial_eq;
+mod ser;
+
 use crate::ser::SerializerToYaml;
 use crate::{Error, Mapping};
 use serde::de::{Deserialize, DeserializeOwned, IntoDeserializer};
@@ -640,10 +646,3 @@ impl<'de> IntoDeserializer<'de, Error> for Value {
         self
     }
 }
-
-mod from;
-mod index;
-mod partial_eq;
-
-mod de;
-mod ser;
