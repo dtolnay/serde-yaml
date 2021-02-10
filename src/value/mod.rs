@@ -1,6 +1,6 @@
 use crate::ser::SerializerToYaml;
 use crate::{Error, Mapping};
-use serde::de::{Deserialize, DeserializeOwned};
+use serde::de::{Deserialize, DeserializeOwned, IntoDeserializer};
 use serde::Serialize;
 use std::f64;
 use std::hash::{Hash, Hasher};
@@ -630,6 +630,14 @@ impl Hash for Value {
             Value::Sequence(seq) => (4, seq).hash(state),
             Value::Mapping(map) => (5, map).hash(state),
         }
+    }
+}
+
+impl<'de> IntoDeserializer<'de, Error> for Value {
+    type Deserializer = Self;
+
+    fn into_deserializer(self) -> Self::Deserializer {
+        self
     }
 }
 
