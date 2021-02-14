@@ -345,6 +345,16 @@ fn test_numbers() {
 }
 
 #[test]
+fn test_quirk_old_octals() {
+    use serde::Deserialize;
+    let de = serde_yaml::Deserializer::from_str_with_quirks("0777", serde_yaml::DeserializingQuirks {
+        old_octals: true,
+    });
+    let value = u64::deserialize(de).unwrap();
+    assert_eq!(value, 0o777);
+}
+
+#[test]
 fn test_stateful() {
     struct Seed(i64);
 
