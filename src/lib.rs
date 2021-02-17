@@ -13,7 +13,7 @@
 //! is a pure Rust YAML 1.2 implementation.
 //!
 //! [Serde]: https://github.com/serde-rs/serde
-//! [YAML]: http://yaml.org
+//! [YAML]: https://yaml.org/
 //! [yaml-rust]: https://github.com/chyh1990/yaml-rust
 //!
 //! # Examples
