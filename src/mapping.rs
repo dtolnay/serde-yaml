@@ -78,7 +78,15 @@ impl Mapping {
     pub fn remove(&mut self, k: &Value) -> Option<Value> {
         self.map.remove(k)
     }
-
+    
+    /// Ensures a key's corresponding value is in the entry by inserting 
+    /// the default if empty.
+    /// Returns a mutable reference to the value in the entry.
+    #[inline]
+    pub fn entry_or_insert(&mut self, k: Value, default: Value) -> &mut Value {
+        self.map.entry(k).or_insert(default)
+    }
+    
     /// Returns the maximum number of key-value pairs the map can hold without
     /// reallocating.
     #[inline]
