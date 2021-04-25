@@ -213,7 +213,7 @@ fn test_no_location() {
 
     let utf8_location = invalid_utf8.unwrap_err().location();
 
-    assert_eq!(utf8_location.is_none(), true);
+    assert!(utf8_location.is_none());
 }
 
 #[test]
