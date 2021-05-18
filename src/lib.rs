@@ -88,8 +88,8 @@
 pub use crate::de::{from_reader, from_slice, from_str, Deserializer};
 pub use crate::error::{Error, Location, Result};
 pub use crate::ser::{to_string, to_vec, to_writer, Serializer};
+pub use crate::spanned::Spanned;
 pub use crate::value::{from_value, to_value, Index, Number, Sequence, Value};
-pub use crate::span::Spanned;
 
 #[doc(inline)]
 pub use crate::mapping::Mapping;
@@ -108,6 +108,6 @@ mod error;
 pub mod mapping;
 mod number;
 mod path;
-mod span;
 mod ser;
+mod spanned;
 mod value;
