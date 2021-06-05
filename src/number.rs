@@ -484,7 +484,7 @@ impl Hash for Number {
         match self.n {
             N::Float(_) => {
                 // you should feel bad for using f64 as a map key
-                3.hash(state)
+                3.hash(state);
             }
             N::PosInt(u) => u.hash(state),
             N::NegInt(i) => i.hash(state),

@@ -37,7 +37,7 @@ impl Mapping {
     /// Panics if the new allocation size overflows `usize`.
     #[inline]
     pub fn reserve(&mut self, additional: usize) {
-        self.map.reserve(additional)
+        self.map.reserve(additional);
     }
 
     /// Shrinks the capacity of the map as much as possible. It will drop down
@@ -45,7 +45,7 @@ impl Mapping {
     /// leaving some space in accordance with the resize policy.
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        self.map.shrink_to_fit()
+        self.map.shrink_to_fit();
     }
 
     /// Inserts a key-value pair into the map. If the key already existed, the
@@ -101,7 +101,7 @@ impl Mapping {
     /// Clears the map of all key-value pairs.
     #[inline]
     pub fn clear(&mut self) {
-        self.map.clear()
+        self.map.clear();
     }
 
     /// Returns a double-ended iterator visiting all key-value pairs in order of
