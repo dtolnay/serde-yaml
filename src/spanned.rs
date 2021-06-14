@@ -17,6 +17,79 @@ pub(crate) const VALUE: &str = "$__serde_private_value";
 
 pub(crate) const FIELDS: &[&str] = &[START, LENGTH, VALUE];
 
+/// An wrapper which records the location of an item as byte indices into the
+/// source text.
+///
+/// # Examples
+///
+/// Primitive values can be wrapped with [`Spanned<T>`] to get their location,
+/// as you may expect.
+///
+/// ```rust
+/// # use serde_yaml::Spanned;
+/// #[derive(Debug, serde_derive::Deserialize)]
+/// struct Document {
+///     name: Spanned<String>,
+/// }
+/// # fn main() -> Result<(), serde_yaml::Error> {
+///
+/// let yaml = "name: Document";
+///
+/// let doc: Document = serde_yaml::from_str(yaml)?;
+///
+/// assert_eq!(doc.name.value, "Document");
+/// assert_eq!(doc.name.start, 6);
+/// assert_eq!(doc.name.len, "Document".len());
+/// # Ok(())
+/// # }
+/// ```
+///
+/// More complex items like maps and arrays can also be used.
+///
+/// ```rust
+/// # use serde_yaml::Spanned;
+/// #[derive(Debug, serde_derive::Deserialize)]
+/// struct Document {
+///     words: Spanned<Vec<String>>,
+/// }
+/// # fn main() -> Result<(), serde_yaml::Error> {
+///
+/// let yaml = "words: [Hello, World]";
+///
+/// let doc: Document = serde_yaml::from_str(yaml)?;
+///
+/// assert_eq!(doc.words.value, &["Hello", "World"]);
+/// assert_eq!(doc.words.start, yaml.find("[").unwrap());
+/// assert_eq!(doc.words.len, "[Hello, World]".len());
+/// assert_eq!(doc.words.end(), yaml.find("]").unwrap());
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Note that a map item starts after first key.
+///
+/// ```rust
+/// # use serde_yaml::Spanned;
+/// #[derive(Debug, serde_derive::Deserialize)]
+/// struct Document {
+///     nested: Spanned<Nested>,
+/// }
+/// #[derive(Debug, serde_derive::Deserialize)]
+/// struct Nested {
+///    first: u32,
+///    second: u32,
+/// }
+/// # fn main() -> Result<(), serde_yaml::Error> {
+///
+/// let yaml = "nested:\n  first: 1\n  second: 2";
+/// let doc: Document = serde_yaml::from_str(yaml)?;
+///
+/// let spanned_text = &yaml[doc.nested.span()];
+/// assert_eq!(spanned_text, ": 1\n  second: 2");
+/// # Ok(())
+/// # }
+/// ```
+///
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Spanned<T> {
     pub value: T,
@@ -226,5 +299,63 @@ mod tests {
         assert_eq!("[4, 5]", &src[second_values.span()]);
 
         assert_eq!(got, should_be);
+    }
+
+    #[test]
+    fn deserialize_map_at_end_of_stream() {
+        #[derive(Debug, PartialEq, serde_derive::Deserialize)]
+        struct Document {
+            nested: Spanned<Nested>,
+        }
+        #[derive(Debug, PartialEq, serde_derive::Deserialize)]
+        struct Nested {
+            value: String,
+        }
+
+        let src = "nested:\n  value: Hello, World!";
+        let should_be = Document {
+            nested: Spanned {
+                start: src.rfind(":").unwrap(),
+                len: ": Hello, World!".len(),
+                value: Nested {
+                    value: String::from("Hello, World!"),
+                },
+            },
+        };
+
+        let got: Document = crate::from_str(src).unwrap();
+
+        assert_eq!(got.nested.end(), src.len() - 1);
+        assert_eq!(got, should_be);
+    }
+
+    #[test]
+    fn empty_map() {
+        #[derive(Debug, PartialEq, serde_derive::Deserialize)]
+        struct Document {
+            nested: Spanned<Nested>,
+        }
+        #[derive(Debug, Default, PartialEq, serde_derive::Deserialize)]
+        struct Nested {
+            #[serde(default)]
+            value: String,
+        }
+
+        let src = "nested: {}";
+        let should_be = Document {
+            nested: Spanned {
+                start: 8,
+                len: 2,
+                value: Nested {
+                    value: String::new(),
+                },
+            },
+        };
+
+        let got: Document = crate::from_str(src).unwrap();
+
+        assert_eq!(got, should_be);
+        let spanned_text = &src[got.nested.span()];
+        assert_eq!(spanned_text, "{}");
     }
 }

@@ -872,7 +872,7 @@ impl<'de, 'a, 'r> SpannedMapAccess<'a, 'r> {
             last_index = Some(marker.index());
         }
 
-        Err(crate::error::end_of_stream())
+        last_index.ok_or_else(crate::error::end_of_stream)
     }
 
     fn current_item_length(&self) -> Result<usize> {
@@ -887,10 +887,7 @@ impl<'de, 'a, 'r> SpannedMapAccess<'a, 'r> {
         let length = match event {
             // just add the length of the token. Don't forget to subtract by 1
             // because of our inclusive end bound.
-            Event::Scalar(token, _, _) => {
-                dbg!(token, token.len());
-                token.len()
-            }
+            Event::Scalar(token, _, _) => token.len(),
             // find the index of the end token
             Event::SequenceStart => self.index_of_sequence_end()? - marker.index(),
             // find the index of the end token
