@@ -867,7 +867,7 @@ where
     W: io::Write,
 {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        if self.writer.write(s.as_bytes()).is_err() {
+        if self.writer.write_all(s.as_bytes()).is_err() {
             return Err(fmt::Error);
         }
         Ok(())
