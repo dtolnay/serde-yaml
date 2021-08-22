@@ -1,7 +1,7 @@
 //! A YAML mapping and its iterator types.
 
 use crate::Value;
-use linked_hash_map::LinkedHashMap;
+use indexmap::IndexMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt;
 use std::iter::FromIterator;
@@ -10,7 +10,7 @@ use std::ops::{Index, IndexMut};
 /// A YAML mapping in which the keys and values are both `serde_yaml::Value`.
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq, PartialOrd)]
 pub struct Mapping {
-    map: LinkedHashMap<Value, Value>,
+    map: IndexMap<Value, Value>,
 }
 
 impl Mapping {
@@ -24,7 +24,7 @@ impl Mapping {
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Mapping {
-            map: LinkedHashMap::with_capacity(capacity),
+            map: IndexMap::with_capacity(capacity),
         }
     }
 
@@ -149,7 +149,7 @@ impl FromIterator<(Value, Value)> for Mapping {
     #[inline]
     fn from_iter<I: IntoIterator<Item = (Value, Value)>>(iter: I) -> Self {
         Mapping {
-            map: LinkedHashMap::from_iter(iter),
+            map: IndexMap::from_iter(iter),
         }
     }
 }
@@ -179,7 +179,7 @@ macro_rules! delegate_iterator {
 
 /// Iterator over `&serde_yaml::Mapping`.
 pub struct Iter<'a> {
-    iter: linked_hash_map::Iter<'a, Value, Value>,
+    iter: indexmap::map::Iter<'a, Value, Value>,
 }
 
 delegate_iterator!((Iter<'a>) => (&'a Value, &'a Value));
@@ -197,7 +197,7 @@ impl<'a> IntoIterator for &'a Mapping {
 
 /// Iterator over `&mut serde_yaml::Mapping`.
 pub struct IterMut<'a> {
-    iter: linked_hash_map::IterMut<'a, Value, Value>,
+    iter: indexmap::map::IterMut<'a, Value, Value>,
 }
 
 delegate_iterator!((IterMut<'a>) => (&'a Value, &'a mut Value));
@@ -215,7 +215,7 @@ impl<'a> IntoIterator for &'a mut Mapping {
 
 /// Iterator over `serde_yaml::Mapping` by value.
 pub struct IntoIter {
-    iter: linked_hash_map::IntoIter<Value, Value>,
+    iter: indexmap::map::IntoIter<Value, Value>,
 }
 
 delegate_iterator!((IntoIter) => (Value, Value));
