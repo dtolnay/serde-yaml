@@ -126,6 +126,7 @@ impl Mapping {
     }
 }
 
+#[allow(clippy::derive_hash_xor_eq)]
 impl Hash for Mapping {
     fn hash<H: Hasher>(&self, state: &mut H) {
         // Hash the kv pairs in a way that is not sensitive to their order.
