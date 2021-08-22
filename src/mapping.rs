@@ -8,7 +8,7 @@ use std::iter::FromIterator;
 use std::ops::{Index, IndexMut};
 
 /// A YAML mapping in which the keys and values are both `serde_yaml::Value`.
-#[derive(Clone, Debug, Default, Eq, Hash, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Mapping {
     map: IndexMap<Value, Value>,
 }
