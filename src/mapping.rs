@@ -76,6 +76,16 @@ impl Mapping {
         self.map.get_mut(k)
     }
 
+    /// Gets the given key’s corresponding entry in the map for insertion and/or
+    /// in-place manipulation.
+    #[inline]
+    pub fn entry(&mut self, k: Value) -> Entry {
+        match self.map.entry(k) {
+            indexmap::map::Entry::Occupied(occupied) => Entry::Occupied(OccupiedEntry { occupied }),
+            indexmap::map::Entry::Vacant(vacant) => Entry::Vacant(VacantEntry { vacant }),
+        }
+    }
+
     /// Removes and returns the value corresponding to the key from the map.
     #[inline]
     pub fn remove(&mut self, k: &Value) -> Option<Value> {
@@ -325,6 +335,128 @@ impl IntoIterator for Mapping {
         IntoIter {
             iter: self.map.into_iter(),
         }
+    }
+}
+
+/// Entry for an existing key-value pair or a vacant location to insert one.
+pub enum Entry<'a> {
+    /// Existing slot with equivalent key.
+    Occupied(OccupiedEntry<'a>),
+    /// Vacant slot (no equivalent key in the map).
+    Vacant(VacantEntry<'a>),
+}
+
+/// A view into an occupied entry in a [`Mapping`]. It is part of the [`Entry`]
+/// enum.
+pub struct OccupiedEntry<'a> {
+    occupied: indexmap::map::OccupiedEntry<'a, Value, Value>,
+}
+
+/// A view into a vacant entry in a [`Mapping`]. It is part of the [`Entry`]
+/// enum.
+pub struct VacantEntry<'a> {
+    vacant: indexmap::map::VacantEntry<'a, Value, Value>,
+}
+
+impl<'a> Entry<'a> {
+    /// Returns a reference to this entry's key.
+    pub fn key(&self) -> &Value {
+        match self {
+            Entry::Vacant(e) => e.key(),
+            Entry::Occupied(e) => e.key(),
+        }
+    }
+
+    /// Ensures a value is in the entry by inserting the default if empty, and
+    /// returns a mutable reference to the value in the entry.
+    pub fn or_insert(self, default: Value) -> &'a mut Value {
+        match self {
+            Entry::Vacant(entry) => entry.insert(default),
+            Entry::Occupied(entry) => entry.into_mut(),
+        }
+    }
+
+    /// Ensures a value is in the entry by inserting the result of the default
+    /// function if empty, and returns a mutable reference to the value in the
+    /// entry.
+    pub fn or_insert_with<F>(self, default: F) -> &'a mut Value
+    where
+        F: FnOnce() -> Value,
+    {
+        match self {
+            Entry::Vacant(entry) => entry.insert(default()),
+            Entry::Occupied(entry) => entry.into_mut(),
+        }
+    }
+
+    /// Provides in-place mutable access to an occupied entry before any
+    /// potential inserts into the map.
+    pub fn and_modify<F>(self, f: F) -> Self
+    where
+        F: FnOnce(&mut Value),
+    {
+        match self {
+            Entry::Occupied(mut entry) => {
+                f(entry.get_mut());
+                Entry::Occupied(entry)
+            }
+            Entry::Vacant(entry) => Entry::Vacant(entry),
+        }
+    }
+}
+
+impl<'a> OccupiedEntry<'a> {
+    /// Gets a reference to the key in the entry.
+    #[inline]
+    pub fn key(&self) -> &Value {
+        self.occupied.key()
+    }
+
+    /// Gets a reference to the value in the entry.
+    #[inline]
+    pub fn get(&self) -> &Value {
+        self.occupied.get()
+    }
+
+    /// Gets a mutable reference to the value in the entry.
+    #[inline]
+    pub fn get_mut(&mut self) -> &mut Value {
+        self.occupied.get_mut()
+    }
+
+    /// Converts the entry into a mutable reference to its value.
+    #[inline]
+    pub fn into_mut(self) -> &'a mut Value {
+        self.occupied.into_mut()
+    }
+
+    /// Sets the value of the entry with the `OccupiedEntry`'s key, and returns
+    /// the entry's old value.
+    #[inline]
+    pub fn insert(&mut self, value: Value) -> Value {
+        self.occupied.insert(value)
+    }
+
+    /// Takes the value of the entry out of the map, and returns it.
+    #[inline]
+    pub fn remove(self) -> Value {
+        self.occupied.swap_remove()
+    }
+}
+
+impl<'a> VacantEntry<'a> {
+    /// Gets a reference to the key that would be used when inserting a value
+    /// through the VacantEntry.
+    #[inline]
+    pub fn key(&self) -> &Value {
+        self.vacant.key()
+    }
+
+    /// Sets the value of the entry with the VacantEntry's key, and returns a
+    /// mutable reference to it.
+    #[inline]
+    pub fn insert(self, value: Value) -> &'a mut Value {
+        self.vacant.insert(value)
     }
 }
 
