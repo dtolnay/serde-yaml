@@ -83,6 +83,7 @@
     // code is acceptable
     clippy::cast_possible_wrap,
     clippy::cast_precision_loss,
+    clippy::items_after_statements,
     // noisy
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
