@@ -339,24 +339,48 @@ impl PartialEq for N {
 impl PartialOrd for N {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (*self, *other) {
-            (N::PosInt(a), N::PosInt(b)) => Some(a.cmp(&b)),
-            (N::NegInt(a), N::NegInt(b)) => Some(a.cmp(&b)),
-            // negint is always less than zero
-            (N::NegInt(_), N::PosInt(_)) => Some(Ordering::Less),
-            (N::PosInt(_), N::NegInt(_)) => Some(Ordering::Greater),
-            // YAML only has one NaN
             (N::Float(a), N::Float(b)) => {
                 if a.is_nan() && b.is_nan() {
+                    // YAML only has one NaN
                     Some(Ordering::Equal)
                 } else {
                     a.partial_cmp(&b)
                 }
             }
+            _ => Some(self.total_cmp(other)),
+        }
+    }
+}
+
+impl N {
+    fn total_cmp(&self, other: &Self) -> Ordering {
+        match (*self, *other) {
+            (N::PosInt(a), N::PosInt(b)) => a.cmp(&b),
+            (N::NegInt(a), N::NegInt(b)) => a.cmp(&b),
+            // negint is always less than zero
+            (N::NegInt(_), N::PosInt(_)) => Ordering::Less,
+            (N::PosInt(_), N::NegInt(_)) => Ordering::Greater,
+            (N::Float(a), N::Float(b)) => a.partial_cmp(&b).unwrap_or_else(|| {
+                // arbitrarily sort the NaN last
+                if !a.is_nan() {
+                    Ordering::Less
+                } else if !b.is_nan() {
+                    Ordering::Greater
+                } else {
+                    Ordering::Equal
+                }
+            }),
             // arbitrarily sort integers below floats
             // FIXME: maybe something more sensible?
-            (_, N::Float(_)) => Some(Ordering::Less),
-            (N::Float(_), _) => Some(Ordering::Greater),
+            (_, N::Float(_)) => Ordering::Less,
+            (N::Float(_), _) => Ordering::Greater,
         }
+    }
+}
+
+impl Number {
+    pub(crate) fn total_cmp(&self, other: &Self) -> Ordering {
+        self.n.total_cmp(&other.n)
     }
 }
 
