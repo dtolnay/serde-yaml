@@ -1,6 +1,7 @@
 use crate::Error;
 use serde::de::{Unexpected, Visitor};
 use serde::{forward_to_deserialize_any, Deserialize, Deserializer, Serialize, Serializer};
+use std::cmp::Ordering;
 use std::fmt::{self, Debug, Display};
 use std::hash::{Hash, Hasher};
 use std::i64;
@@ -14,7 +15,7 @@ pub struct Number {
 // "N" is a prefix of "NegInt"... this is a false positive.
 // https://github.com/Manishearth/rust-clippy/issues/1241
 #[allow(clippy::enum_variant_names)]
-#[derive(Copy, Clone, Debug, PartialOrd)]
+#[derive(Copy, Clone, Debug)]
 enum N {
     PosInt(u64),
     /// Always less than zero.
@@ -331,6 +332,30 @@ impl PartialEq for N {
                 }
             }
             _ => false,
+        }
+    }
+}
+
+impl PartialOrd for N {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (*self, *other) {
+            (N::PosInt(a), N::PosInt(b)) => Some(a.cmp(&b)),
+            (N::NegInt(a), N::NegInt(b)) => Some(a.cmp(&b)),
+            // negint is always less than zero
+            (N::NegInt(_), N::PosInt(_)) => Some(Ordering::Less),
+            (N::PosInt(_), N::NegInt(_)) => Some(Ordering::Greater),
+            // YAML only has one NaN
+            (N::Float(a), N::Float(b)) => {
+                if a.is_nan() && b.is_nan() {
+                    Some(Ordering::Equal)
+                } else {
+                    a.partial_cmp(&b)
+                }
+            }
+            // arbitrarily sort integers below floats
+            // FIXME: maybe something more sensible?
+            (_, N::Float(_)) => Some(Ordering::Less),
+            (N::Float(_), _) => Some(Ordering::Greater),
         }
     }
 }
