@@ -3,7 +3,9 @@
 use crate::Value;
 use indexmap::IndexMap;
 use serde::{Deserialize, Deserializer, Serialize};
+use std::collections::hash_map::DefaultHasher;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 use std::ops::{Index, IndexMut};
 
@@ -120,6 +122,20 @@ impl Mapping {
         IterMut {
             iter: self.map.iter_mut(),
         }
+    }
+}
+
+impl Hash for Mapping {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // Hash the kv pairs in a way that is not sensitive to their order.
+        let mut xor = 0;
+        for (k, v) in self {
+            let mut hasher = DefaultHasher::new();
+            k.hash(&mut hasher);
+            v.hash(&mut hasher);
+            xor ^= hasher.finish();
+        }
+        xor.hash(state);
     }
 }
 
