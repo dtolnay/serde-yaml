@@ -35,11 +35,29 @@ impl<'de> Deserialize<'de> for Value {
                 Ok(Value::Number(i.into()))
             }
 
+            serde_if_integer128! {
+                fn visit_i128<E>(self, v: i128) -> Result<Value, E>
+                where
+                    E: SError,
+                {
+                    Ok(Value::String(v.to_string()))
+                }
+            }
+
             fn visit_u64<E>(self, u: u64) -> Result<Value, E>
             where
                 E: SError,
             {
                 Ok(Value::Number(u.into()))
+            }
+
+            serde_if_integer128! {
+                fn visit_u128<E>(self, v: u128) -> Result<Value, E>
+                where
+                    E: SError,
+                {
+                    Ok(Value::String(v.to_string()))
+                }
             }
 
             fn visit_f64<E>(self, f: f64) -> Result<Value, E>

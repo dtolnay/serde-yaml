@@ -1,5 +1,6 @@
 #![allow(clippy::eq_op)]
 
+use indoc::indoc;
 use serde::de::IntoDeserializer;
 use serde::Deserialize;
 use serde_derive::Deserialize;
@@ -52,4 +53,26 @@ fn test_into_deserializer() {
             second: 99
         }
     );
+}
+
+#[test]
+fn test_i128_as_value() {
+    let expected = Value::String("-9223372036854775809".to_owned());
+    let yaml = indoc! {"
+            ---
+            -9223372036854775809
+        "};
+
+    assert_eq!(expected, serde_yaml::from_str::<Value>(yaml).unwrap());
+}
+
+#[test]
+fn test_u128_as_value() {
+    let expected = Value::String("18446744073709551616".to_owned());
+    let yaml = indoc! {"
+            ---
+            18446744073709551616
+        "};
+
+    assert_eq!(expected, serde_yaml::from_str::<Value>(yaml).unwrap());
 }
