@@ -1,6 +1,6 @@
 [package]
 name = "serde_yaml"
-version = "0.8.17" # remember to update html_root_url, and readme for major versions
+version = "0.8.20" # remember to update html_root_url, and readme for major versions
 authors = ["David Tolnay <dtolnay@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -12,7 +12,7 @@ keywords = ["yaml", "serde"]
 
 [dependencies]
 dtoa = "0.4"
-linked-hash-map = "0.5.3"
+indexmap = "1.5"
 serde = "1.0.69"
 yaml-rust = "0.4.5"
 

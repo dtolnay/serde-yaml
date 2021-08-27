@@ -687,9 +687,7 @@ fn visit_scalar<'de, V>(
 where
     V: Visitor<'de>,
 {
-    if style != TScalarStyle::Plain {
-        visitor.visit_str(v)
-    } else if let Some(TokenType::Tag(handle, suffix)) = tag {
+    if let Some(TokenType::Tag(handle, suffix)) = tag {
         if handle == "!!" {
             match suffix.as_ref() {
                 "bool" => match v.parse::<bool>() {
@@ -713,8 +711,10 @@ where
         } else {
             visitor.visit_str(v)
         }
-    } else {
+    } else if style == TScalarStyle::Plain {
         visit_untagged_str(visitor, v)
+    } else {
+        visitor.visit_str(v)
     }
 }
 
