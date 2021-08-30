@@ -1,7 +1,6 @@
 #![allow(clippy::cast_lossless, clippy::cast_possible_wrap)]
 
 use indoc::indoc;
-use serde::serde_if_integer128;
 use serde_derive::Deserialize;
 use serde_yaml::Value;
 use std::collections::BTreeMap;
@@ -196,26 +195,24 @@ fn test_number_as_string() {
     test_de(yaml, &expected);
 }
 
-serde_if_integer128! {
-    #[test]
-    fn test_i128_big() {
-        let expected: i128 = ::std::i64::MIN as i128 - 1;
-        let yaml = indoc! {"
-            ---
-            -9223372036854775809
-        "};
-        assert_eq!(expected, serde_yaml::from_str::<i128>(yaml).unwrap());
-    }
+#[test]
+fn test_i128_big() {
+    let expected: i128 = ::std::i64::MIN as i128 - 1;
+    let yaml = indoc! {"
+        ---
+        -9223372036854775809
+    "};
+    assert_eq!(expected, serde_yaml::from_str::<i128>(yaml).unwrap());
+}
 
-    #[test]
-    fn test_u128_big() {
-        let expected: u128 = ::std::u64::MAX as u128 + 1;
-        let yaml = indoc! {"
-            ---
-            18446744073709551616
-        "};
-        assert_eq!(expected, serde_yaml::from_str::<u128>(yaml).unwrap());
-    }
+#[test]
+fn test_u128_big() {
+    let expected: u128 = ::std::u64::MAX as u128 + 1;
+    let yaml = indoc! {"
+        ---
+        18446744073709551616
+    "};
+    assert_eq!(expected, serde_yaml::from_str::<u128>(yaml).unwrap());
 }
 
 #[test]

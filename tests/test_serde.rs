@@ -5,7 +5,6 @@
 )]
 
 use indoc::indoc;
-use serde::serde_if_integer128;
 use serde_derive::{Deserialize, Serialize};
 use serde_yaml::Value;
 use std::collections::BTreeMap;
@@ -78,26 +77,24 @@ fn test_int_max_i64() {
     test_serde(&thing, yaml);
 }
 
-serde_if_integer128! {
-    #[test]
-    fn test_i128_small() {
-        let thing: i128 = -256;
-        let yaml = indoc! {"
-            ---
-            -256
-        "};
-        test_serde(&thing, yaml);
-    }
+#[test]
+fn test_i128_small() {
+    let thing: i128 = -256;
+    let yaml = indoc! {"
+        ---
+        -256
+    "};
+    test_serde(&thing, yaml);
+}
 
-    #[test]
-    fn test_u128_small() {
-        let thing: u128 = 256;
-        let yaml = indoc! {"
-            ---
-            256
-        "};
-        test_serde(&thing, yaml);
-    }
+#[test]
+fn test_u128_small() {
+    let thing: u128 = 256;
+    let yaml = indoc! {"
+        ---
+        256
+    "};
+    test_serde(&thing, yaml);
 }
 
 #[test]
