@@ -3,7 +3,7 @@
 //! This module provides YAML serialization with the type `Serializer`.
 
 use crate::{error, Error, Result};
-use serde::{ser, serde_if_integer128};
+use serde::ser;
 use std::{fmt, io, num, str};
 use yaml_rust::{yaml, Yaml, YamlEmitter};
 
@@ -109,11 +109,9 @@ where
         self.write(doc)
     }
 
-    serde_if_integer128! {
-        fn serialize_i128(self, v: i128) -> Result<()> {
-            let doc = SerializerToYaml.serialize_i128(v)?;
-            self.write(doc)
-        }
+    fn serialize_i128(self, v: i128) -> Result<()> {
+        let doc = SerializerToYaml.serialize_i128(v)?;
+        self.write(doc)
     }
 
     fn serialize_u8(self, v: u8) -> Result<()> {
@@ -136,11 +134,9 @@ where
         self.write(doc)
     }
 
-    serde_if_integer128! {
-        fn serialize_u128(self, v: u128) -> Result<()> {
-            let doc = SerializerToYaml.serialize_u128(v)?;
-            self.write(doc)
-        }
+    fn serialize_u128(self, v: u128) -> Result<()> {
+        let doc = SerializerToYaml.serialize_u128(v)?;
+        self.write(doc)
     }
 
     fn serialize_f32(self, v: f32) -> Result<()> {
@@ -479,14 +475,12 @@ impl ser::Serializer for SerializerToYaml {
         Ok(Yaml::Integer(v))
     }
 
-    serde_if_integer128! {
-        #[allow(clippy::cast_possible_truncation)]
-        fn serialize_i128(self, v: i128) -> Result<Yaml> {
-            if v <= i64::max_value() as i128 && v >= i64::min_value() as i128 {
-                self.serialize_i64(v as i64)
-            } else {
-                Ok(Yaml::Real(v.to_string()))
-            }
+    #[allow(clippy::cast_possible_truncation)]
+    fn serialize_i128(self, v: i128) -> Result<Yaml> {
+        if v <= i64::max_value() as i128 && v >= i64::min_value() as i128 {
+            self.serialize_i64(v as i64)
+        } else {
+            Ok(Yaml::Real(v.to_string()))
         }
     }
 
@@ -510,14 +504,12 @@ impl ser::Serializer for SerializerToYaml {
         }
     }
 
-    serde_if_integer128! {
-        #[allow(clippy::cast_possible_truncation)]
-        fn serialize_u128(self, v: u128) -> Result<Yaml> {
-            if v <= i64::max_value() as u128 {
-                self.serialize_i64(v as i64)
-            } else {
-                Ok(Yaml::Real(v.to_string()))
-            }
+    #[allow(clippy::cast_possible_truncation)]
+    fn serialize_u128(self, v: u128) -> Result<Yaml> {
+        if v <= i64::max_value() as u128 {
+            self.serialize_i64(v as i64)
+        } else {
+            Ok(Yaml::Real(v.to_string()))
         }
     }
 
