@@ -520,8 +520,8 @@ impl ser::Serializer for SerializerToYaml {
             num::FpCategory::Nan => ".nan".into(),
             _ => {
                 let mut buf = vec![];
-                ::dtoa::write(&mut buf, v).unwrap();
-                ::std::str::from_utf8(&buf).unwrap().into()
+                dtoa::write(&mut buf, v).unwrap();
+                str::from_utf8(&buf).unwrap().into()
             }
         }))
     }
@@ -533,8 +533,8 @@ impl ser::Serializer for SerializerToYaml {
             num::FpCategory::Nan => ".nan".into(),
             _ => {
                 let mut buf = vec![];
-                ::dtoa::write(&mut buf, v).unwrap();
-                ::std::str::from_utf8(&buf).unwrap().into()
+                dtoa::write(&mut buf, v).unwrap();
+                str::from_utf8(&buf).unwrap().into()
             }
         }))
     }
