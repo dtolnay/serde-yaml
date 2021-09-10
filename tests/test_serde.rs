@@ -136,6 +136,16 @@ fn test_float() {
 }
 
 #[test]
+fn test_float32() {
+    let thing: f32 = 25.6;
+    let yaml = indoc! {"
+        ---
+        25.6
+    "};
+    test_serde(&thing, yaml);
+}
+
+#[test]
 fn test_vec() {
     let thing = vec![1, 2, 3];
     let yaml = indoc! {"

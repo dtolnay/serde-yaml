@@ -514,7 +514,16 @@ impl ser::Serializer for SerializerToYaml {
     }
 
     fn serialize_f32(self, v: f32) -> Result<Yaml> {
-        self.serialize_f64(v as f64)
+        Ok(Yaml::Real(match v.classify() {
+            num::FpCategory::Infinite if v.is_sign_positive() => ".inf".into(),
+            num::FpCategory::Infinite => "-.inf".into(),
+            num::FpCategory::Nan => ".nan".into(),
+            _ => {
+                let mut buf = vec![];
+                ::dtoa::write(&mut buf, v).unwrap();
+                ::std::str::from_utf8(&buf).unwrap().into()
+            }
+        }))
     }
 
     fn serialize_f64(self, v: f64) -> Result<Yaml> {
