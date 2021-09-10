@@ -143,6 +143,28 @@ fn test_float32() {
         25.6
     "};
     test_serde(&thing, yaml);
+
+    let thing = f32::INFINITY;
+    let yaml = indoc! {"
+        ---
+        .inf
+    "};
+    test_serde(&thing, yaml);
+
+    let thing = f32::NEG_INFINITY;
+    let yaml = indoc! {"
+        ---
+        -.inf
+    "};
+    test_serde(&thing, yaml);
+
+    let single_float: f32 = serde_yaml::from_str(indoc! {"
+        ---
+        .nan
+    "})
+    .unwrap();
+    assert!(single_float.is_nan());
+
 }
 
 #[test]
