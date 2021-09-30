@@ -74,6 +74,7 @@
     // things are often more readable this way
     clippy::cast_lossless,
     clippy::if_not_else,
+    clippy::if_then_panic,
     clippy::match_same_arms,
     clippy::module_name_repetitions,
     clippy::needless_pass_by_value,
