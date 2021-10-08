@@ -57,3 +57,11 @@ jobs:
       - run: cargo fuzz build -O
         # Currently broken. https://github.com/rust-fuzz/cargo-fuzz/issues/276
         continue-on-error: true
+
+  outdated:
+    name: Outdated
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v2
+      - run: cargo outdated --exit-code 1
