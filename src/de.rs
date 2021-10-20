@@ -1277,11 +1277,17 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
         self.deserialize_scalar(visitor)
     }
 
-    fn deserialize_unit_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value>
+    fn deserialize_unit_struct<V>(self, name: &'static str, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_unit(visitor)
+        let (next, _) = self.next()?;
+        match next {
+            Event::Scalar(scalar_name, TScalarStyle::Plain, None) if name == scalar_name => {
+                visitor.visit_unit()
+            }
+            other => Err(invalid_type(other, &visitor)),
+        }
     }
 
     /// Parses a newtype struct as the underlying value.

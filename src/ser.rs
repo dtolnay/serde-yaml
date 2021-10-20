@@ -556,8 +556,8 @@ impl ser::Serializer for SerializerToYaml {
         Ok(Yaml::Null)
     }
 
-    fn serialize_unit_struct(self, _name: &'static str) -> Result<Yaml> {
-        self.serialize_unit()
+    fn serialize_unit_struct(self, name: &'static str) -> Result<Yaml> {
+        Ok(Yaml::String(name.to_owned()))
     }
 
     fn serialize_unit_variant(

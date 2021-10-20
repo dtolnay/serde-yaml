@@ -330,11 +330,14 @@ impl<'de> Deserializer<'de> for Value {
         }
     }
 
-    fn deserialize_unit_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value, Error>
+    fn deserialize_unit_struct<V>(self, name: &'static str, visitor: V) -> Result<V::Value, Error>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_unit(visitor)
+        match self {
+            Value::String(ref unit_name) if name == unit_name => visitor.visit_unit(),
+            _ => Err(self.invalid_type(&visitor)),
+        }
     }
 
     fn deserialize_newtype_struct<V>(
