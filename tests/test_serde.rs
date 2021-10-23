@@ -164,7 +164,6 @@ fn test_float32() {
     "})
     .unwrap();
     assert!(single_float.is_nan());
-
 }
 
 #[test]
