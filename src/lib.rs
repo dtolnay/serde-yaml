@@ -69,6 +69,8 @@
 #![deny(missing_docs)]
 // Suppressed clippy_pedantic lints
 #![allow(
+    // buggy
+    clippy::question_mark, // https://github.com/rust-lang/rust-clippy/issues/7859
     // private Deserializer::next
     clippy::should_implement_trait,
     // things are often more readable this way
