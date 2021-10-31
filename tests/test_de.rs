@@ -2,8 +2,8 @@
 
 use indoc::indoc;
 use serde_derive::Deserialize;
-use serde_yaml::Value;
-use std::collections::BTreeMap;
+use serde_yaml::{Value, to_string};
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 
 fn test_de<T>(yaml: &str, expected: &T)
@@ -160,22 +160,89 @@ fn test_enum_tag() {
     enum E {
         A(String),
         B(String),
+        C(Vec<String>),
     }
     #[derive(Deserialize, PartialEq, Debug)]
     struct Data {
         a: E,
         b: E,
+        c: E
     }
     let yaml = indoc! {"
         ---
         a: !A foo
         b: !B bar
+        c: !C [Hi, There]
     "};
     let expected = Data {
         a: E::A("foo".into()),
         b: E::B("bar".into()),
+        c: E::C(vec!["Hi".into(), "There".into()])
     };
     test_de(yaml, &expected);
+}
+
+#[test]
+fn test_enum_tag_map() {
+    #[derive(Deserialize, PartialEq, Debug)]
+    enum E {
+        A(String),
+        B(String),
+        C(HashMap<String, String>)
+    }
+    #[derive(Deserialize, PartialEq, Debug)]
+    struct Data {
+        a: E,
+        b: E,
+        c: E
+    }
+    let yaml = indoc! {"
+        ---
+        a: !A foo
+        b: !B bar
+        c: !C
+           Hi: There
+    "};
+    let mut mapC = HashMap::with_capacity(1);
+    mapC.insert("Hi".to_string(), "There".to_string());
+    let expected = Data {
+        a: E::A("foo".into()),
+        b: E::B("bar".into()),
+        c: E::C(mapC)
+    };
+    test_de(yaml, &expected);
+}
+
+#[test]
+fn test_variant_by_tags() {
+    #[derive(Deserialize, Debug, PartialEq)]
+    enum Message {
+        Quit,
+        ChangeColor(i32, i32, i32),
+        Move { x: i32, y: i32 },
+        Write(String),
+        Number(f64)
+    }
+
+    let yaml = indoc! {"\
+        ---
+        - !ChangeColor [1, 2, 3] # Testing Seq Start
+        - !ChangeColor [1, 2, 3]
+        - !Move {x: 10, y: 10}   # Testing Mapping start
+        - !Write Okay            # Testing Scalar start
+        - !Quit                  # Testing Unit type
+        - !Number 1.0            # Testing Scalar Start non-string values
+    "};
+    let expected = vec![
+        Message::ChangeColor(1, 2, 3),
+        Message::ChangeColor(1, 2, 3),
+        Message::Move {x: 10, y: 10},
+        Message::Write("Okay".to_string()),
+        Message::Quit,
+        Message::Number(1.0)
+    ];
+    test_de::<Vec<Message>>(yaml, &expected);
+
 }
 
 #[test]

@@ -15,7 +15,7 @@ keywords = ["yaml", "serde"]
 dtoa = "0.4"
 indexmap = "1.5"
 serde = "1.0.69"
-yaml-rust = "0.4.5"
+yaml-rust = {git = "https://github.com/dchakrav-github/yaml-rust"}
 
 [dev-dependencies]
 anyhow = "1.0"

@@ -471,14 +471,14 @@ impl MarkedEventReceiver for Loader {
                 self.aliases.insert(id, self.events.len());
                 Event::Scalar(value, style, tag)
             }
-            YamlEvent::SequenceStart(id) => {
+            YamlEvent::SequenceStart(id, tag) => {
                 self.aliases.insert(id, self.events.len());
-                Event::SequenceStart
+                Event::SequenceStart(tag)
             }
             YamlEvent::SequenceEnd => Event::SequenceEnd,
-            YamlEvent::MappingStart(id) => {
+            YamlEvent::MappingStart(id, tag) => {
                 self.aliases.insert(id, self.events.len());
-                Event::MappingStart
+                Event::MappingStart(tag)
             }
             YamlEvent::MappingEnd => Event::MappingEnd,
         };
@@ -490,9 +490,9 @@ impl MarkedEventReceiver for Loader {
 enum Event {
     Alias(usize),
     Scalar(String, TScalarStyle, Option<TokenType>),
-    SequenceStart,
+    SequenceStart(Option<TokenType>),
     SequenceEnd,
-    MappingStart,
+    MappingStart(Option<TokenType>),
     MappingEnd,
 }
 
@@ -551,10 +551,10 @@ impl<'a> DeserializerFromEvents<'a> {
         while let Some((event, _)) = self.opt_next() {
             match event {
                 Event::Alias(_) | Event::Scalar(_, _, _) => {}
-                Event::SequenceStart => {
+                Event::SequenceStart(_) => {
                     stack.push(Nest::Sequence);
                 }
-                Event::MappingStart => {
+                Event::MappingStart(_) => {
                     stack.push(Nest::Mapping);
                 }
                 Event::SequenceEnd => match stack.pop() {
@@ -703,7 +703,17 @@ where
                 },
                 _ => visitor.visit_str(v),
             }
-        } else {
+        }
+        else if handle == "!" && style == TScalarStyle::Plain {
+            //
+            // This is using variant based discriminant in YAML format, treat this as an
+            // untagged str for auto-conversion, when it is plain, when using '' or "",
+            // it would be intentionally mapping to string, like "1.0" is meant to be interpreted
+            // as a string and not 1.0
+            //
+            visit_untagged_str(visitor, v)
+        }
+        else {
             visitor.visit_str(v)
         }
     } else if style == TScalarStyle::Plain {
@@ -800,7 +810,7 @@ impl<'de, 'a, 'r> de::MapAccess<'de> for MapAccess<'a, 'r> {
 struct EnumAccess<'a: 'r, 'r> {
     de: &'r mut DeserializerFromEvents<'a>,
     name: &'static str,
-    tag: Option<&'static str>,
+    tag: Option<&'a str>,
 }
 
 impl<'de, 'a, 'r> de::EnumAccess<'de> for EnumAccess<'a, 'r> {
@@ -839,8 +849,8 @@ impl<'de, 'a, 'r> de::EnumAccess<'de> for EnumAccess<'a, 'r> {
             }
         };
 
-        let str_de = IntoDeserializer::<Error>::into_deserializer(variant);
-        let ret = seed.deserialize(str_de)?;
+        //let str_de = IntoDeserializer::<Error>::into_deserializer(variant);
+        let ret = seed.deserialize(variant.into_deserializer())?;
         let variant_visitor = DeserializerFromEvents {
             events: self.de.events,
             aliases: self.de.aliases,
@@ -1056,10 +1066,10 @@ fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
                 Err(invalid_type) => invalid_type,
             }
         }
-        Event::SequenceStart => de::Error::invalid_type(Unexpected::Seq, exp),
-        Event::MappingStart => de::Error::invalid_type(Unexpected::Map, exp),
-        Event::SequenceEnd => panic!("unexpected end of sequence"),
-        Event::MappingEnd => panic!("unexpected end of mapping"),
+        Event::SequenceStart(_) => de::Error::invalid_type(Unexpected::Seq, exp),
+        Event::MappingStart(_) => de::Error::invalid_type(Unexpected::Map, exp),
+        Event::SequenceEnd => de::Error::invalid_type(Unexpected::Seq, exp),
+        Event::MappingEnd => de::Error::invalid_type(Unexpected::Map, exp),
     }
 }
 
@@ -1071,6 +1081,59 @@ impl<'a> DeserializerFromEvents<'a> {
         let (next, marker) = self.next()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_scalar(visitor),
+            //
+            // This also handles being delegated from a call to deserialize_unit as well.
+            //
+            // YAML itself as a format does not have the concept of unit_type, it is serde
+            // data model and Rust binding that does. Unlike handling other parts where this Deserializer
+            // drives mostly filling in the data model, Enums however we need to lean in on the
+            // serde data model to tell us which variant and what it expects and we respond to that
+            // esp. when using tag based discrimination, e.g. !ChangeColor [1, 2, 3].
+            //
+            // This change only fixes deserialization and not Ser. So Ser will still uses default struct key
+            // format for conveying each disriminant. It isn't clear as there are multiple users of the library
+            // if changing the format can cause breakage for consumers.
+            //
+            // TODO: consult with maintainers on where we should change Ser as well
+            //
+
+            //
+            // To understand what this check below is doing, let us take an example of a Enum type
+            // In YAML one would use a variant tag based discriminator to specify which type it is.
+            // We will take an example of Message Type
+            //
+            // #[derive(Deserialize, Debug, PartialEq)]
+            // enum Message {
+            //     Quit,
+            //     ChangeColor(i32, i32, i32),
+            //     Move { x: i32, y: i32 },
+            //     Write(String),
+            //     Number(f64)
+            // }
+            //
+            // Consider the following input
+            //   1.  ---
+            //   2.  - !Quit
+            //   3.  - !Write "" # this will pass
+            //   4.  - !Move {x: 10, y: 10}
+            //   5.  - !Write Okay
+            //   6.  - !Write # this should fail
+            //
+            //
+            // yaml_rust (with a pending PR change) will map the discriminants as Scalar("", Plain, Some(TokenType::Tag("!", "Quit"))) and
+            // Scalar("", DoubleQuoted, Some(TokenType::Tag("!", "Write"))). As the deserializer we do not have
+            // knowledge about Quit or Write, the serde generated code that call us knows about this using. It
+            // provides hints to us using 2 calls, EnumAccess::variant() that return which field (Quit or Write)
+            // and the subsequent call to fulfill the variant's state. So for Quit it will call de::VariantAccess::deserialize_unit,
+            // where it expects a call back into visitor.visit_unit() and for Write de::VariantAccess::newtype_variant.
+            // All de::VariantAccess scalar calls get delegated to this method. So we handle all cases here
+            //
+            // We need to distinguish between the following events
+            // 1.  Scalar("", Plain, Some(TokenType::Tag("!", "Quit") -> maps to visit_unit
+            // 2.  Scalar("", DoubleQuote, Some(TokenType::Tag("!", "Write")) -> map to visit_scalar with empty string
+            // 3.  Scalar("", Plain, Some(TokenType::Tag("!", "Write")) -> maps to visit_unit below, which should error out for (6)
+            //`
+            Event::Scalar(v, TScalarStyle::Plain, Some(TokenType::Tag(ref handle, ref suffix))) if handle == "!" && v.is_empty() => visitor.visit_unit(),
             Event::Scalar(v, style, tag) => visit_scalar(v, *style, tag, visitor),
             other => Err(invalid_type(other, &visitor)),
         }
@@ -1089,8 +1152,8 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_any(visitor),
             Event::Scalar(v, style, tag) => visit_scalar(v, *style, tag, visitor),
-            Event::SequenceStart => self.visit_sequence(visitor),
-            Event::MappingStart => self.visit_mapping(visitor),
+            Event::SequenceStart(_) => self.visit_sequence(visitor),
+            Event::MappingStart(_) => self.visit_mapping(visitor),
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
         }
@@ -1203,6 +1266,11 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     {
         let (next, marker) = self.next()?;
         match next {
+            //
+            // see deserialize_scalar for context. We have this for the use case we serde
+            // data model is a string/str but in yaml it was Plain with just numbers
+            //
+            Event::Scalar(v, TScalarStyle::Plain, Some(TokenType::Tag(ref handle, ref suffix))) if handle == "!" && v.is_empty() => visitor.visit_unit(),
             Event::Scalar(v, _, _) => visitor.visit_str(v),
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_str(visitor),
             other => Err(invalid_type(other, &visitor)),
@@ -1258,7 +1326,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
                     v != "~" && v != "null"
                 }
             }
-            Event::SequenceStart | Event::MappingStart => true,
+            Event::SequenceStart(_) | Event::MappingStart(_) => true,
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
         };
@@ -1299,7 +1367,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
         let (next, marker) = self.next()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_seq(visitor),
-            Event::SequenceStart => self.visit_sequence(visitor),
+            Event::SequenceStart(_) => self.visit_sequence(visitor),
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_marker(err, marker, self.path))
@@ -1331,7 +1399,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
         let (next, marker) = self.next()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_map(visitor),
-            Event::MappingStart => self.visit_mapping(visitor),
+            Event::MappingStart(_) => self.visit_mapping(visitor),
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_marker(err, marker, self.path))
@@ -1351,8 +1419,8 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
             Event::Alias(mut pos) => self
                 .jump(&mut pos)?
                 .deserialize_struct(name, fields, visitor),
-            Event::SequenceStart => self.visit_sequence(visitor),
-            Event::MappingStart => self.visit_mapping(visitor),
+            Event::SequenceStart(_) => self.visit_sequence(visitor),
+            Event::MappingStart(_) => self.visit_mapping(visitor),
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_marker(err, marker, self.path))
@@ -1377,6 +1445,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
                 self.jump(&mut pos)?
                     .deserialize_enum(name, variants, visitor)
             }
+
             Event::Scalar(_, _, t) => {
                 if let Some(TokenType::Tag(handle, suffix)) = t {
                     if handle == "!" {
@@ -1391,20 +1460,31 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
                 }
                 visitor.visit_enum(UnitVariantAccess { de: self })
             }
-            Event::MappingStart => {
-                *self.pos += 1;
-                let value = visitor.visit_enum(EnumAccess {
-                    de: self,
-                    name,
-                    tag: None,
-                })?;
-                self.end_mapping(1)?;
+
+            Event::SequenceStart(token) |
+            Event::MappingStart(token) => {
+                let value = if token.is_none() {
+                    *self.pos += 1;
+                    let value = visitor.visit_enum(EnumAccess {
+                        de: self,
+                        name,
+                        tag: None,
+                    })?;
+                    self.end_mapping(1)?;
+                    value
+                } else {
+                    visitor.visit_enum(EnumAccess {
+                        de: self,
+                        name,
+                        tag: token.as_ref().map(|token| match token {
+                            TokenType::Tag(_, variant) => variant.as_str(),
+                            _ => ""
+                        })
+                    })?
+                };
                 Ok(value)
             }
-            Event::SequenceStart => {
-                let err = de::Error::invalid_type(Unexpected::Seq, &"string or singleton map");
-                Err(error::fix_marker(err, marker, self.path))
-            }
+
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
         }

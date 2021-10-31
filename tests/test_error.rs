@@ -133,7 +133,7 @@ fn test_variant_not_a_map() {
         ---
         - "V"
     "#};
-    let expected = "invalid type: sequence, expected string or singleton map at line 2 column 1";
+    let expected = "V: invalid type: sequence, expected usize at line 3 column 1";
     test_error::<E>(yaml, expected);
 }
 
@@ -232,6 +232,25 @@ fn test_invalid_scalar_type() {
     let yaml = "x:\n";
     let expected = "x: invalid type: unit value, expected an array of length 1 at line 2 column 1";
     test_error::<S>(yaml, expected);
+}
+
+#[test]
+fn test_incorrect_variant_by_tag() {
+    #[derive(Deserialize, Debug, PartialEq)]
+    enum Message {
+        Quit,
+        ChangeColor(i32, i32, i32),
+        Move { x: i32, y: i32 },
+        Write(String),
+        Number(f64)
+    }
+
+    let yaml = indoc! {"\
+        ---
+        !Write
+    "};
+    let expected = "Write: invalid type: unit value, expected a string at line 3 column 1";
+    test_error::<Message>(yaml, &expected);
 }
 
 #[test]
