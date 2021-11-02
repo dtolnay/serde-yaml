@@ -155,6 +155,51 @@ fn test_enum_alias() {
 }
 
 #[test]
+fn test_enum_alias_tag_mixed_with_key_based() {
+    #[derive(Deserialize, PartialEq, Debug)]
+    enum E {
+        A,
+        B(u8, u8),
+        C(f64)
+    }
+    #[derive(Deserialize, PartialEq, Debug)]
+    struct Data {
+        a: E,
+        b: E,
+        c: E,
+        u: E,
+    }
+    let yaml = indoc! {"
+        ---
+        aref:
+          &aref
+          A
+        bref:
+          &bref
+          B:
+            - 1
+            - 2
+        cref:
+          &cref
+          !C 1.0
+        uref:
+          &uref
+          !A
+        a: *aref
+        b: *bref
+        c: *cref
+        u: *uref
+    "};
+    let expected = Data {
+        a: E::A,
+        b: E::B(1, 2),
+        c: E::C(1.0),
+        u: E::A
+    };
+    test_de(yaml, &expected);
+}
+
+#[test]
 fn test_enum_tag() {
     #[derive(Deserialize, PartialEq, Debug)]
     enum E {
