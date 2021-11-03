@@ -393,6 +393,8 @@ fn test_value() {
 #[test]
 fn test_mapping() {
     use serde_yaml::Mapping;
+    use serde_yaml::mapping::Entry;
+
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct Data {
         pub substructure: Mapping,
@@ -409,12 +411,51 @@ fn test_mapping() {
         Value::String("b".to_owned()),
         Value::String("bar".to_owned()),
     );
+    thing.substructure.insert(
+        Value::String("c".to_owned()),
+        Value::String("baz".to_owned()),
+    );
+    thing.substructure.insert(
+        Value::String("d".to_owned()),
+        Value::String("ram".to_owned()),
+    );
 
     let yaml = indoc! {"
         ---
         substructure:
           a: foo
           b: bar
+          c: baz
+          d: ram
+    "};
+
+    test_serde(&thing, yaml);
+
+    // Regression test for #221 (iteration order should be preserved when entries are removed):
+    thing.substructure.remove(&Value::String("a".to_owned()));
+
+    let yaml = indoc! {"
+        ---
+        substructure:
+          b: bar
+          c: baz
+          d: ram
+    "};
+
+    test_serde(&thing, yaml);
+
+    match thing.substructure.entry(Value::String("b".to_owned())) {
+        Entry::Vacant(_) => panic!("Expected Occupied entry"),
+        Entry::Occupied(entry) => {
+            entry.remove();
+        }
+    }
+
+    let yaml = indoc! {"
+        ---
+        substructure:
+          c: baz
+          d: ram
     "};
 
     test_serde(&thing, yaml);

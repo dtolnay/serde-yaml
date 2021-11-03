@@ -89,7 +89,7 @@ impl Mapping {
     /// Removes and returns the value corresponding to the key from the map.
     #[inline]
     pub fn remove(&mut self, k: &Value) -> Option<Value> {
-        self.map.remove(k)
+        self.map.shift_remove(k)
     }
 
     /// Returns the maximum number of key-value pairs the map can hold without
@@ -440,7 +440,7 @@ impl<'a> OccupiedEntry<'a> {
     /// Takes the value of the entry out of the map, and returns it.
     #[inline]
     pub fn remove(self) -> Value {
-        self.occupied.swap_remove()
+        self.occupied.shift_remove()
     }
 }
 
