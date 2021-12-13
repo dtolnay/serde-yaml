@@ -273,6 +273,18 @@ fn test_unit() {
 }
 
 #[test]
+fn test_unit_struct() {
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    struct Foo;
+    let thing = Foo;
+    let yaml = indoc! {"
+        ---
+        ~
+    "};
+    test_serde(&thing, yaml);
+}
+
+#[test]
 fn test_unit_variant() {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     enum Variant {
