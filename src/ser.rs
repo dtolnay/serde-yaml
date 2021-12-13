@@ -518,7 +518,7 @@ impl ser::Serializer for SerializerToYaml {
             num::FpCategory::Infinite if v.is_sign_positive() => ".inf".into(),
             num::FpCategory::Infinite => "-.inf".into(),
             num::FpCategory::Nan => ".nan".into(),
-            _ => dtoa::Buffer::new().format_finite(v).into(),
+            _ => ryu::Buffer::new().format_finite(v).into(),
         }))
     }
 
@@ -527,7 +527,7 @@ impl ser::Serializer for SerializerToYaml {
             num::FpCategory::Infinite if v.is_sign_positive() => ".inf".into(),
             num::FpCategory::Infinite => "-.inf".into(),
             num::FpCategory::Nan => ".nan".into(),
-            _ => dtoa::Buffer::new().format_finite(v).into(),
+            _ => ryu::Buffer::new().format_finite(v).into(),
         }))
     }
 
