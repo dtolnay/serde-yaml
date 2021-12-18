@@ -89,6 +89,7 @@
     clippy::cast_precision_loss,
     clippy::doc_markdown,
     clippy::items_after_statements,
+    clippy::return_self_not_must_use,
     // noisy
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
