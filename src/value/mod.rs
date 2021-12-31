@@ -89,7 +89,9 @@ pub fn to_value<T>(value: T) -> Result<Value, Error>
 where
     T: Serialize,
 {
-    value.serialize(SerializerToYaml).map(yaml_to_value)
+    value
+        .serialize(SerializerToYaml::default())
+        .map(yaml_to_value)
 }
 
 /// Interpret a `serde_yaml::Value` as an instance of type `T`.
@@ -621,6 +623,9 @@ fn yaml_to_value(yaml: Yaml) -> Value {
         Yaml::Alias(_) => panic!("alias unsupported"),
         Yaml::Null => Value::Null,
         Yaml::BadValue => panic!("bad value"),
+        Yaml::BlockScalar(_) => panic!("block scalar unexpected"),
+        Yaml::DocFragment(_) => panic!("doc fragment unexpected"),
+        Yaml::Comment(_) => panic!("comment unexpected"),
     }
 }
 

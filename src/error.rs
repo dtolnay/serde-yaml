@@ -25,6 +25,7 @@ pub enum ErrorImpl {
     Io(io::Error),
     Utf8(str::Utf8Error),
     FromUtf8(string::FromUtf8Error),
+    Format(String),
 
     EndOfStream,
     MoreThanOneDocument,
@@ -130,6 +131,10 @@ pub(crate) fn string_utf8(err: string::FromUtf8Error) -> Error {
     Error(Box::new(ErrorImpl::FromUtf8(err)))
 }
 
+pub(crate) fn format(err: String) -> Error {
+    Error(Box::new(ErrorImpl::Format(err)))
+}
+
 pub(crate) fn recursion_limit_exceeded() -> Error {
     Error(Box::new(ErrorImpl::RecursionLimitExceeded))
 }
@@ -205,6 +210,7 @@ impl ErrorImpl {
             ErrorImpl::Io(err) => error::Error::description(err),
             ErrorImpl::Utf8(err) => error::Error::description(err),
             ErrorImpl::FromUtf8(err) => error::Error::description(err),
+            ErrorImpl::Format(err) => err.as_str(),
             ErrorImpl::EndOfStream => "EOF while parsing a value",
             ErrorImpl::MoreThanOneDocument => {
                 "deserializing from YAML containing more than one document is not supported"
@@ -241,6 +247,7 @@ impl ErrorImpl {
             ErrorImpl::Io(err) => Display::fmt(err, f),
             ErrorImpl::Utf8(err) => Display::fmt(err, f),
             ErrorImpl::FromUtf8(err) => Display::fmt(err, f),
+            ErrorImpl::Format(err) => Display::fmt(err, f),
             ErrorImpl::EndOfStream => f.write_str("EOF while parsing a value"),
             ErrorImpl::MoreThanOneDocument => f.write_str(
                 "deserializing from YAML containing more than one document is not supported",
@@ -258,6 +265,7 @@ impl ErrorImpl {
             ErrorImpl::Io(io) => f.debug_tuple("Io").field(io).finish(),
             ErrorImpl::Utf8(utf8) => f.debug_tuple("Utf8").field(utf8).finish(),
             ErrorImpl::FromUtf8(from_utf8) => f.debug_tuple("FromUtf8").field(from_utf8).finish(),
+            ErrorImpl::Format(s) => f.debug_tuple("Format").field(s).finish(),
             ErrorImpl::EndOfStream => f.debug_tuple("EndOfStream").finish(),
             ErrorImpl::MoreThanOneDocument => f.debug_tuple("MoreThanOneDocument").finish(),
             ErrorImpl::RecursionLimitExceeded => f.debug_tuple("RecursionLimitExceeded").finish(),

@@ -2,6 +2,7 @@
 //!
 //! This module provides YAML serialization with the type `Serializer`.
 
+use crate::yamlformat::{Format, MemberId, YamlFormat, YamlFormatType};
 use crate::{error, Error, Result};
 use serde::ser;
 use std::{fmt, io, num, str};
@@ -31,18 +32,29 @@ use yaml_rust::{yaml, Yaml, YamlEmitter};
 ///     Ok(())
 /// }
 /// ```
-pub struct Serializer<W> {
+pub struct Serializer<'f, W> {
+    yamlformat: Option<&'f dyn YamlFormat>,
     documents: usize,
     writer: W,
 }
 
-impl<W> Serializer<W>
+impl<'f, W> Serializer<'f, W>
 where
     W: io::Write,
 {
     /// Creates a new YAML serializer.
     pub fn new(writer: W) -> Self {
         Serializer {
+            yamlformat: None,
+            documents: 0,
+            writer,
+        }
+    }
+
+    /// Creates a new YAML serializer with formatting info.
+    pub fn new_with_format(writer: W, yamlformat: Option<&'f dyn YamlFormat>) -> Self {
+        Serializer {
+            yamlformat: yamlformat,
             documents: 0,
             writer,
         }
@@ -69,108 +81,108 @@ where
     }
 }
 
-impl<'a, W> ser::Serializer for &'a mut Serializer<W>
+impl<'a, 'f, W> ser::Serializer for &'a mut Serializer<'f, W>
 where
     W: io::Write,
 {
     type Ok = ();
     type Error = Error;
 
-    type SerializeSeq = ThenWrite<'a, W, SerializeArray>;
-    type SerializeTuple = ThenWrite<'a, W, SerializeArray>;
-    type SerializeTupleStruct = ThenWrite<'a, W, SerializeArray>;
-    type SerializeTupleVariant = ThenWrite<'a, W, SerializeTupleVariant>;
-    type SerializeMap = ThenWrite<'a, W, SerializeMap>;
-    type SerializeStruct = ThenWrite<'a, W, SerializeStruct>;
-    type SerializeStructVariant = ThenWrite<'a, W, SerializeStructVariant>;
+    type SerializeSeq = ThenWrite<'a, 'f, W, SerializeArray>;
+    type SerializeTuple = ThenWrite<'a, 'f, W, SerializeArray>;
+    type SerializeTupleStruct = ThenWrite<'a, 'f, W, SerializeArray>;
+    type SerializeTupleVariant = ThenWrite<'a, 'f, W, SerializeTupleVariant>;
+    type SerializeMap = ThenWrite<'a, 'f, W, SerializeMap>;
+    type SerializeStruct = ThenWrite<'a, 'f, W, SerializeStruct<'f>>;
+    type SerializeStructVariant = ThenWrite<'a, 'f, W, SerializeStructVariant>;
 
     fn serialize_bool(self, v: bool) -> Result<()> {
-        let doc = SerializerToYaml.serialize_bool(v)?;
+        let doc = SerializerToYaml::default().serialize_bool(v)?;
         self.write(doc)
     }
 
     fn serialize_i8(self, v: i8) -> Result<()> {
-        let doc = SerializerToYaml.serialize_i8(v)?;
+        let doc = SerializerToYaml::default().serialize_i8(v)?;
         self.write(doc)
     }
 
     fn serialize_i16(self, v: i16) -> Result<()> {
-        let doc = SerializerToYaml.serialize_i16(v)?;
+        let doc = SerializerToYaml::default().serialize_i16(v)?;
         self.write(doc)
     }
 
     fn serialize_i32(self, v: i32) -> Result<()> {
-        let doc = SerializerToYaml.serialize_i32(v)?;
+        let doc = SerializerToYaml::default().serialize_i32(v)?;
         self.write(doc)
     }
 
     fn serialize_i64(self, v: i64) -> Result<()> {
-        let doc = SerializerToYaml.serialize_i64(v)?;
+        let doc = SerializerToYaml::default().serialize_i64(v)?;
         self.write(doc)
     }
 
     fn serialize_i128(self, v: i128) -> Result<()> {
-        let doc = SerializerToYaml.serialize_i128(v)?;
+        let doc = SerializerToYaml::default().serialize_i128(v)?;
         self.write(doc)
     }
 
     fn serialize_u8(self, v: u8) -> Result<()> {
-        let doc = SerializerToYaml.serialize_u8(v)?;
+        let doc = SerializerToYaml::default().serialize_u8(v)?;
         self.write(doc)
     }
 
     fn serialize_u16(self, v: u16) -> Result<()> {
-        let doc = SerializerToYaml.serialize_u16(v)?;
+        let doc = SerializerToYaml::default().serialize_u16(v)?;
         self.write(doc)
     }
 
     fn serialize_u32(self, v: u32) -> Result<()> {
-        let doc = SerializerToYaml.serialize_u32(v)?;
+        let doc = SerializerToYaml::default().serialize_u32(v)?;
         self.write(doc)
     }
 
     fn serialize_u64(self, v: u64) -> Result<()> {
-        let doc = SerializerToYaml.serialize_u64(v)?;
+        let doc = SerializerToYaml::default().serialize_u64(v)?;
         self.write(doc)
     }
 
     fn serialize_u128(self, v: u128) -> Result<()> {
-        let doc = SerializerToYaml.serialize_u128(v)?;
+        let doc = SerializerToYaml::default().serialize_u128(v)?;
         self.write(doc)
     }
 
     fn serialize_f32(self, v: f32) -> Result<()> {
-        let doc = SerializerToYaml.serialize_f32(v)?;
+        let doc = SerializerToYaml::default().serialize_f32(v)?;
         self.write(doc)
     }
 
     fn serialize_f64(self, v: f64) -> Result<()> {
-        let doc = SerializerToYaml.serialize_f64(v)?;
+        let doc = SerializerToYaml::default().serialize_f64(v)?;
         self.write(doc)
     }
 
     fn serialize_char(self, value: char) -> Result<()> {
-        let doc = SerializerToYaml.serialize_char(value)?;
+        let doc = SerializerToYaml::default().serialize_char(value)?;
         self.write(doc)
     }
 
     fn serialize_str(self, value: &str) -> Result<()> {
-        let doc = SerializerToYaml.serialize_str(value)?;
+        let doc = SerializerToYaml::default().serialize_str(value)?;
         self.write(doc)
     }
 
     fn serialize_bytes(self, value: &[u8]) -> Result<()> {
-        let doc = SerializerToYaml.serialize_bytes(value)?;
+        let doc = SerializerToYaml::default().serialize_bytes(value)?;
         self.write(doc)
     }
 
     fn serialize_unit(self) -> Result<()> {
-        let doc = SerializerToYaml.serialize_unit()?;
+        let doc = SerializerToYaml::default().serialize_unit()?;
         self.write(doc)
     }
 
     fn serialize_unit_struct(self, name: &'static str) -> Result<()> {
-        let doc = SerializerToYaml.serialize_unit_struct(name)?;
+        let doc = SerializerToYaml::default().serialize_unit_struct(name)?;
         self.write(doc)
     }
 
@@ -180,7 +192,8 @@ where
         variant_index: u32,
         variant: &'static str,
     ) -> Result<()> {
-        let doc = SerializerToYaml.serialize_unit_variant(name, variant_index, variant)?;
+        let doc =
+            SerializerToYaml::default().serialize_unit_variant(name, variant_index, variant)?;
         self.write(doc)
     }
 
@@ -188,7 +201,7 @@ where
     where
         T: ser::Serialize,
     {
-        let doc = SerializerToYaml.serialize_newtype_struct(name, value)?;
+        let doc = SerializerToYaml::default().serialize_newtype_struct(name, value)?;
         self.write(doc)
     }
 
@@ -202,13 +215,17 @@ where
     where
         T: ser::Serialize,
     {
-        let doc =
-            SerializerToYaml.serialize_newtype_variant(name, variant_index, variant, value)?;
+        let doc = SerializerToYaml::default().serialize_newtype_variant(
+            name,
+            variant_index,
+            variant,
+            value,
+        )?;
         self.write(doc)
     }
 
     fn serialize_none(self) -> Result<()> {
-        let doc = SerializerToYaml.serialize_none()?;
+        let doc = SerializerToYaml::default().serialize_none()?;
         self.write(doc)
     }
 
@@ -216,17 +233,17 @@ where
     where
         V: ser::Serialize,
     {
-        let doc = SerializerToYaml.serialize_some(value)?;
+        let doc = SerializerToYaml::default().serialize_some(value)?;
         self.write(doc)
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq> {
-        let delegate = SerializerToYaml.serialize_seq(len)?;
+        let delegate = SerializerToYaml::default().serialize_seq(len)?;
         Ok(ThenWrite::new(self, delegate))
     }
 
     fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple> {
-        let delegate = SerializerToYaml.serialize_tuple(len)?;
+        let delegate = SerializerToYaml::default().serialize_tuple(len)?;
         Ok(ThenWrite::new(self, delegate))
     }
 
@@ -235,7 +252,7 @@ where
         name: &'static str,
         len: usize,
     ) -> Result<Self::SerializeTupleStruct> {
-        let delegate = SerializerToYaml.serialize_tuple_struct(name, len)?;
+        let delegate = SerializerToYaml::default().serialize_tuple_struct(name, len)?;
         Ok(ThenWrite::new(self, delegate))
     }
 
@@ -246,17 +263,18 @@ where
         variant: &'static str,
         len: usize,
     ) -> Result<Self::SerializeTupleVariant> {
-        let delegate = SerializerToYaml.serialize_tuple_variant(enm, idx, variant, len)?;
+        let delegate =
+            SerializerToYaml::default().serialize_tuple_variant(enm, idx, variant, len)?;
         Ok(ThenWrite::new(self, delegate))
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
-        let delegate = SerializerToYaml.serialize_map(len)?;
+        let delegate = SerializerToYaml::default().serialize_map(len)?;
         Ok(ThenWrite::new(self, delegate))
     }
 
     fn serialize_struct(self, name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
-        let delegate = SerializerToYaml.serialize_struct(name, len)?;
+        let delegate = SerializerToYaml::default().serialize_struct(name, len)?;
         Ok(ThenWrite::new(self, delegate))
     }
 
@@ -267,26 +285,29 @@ where
         variant: &'static str,
         len: usize,
     ) -> Result<Self::SerializeStructVariant> {
-        let delegate = SerializerToYaml.serialize_struct_variant(enm, idx, variant, len)?;
+        let delegate =
+            SerializerToYaml::default().serialize_struct_variant(enm, idx, variant, len)?;
         Ok(ThenWrite::new(self, delegate))
     }
 }
 
-pub struct ThenWrite<'a, W, D> {
-    serializer: &'a mut Serializer<W>,
+pub struct ThenWrite<'a, 'f, W, D> {
+    serializer: &'a mut Serializer<'f, W>,
     delegate: D,
+    comment: Option<String>,
 }
 
-impl<'a, W, D> ThenWrite<'a, W, D> {
-    fn new(serializer: &'a mut Serializer<W>, delegate: D) -> Self {
+impl<'a, 'f, W, D> ThenWrite<'a, 'f, W, D> {
+    fn new(serializer: &'a mut Serializer<'f, W>, delegate: D) -> Self {
         ThenWrite {
             serializer,
             delegate,
+            comment: None,
         }
     }
 }
 
-impl<'a, W> ser::SerializeSeq for ThenWrite<'a, W, SerializeArray>
+impl<'a, 'f, W> ser::SerializeSeq for ThenWrite<'a, 'f, W, SerializeArray>
 where
     W: io::Write,
 {
@@ -306,7 +327,7 @@ where
     }
 }
 
-impl<'a, W> ser::SerializeTuple for ThenWrite<'a, W, SerializeArray>
+impl<'a, 'f, W> ser::SerializeTuple for ThenWrite<'a, 'f, W, SerializeArray>
 where
     W: io::Write,
 {
@@ -326,7 +347,7 @@ where
     }
 }
 
-impl<'a, W> ser::SerializeTupleStruct for ThenWrite<'a, W, SerializeArray>
+impl<'a, 'f, W> ser::SerializeTupleStruct for ThenWrite<'a, 'f, W, SerializeArray>
 where
     W: io::Write,
 {
@@ -346,7 +367,7 @@ where
     }
 }
 
-impl<'a, W> ser::SerializeTupleVariant for ThenWrite<'a, W, SerializeTupleVariant>
+impl<'a, 'f, W> ser::SerializeTupleVariant for ThenWrite<'a, 'f, W, SerializeTupleVariant>
 where
     W: io::Write,
 {
@@ -366,7 +387,7 @@ where
     }
 }
 
-impl<'a, W> ser::SerializeMap for ThenWrite<'a, W, SerializeMap>
+impl<'a, 'f, W> ser::SerializeMap for ThenWrite<'a, 'f, W, SerializeMap>
 where
     W: io::Write,
 {
@@ -401,7 +422,7 @@ where
     }
 }
 
-impl<'a, W> ser::SerializeStruct for ThenWrite<'a, W, SerializeStruct>
+impl<'a, 'f, W> ser::SerializeStruct for ThenWrite<'a, 'f, W, SerializeStruct<'f>>
 where
     W: io::Write,
 {
@@ -412,6 +433,20 @@ where
     where
         V: ser::Serialize,
     {
+        let name = MemberId::Name(key);
+        //println!("serialize_field: {:?}", name);
+
+        self.delegate.serializer.format = self
+            .serializer
+            .yamlformat
+            .map(|y| y.format(&name))
+            .flatten();
+        self.delegate.serializer.comment = self
+            .serializer
+            .yamlformat
+            .map(|y| y.comment(&name))
+            .flatten();
+
         self.delegate.serialize_field(key, value)
     }
 
@@ -421,7 +456,7 @@ where
     }
 }
 
-impl<'a, W> ser::SerializeStructVariant for ThenWrite<'a, W, SerializeStructVariant>
+impl<'a, 'f, W> ser::SerializeStructVariant for ThenWrite<'a, 'f, W, SerializeStructVariant>
 where
     W: io::Write,
 {
@@ -441,9 +476,33 @@ where
     }
 }
 
-pub struct SerializerToYaml;
+pub struct SerializerToYaml<'f> {
+    yamlformat: Option<&'f dyn YamlFormat>,
+    format: Option<Format>,
+    comment: Option<String>,
+}
 
-impl ser::Serializer for SerializerToYaml {
+impl<'f> SerializerToYaml<'f> {
+    pub fn new(yf: Option<&'f dyn YamlFormat>, format: Option<Format>) -> Self {
+        SerializerToYaml {
+            yamlformat: yf,
+            format: format,
+            comment: None,
+        }
+    }
+}
+
+impl<'f> Default for SerializerToYaml<'f> {
+    fn default() -> Self {
+        SerializerToYaml {
+            yamlformat: None,
+            format: None,
+            comment: None,
+        }
+    }
+}
+
+impl<'f> ser::Serializer for SerializerToYaml<'f> {
     type Ok = Yaml;
     type Error = Error;
 
@@ -452,7 +511,7 @@ impl ser::Serializer for SerializerToYaml {
     type SerializeTupleStruct = SerializeArray;
     type SerializeTupleVariant = SerializeTupleVariant;
     type SerializeMap = SerializeMap;
-    type SerializeStruct = SerializeStruct;
+    type SerializeStruct = SerializeStruct<'f>;
     type SerializeStructVariant = SerializeStructVariant;
 
     fn serialize_bool(self, v: bool) -> Result<Yaml> {
@@ -460,56 +519,142 @@ impl ser::Serializer for SerializerToYaml {
     }
 
     fn serialize_i8(self, v: i8) -> Result<Yaml> {
-        self.serialize_i64(v as i64)
+        match self.format {
+            None => Ok(Yaml::Integer(v as i64)),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#08b}", v))),
+            Some(Format::Decimal) => Ok(Yaml::Integer(v as i64)),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#02x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#03o}", v))),
+            _ => Err(error::format(format!(
+                "Format {:?} not supported for type i8",
+                self.format
+            ))),
+        }
     }
 
     fn serialize_i16(self, v: i16) -> Result<Yaml> {
-        self.serialize_i64(v as i64)
+        match self.format {
+            None => Ok(Yaml::Integer(v as i64)),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#016b}", v))),
+            Some(Format::Decimal) => Ok(Yaml::Integer(v as i64)),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#04x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#06o}", v))),
+            _ => Err(error::format(format!(
+                "Format {:?} not supported for type i16",
+                self.format
+            ))),
+        }
     }
 
     fn serialize_i32(self, v: i32) -> Result<Yaml> {
-        self.serialize_i64(v as i64)
+        match self.format {
+            None => Ok(Yaml::Integer(v as i64)),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#032b}", v))),
+            Some(Format::Decimal) => Ok(Yaml::Integer(v as i64)),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#08x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#011o}", v))),
+            _ => Err(error::format(format!(
+                "Format {:?} not supported for type i32",
+                self.format
+            ))),
+        }
     }
 
     fn serialize_i64(self, v: i64) -> Result<Yaml> {
-        Ok(Yaml::Integer(v))
+        match self.format {
+            None => Ok(Yaml::Integer(v)),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#064b}", v))),
+            Some(Format::Decimal) => Ok(Yaml::Integer(v)),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#016x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#022o}", v))),
+            _ => Err(error::format(format!(
+                "Format {:?} not supported for type i64",
+                self.format
+            ))),
+        }
     }
 
-    #[allow(clippy::cast_possible_truncation)]
     fn serialize_i128(self, v: i128) -> Result<Yaml> {
-        if v <= i64::max_value() as i128 && v >= i64::min_value() as i128 {
-            self.serialize_i64(v as i64)
-        } else {
-            Ok(Yaml::Real(v.to_string()))
+        match self.format {
+            None => Ok(Yaml::Real(v.to_string())),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#0128b}", v))),
+            Some(Format::Decimal) => Ok(Yaml::Real(v.to_string())),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#032x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#043o}", v))),
+            _ => Err(error::format(format!(
+                "Format {:?} not supported for type i128",
+                self.format
+            ))),
         }
     }
 
     fn serialize_u8(self, v: u8) -> Result<Yaml> {
-        self.serialize_i64(v as i64)
-    }
-
-    fn serialize_u16(self, v: u16) -> Result<Yaml> {
-        self.serialize_i64(v as i64)
-    }
-
-    fn serialize_u32(self, v: u32) -> Result<Yaml> {
-        self.serialize_i64(v as i64)
-    }
-
-    fn serialize_u64(self, v: u64) -> Result<Yaml> {
-        if v <= i64::max_value() as u64 {
-            self.serialize_i64(v as i64)
-        } else {
-            Ok(Yaml::Real(v.to_string()))
+        match self.format {
+            None => Ok(Yaml::Integer(v as i64)),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#08b}", v))),
+            Some(Format::Decimal) => Ok(Yaml::Integer(v as i64)),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#02x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#03o}", v))),
+            _ => Err(error::format(format!(
+                "Format {:?} not supported for type u8",
+                self.format
+            ))),
         }
     }
 
-    #[allow(clippy::cast_possible_truncation)]
+    fn serialize_u16(self, v: u16) -> Result<Yaml> {
+        match self.format {
+            None => Ok(Yaml::Integer(v as i64)),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#016b}", v))),
+            Some(Format::Decimal) => Ok(Yaml::Integer(v as i64)),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#04x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#06o}", v))),
+            _ => Err(error::format(format!(
+                "Format {:?} not supported for type u16",
+                self.format
+            ))),
+        }
+    }
+
+    fn serialize_u32(self, v: u32) -> Result<Yaml> {
+        match self.format {
+            None => Ok(Yaml::Integer(v as i64)),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#032b}", v))),
+            Some(Format::Decimal) => Ok(Yaml::Integer(v as i64)),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#08x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#011o}", v))),
+            _ => Err(error::format(format!(
+                "Format {:?} not supported for type u32",
+                self.format
+            ))),
+        }
+    }
+
+    fn serialize_u64(self, v: u64) -> Result<Yaml> {
+        match self.format {
+            None => Ok(Yaml::Real(v.to_string())),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#064b}", v))),
+            Some(Format::Decimal) => Ok(Yaml::Real(v.to_string())),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#016x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#022o}", v))),
+            _ => Err(error::format(format!(
+                "Format {:?} not supported for type u64",
+                self.format
+            ))),
+        }
+    }
+
     fn serialize_u128(self, v: u128) -> Result<Yaml> {
-        if v <= i64::max_value() as u128 {
-            self.serialize_i64(v as i64)
-        } else {
-            Ok(Yaml::Real(v.to_string()))
+        match self.format {
+            None => Ok(Yaml::Real(v.to_string())),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#0128b}", v))),
+            Some(Format::Decimal) => Ok(Yaml::Real(v.to_string())),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#032x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#043o}", v))),
+            _ => Err(error::format(format!(
+                "Format {:?} not supported for type u128",
+                self.format
+            ))),
         }
     }
 
@@ -536,7 +681,14 @@ impl ser::Serializer for SerializerToYaml {
     }
 
     fn serialize_str(self, value: &str) -> Result<Yaml> {
-        Ok(Yaml::String(value.to_owned()))
+        match self.format {
+            None => Ok(Yaml::String(value.to_owned())),
+            Some(Format::Block) => Ok(Yaml::BlockScalar(value.to_owned())),
+            _ => Err(error::format(format!(
+                "Format {:?} not supported for type str",
+                self.format
+            ))),
+        }
     }
 
     fn serialize_bytes(self, value: &[u8]) -> Result<Yaml> {
@@ -578,7 +730,10 @@ impl ser::Serializer for SerializerToYaml {
     where
         T: ser::Serialize,
     {
-        Ok(singleton_hash(to_yaml(variant)?, to_yaml(value)?))
+        Ok(singleton_hash(
+            to_yaml(variant, None, None)?,
+            to_yaml(value, None, None)?,
+        ))
     }
 
     fn serialize_none(self) -> Result<Yaml> {
@@ -628,8 +783,9 @@ impl ser::Serializer for SerializerToYaml {
         })
     }
 
-    fn serialize_struct(self, _name: &'static str, _len: usize) -> Result<SerializeStruct> {
+    fn serialize_struct(self, _name: &'static str, _len: usize) -> Result<SerializeStruct<'f>> {
         Ok(SerializeStruct {
+            serializer: self,
             hash: yaml::Hash::new(),
         })
     }
@@ -666,7 +822,8 @@ pub struct SerializeMap {
 }
 
 #[doc(hidden)]
-pub struct SerializeStruct {
+pub struct SerializeStruct<'f> {
+    serializer: SerializerToYaml<'f>,
     hash: yaml::Hash,
 }
 
@@ -684,7 +841,7 @@ impl ser::SerializeSeq for SerializeArray {
     where
         T: ser::Serialize,
     {
-        self.array.push(to_yaml(elem)?);
+        self.array.push(to_yaml(elem, None, None)?);
         Ok(())
     }
 
@@ -733,12 +890,15 @@ impl ser::SerializeTupleVariant for SerializeTupleVariant {
     where
         V: ser::Serialize,
     {
-        self.array.push(to_yaml(v)?);
+        self.array.push(to_yaml(v, None, None)?);
         Ok(())
     }
 
     fn end(self) -> Result<Yaml> {
-        Ok(singleton_hash(to_yaml(self.name)?, Yaml::Array(self.array)))
+        Ok(singleton_hash(
+            to_yaml(self.name, None, None)?,
+            Yaml::Array(self.array),
+        ))
     }
 }
 
@@ -750,7 +910,7 @@ impl ser::SerializeMap for SerializeMap {
     where
         T: ser::Serialize,
     {
-        self.next_key = Some(to_yaml(key)?);
+        self.next_key = Some(to_yaml(key, None, None)?);
         Ok(())
     }
 
@@ -759,7 +919,7 @@ impl ser::SerializeMap for SerializeMap {
         T: ser::Serialize,
     {
         match self.next_key.take() {
-            Some(key) => self.hash.insert(key, to_yaml(value)?),
+            Some(key) => self.hash.insert(key, to_yaml(value, None, None)?),
             None => panic!("serialize_value called before serialize_key"),
         };
         Ok(())
@@ -770,7 +930,8 @@ impl ser::SerializeMap for SerializeMap {
         K: ser::Serialize,
         V: ser::Serialize,
     {
-        self.hash.insert(to_yaml(key)?, to_yaml(value)?);
+        self.hash
+            .insert(to_yaml(key, None, None)?, to_yaml(value, None, None)?);
         Ok(())
     }
 
@@ -779,7 +940,7 @@ impl ser::SerializeMap for SerializeMap {
     }
 }
 
-impl ser::SerializeStruct for SerializeStruct {
+impl<'f> ser::SerializeStruct for SerializeStruct<'f> {
     type Ok = yaml::Yaml;
     type Error = Error;
 
@@ -787,7 +948,24 @@ impl ser::SerializeStruct for SerializeStruct {
     where
         V: ser::Serialize,
     {
-        self.hash.insert(to_yaml(key)?, to_yaml(value)?);
+        let name = MemberId::Name(key);
+        //println!("serialize_field name={:?} value={:p}", name, value);
+        let format = self.serializer.format.take().or_else(|| {
+            self.serializer
+                .yamlformat
+                .map(|y| y.format(&name))
+                .flatten()
+        });
+
+        let comment = self.serializer.comment.take().or_else(|| {
+            self.serializer
+                .yamlformat
+                .map(|y| y.comment(&name))
+                .flatten()
+        });
+
+        self.hash
+            .insert(to_yaml(key, None, comment)?, to_yaml(value, format, None)?);
         Ok(())
     }
 
@@ -804,12 +982,16 @@ impl ser::SerializeStructVariant for SerializeStructVariant {
     where
         V: ser::Serialize,
     {
-        self.hash.insert(to_yaml(field)?, to_yaml(v)?);
+        self.hash
+            .insert(to_yaml(field, None, None)?, to_yaml(v, None, None)?);
         Ok(())
     }
 
     fn end(self) -> Result<Yaml> {
-        Ok(singleton_hash(to_yaml(self.name)?, Yaml::Hash(self.hash)))
+        Ok(singleton_hash(
+            to_yaml(self.name, None, None)?,
+            Yaml::Hash(self.hash),
+        ))
     }
 }
 
@@ -822,7 +1004,8 @@ where
     W: io::Write,
     T: ser::Serialize,
 {
-    value.serialize(&mut Serializer::new(writer))
+    let yf = YamlFormatType::get(value);
+    value.serialize(&mut Serializer::new_with_format(writer, yf))
 }
 
 /// Serialize the given data structure as a YAML byte vector.
@@ -867,11 +1050,17 @@ where
     }
 }
 
-fn to_yaml<T>(elem: T) -> Result<Yaml>
+fn to_yaml<T>(elem: &T, format: Option<Format>, comment: Option<String>) -> Result<Yaml>
 where
-    T: ser::Serialize,
+    T: ser::Serialize + ?Sized,
 {
-    elem.serialize(SerializerToYaml)
+    let yf = YamlFormatType::get(elem);
+    let yaml = elem.serialize(SerializerToYaml::new(yf, format))?;
+    if let Some(c) = comment {
+        Ok(Yaml::DocFragment(vec![Yaml::Comment(c), yaml]))
+    } else {
+        Ok(yaml)
+    }
 }
 
 fn singleton_hash(k: Yaml, v: Yaml) -> Yaml {
