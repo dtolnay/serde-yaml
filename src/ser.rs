@@ -88,13 +88,13 @@ where
     type Ok = ();
     type Error = Error;
 
-    type SerializeSeq = ThenWrite<'a, 'f, W, SerializeArray>;
-    type SerializeTuple = ThenWrite<'a, 'f, W, SerializeArray>;
-    type SerializeTupleStruct = ThenWrite<'a, 'f, W, SerializeArray>;
-    type SerializeTupleVariant = ThenWrite<'a, 'f, W, SerializeTupleVariant>;
+    type SerializeSeq = ThenWrite<'a, 'f, W, SerializeArray<'f>>;
+    type SerializeTuple = ThenWrite<'a, 'f, W, SerializeArray<'f>>;
+    type SerializeTupleStruct = ThenWrite<'a, 'f, W, SerializeArray<'f>>;
+    type SerializeTupleVariant = ThenWrite<'a, 'f, W, SerializeTupleVariant<'f>>;
     type SerializeMap = ThenWrite<'a, 'f, W, SerializeMap>;
     type SerializeStruct = ThenWrite<'a, 'f, W, SerializeStruct<'f>>;
-    type SerializeStructVariant = ThenWrite<'a, 'f, W, SerializeStructVariant>;
+    type SerializeStructVariant = ThenWrite<'a, 'f, W, SerializeStructVariant<'f>>;
 
     fn serialize_bool(self, v: bool) -> Result<()> {
         let doc = SerializerToYaml::default().serialize_bool(v)?;
@@ -215,7 +215,7 @@ where
     where
         T: ser::Serialize,
     {
-        let doc = SerializerToYaml::default().serialize_newtype_variant(
+        let doc = SerializerToYaml::new(self.yamlformat, None).serialize_newtype_variant(
             name,
             variant_index,
             variant,
@@ -307,7 +307,7 @@ impl<'a, 'f, W, D> ThenWrite<'a, 'f, W, D> {
     }
 }
 
-impl<'a, 'f, W> ser::SerializeSeq for ThenWrite<'a, 'f, W, SerializeArray>
+impl<'a, 'f, W> ser::SerializeSeq for ThenWrite<'a, 'f, W, SerializeArray<'f>>
 where
     W: io::Write,
 {
@@ -327,7 +327,7 @@ where
     }
 }
 
-impl<'a, 'f, W> ser::SerializeTuple for ThenWrite<'a, 'f, W, SerializeArray>
+impl<'a, 'f, W> ser::SerializeTuple for ThenWrite<'a, 'f, W, SerializeArray<'f>>
 where
     W: io::Write,
 {
@@ -347,7 +347,7 @@ where
     }
 }
 
-impl<'a, 'f, W> ser::SerializeTupleStruct for ThenWrite<'a, 'f, W, SerializeArray>
+impl<'a, 'f, W> ser::SerializeTupleStruct for ThenWrite<'a, 'f, W, SerializeArray<'f>>
 where
     W: io::Write,
 {
@@ -358,6 +358,17 @@ where
     where
         V: ser::Serialize,
     {
+        let field = MemberId::Index(self.delegate.array.len() as u32);
+        self.delegate.serializer.format = self
+            .serializer
+            .yamlformat
+            .map(|y| y.format(None, &field))
+            .flatten();
+        self.delegate.serializer.comment = self
+            .serializer
+            .yamlformat
+            .map(|y| y.comment(None, &field))
+            .flatten();
         self.delegate.serialize_field(value)
     }
 
@@ -367,7 +378,7 @@ where
     }
 }
 
-impl<'a, 'f, W> ser::SerializeTupleVariant for ThenWrite<'a, 'f, W, SerializeTupleVariant>
+impl<'a, 'f, W> ser::SerializeTupleVariant for ThenWrite<'a, 'f, W, SerializeTupleVariant<'f>>
 where
     W: io::Write,
 {
@@ -378,10 +389,31 @@ where
     where
         V: ser::Serialize,
     {
+        let field = MemberId::Index(self.delegate.array.len() as u32);
+        self.delegate.serializer.format = self
+            .serializer
+            .yamlformat
+            .map(|y| y.format(Some(self.delegate.name), &field))
+            .flatten();
+        self.delegate.serializer.comment = self
+            .serializer
+            .yamlformat
+            .map(|y| y.comment(Some(self.delegate.name), &field))
+            .flatten();
         self.delegate.serialize_field(v)
     }
 
-    fn end(self) -> Result<()> {
+    fn end(mut self) -> Result<()> {
+        self.delegate.serializer.format = self
+            .serializer
+            .yamlformat
+            .map(|y| y.format(Some(self.delegate.name), &MemberId::Variant))
+            .flatten();
+        self.delegate.serializer.comment = self
+            .serializer
+            .yamlformat
+            .map(|y| y.comment(Some(self.delegate.name), &MemberId::Variant))
+            .flatten();
         let doc = self.delegate.end()?;
         self.serializer.write(doc)
     }
@@ -433,18 +465,16 @@ where
     where
         V: ser::Serialize,
     {
-        let name = MemberId::Name(key);
-        //println!("serialize_field: {:?}", name);
-
+        let field = MemberId::Name(key);
         self.delegate.serializer.format = self
             .serializer
             .yamlformat
-            .map(|y| y.format(&name))
+            .map(|y| y.format(None, &field))
             .flatten();
         self.delegate.serializer.comment = self
             .serializer
             .yamlformat
-            .map(|y| y.comment(&name))
+            .map(|y| y.comment(None, &field))
             .flatten();
 
         self.delegate.serialize_field(key, value)
@@ -456,7 +486,7 @@ where
     }
 }
 
-impl<'a, 'f, W> ser::SerializeStructVariant for ThenWrite<'a, 'f, W, SerializeStructVariant>
+impl<'a, 'f, W> ser::SerializeStructVariant for ThenWrite<'a, 'f, W, SerializeStructVariant<'f>>
 where
     W: io::Write,
 {
@@ -467,10 +497,31 @@ where
     where
         V: ser::Serialize,
     {
-        self.delegate.serialize_field(field, v)
+        let fld = MemberId::Name(field);
+        self.delegate.serializer.format = self
+            .serializer
+            .yamlformat
+            .map(|y| y.format(Some(self.delegate.name), &fld))
+            .flatten();
+        self.delegate.serializer.comment = self
+            .serializer
+            .yamlformat
+            .map(|y| y.comment(Some(self.delegate.name), &fld))
+            .flatten();
+        self.delegate.serialize_field(self.delegate.name, v)
     }
 
-    fn end(self) -> Result<()> {
+    fn end(mut self) -> Result<()> {
+        self.delegate.serializer.format = self
+            .serializer
+            .yamlformat
+            .map(|y| y.format(Some(self.delegate.name), &MemberId::Variant))
+            .flatten();
+        self.delegate.serializer.comment = self
+            .serializer
+            .yamlformat
+            .map(|y| y.comment(Some(self.delegate.name), &MemberId::Variant))
+            .flatten();
         let doc = self.delegate.end()?;
         self.serializer.write(doc)
     }
@@ -506,13 +557,13 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
     type Ok = Yaml;
     type Error = Error;
 
-    type SerializeSeq = SerializeArray;
-    type SerializeTuple = SerializeArray;
-    type SerializeTupleStruct = SerializeArray;
-    type SerializeTupleVariant = SerializeTupleVariant;
+    type SerializeSeq = SerializeArray<'f>;
+    type SerializeTuple = SerializeArray<'f>;
+    type SerializeTupleStruct = SerializeArray<'f>;
+    type SerializeTupleVariant = SerializeTupleVariant<'f>;
     type SerializeMap = SerializeMap;
     type SerializeStruct = SerializeStruct<'f>;
-    type SerializeStructVariant = SerializeStructVariant;
+    type SerializeStructVariant = SerializeStructVariant<'f>;
 
     fn serialize_bool(self, v: bool) -> Result<Yaml> {
         Ok(Yaml::Boolean(v))
@@ -730,9 +781,19 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
     where
         T: ser::Serialize,
     {
+        let format = self
+            .yamlformat
+            .map(|y| y.format(Some(variant), &MemberId::Variant))
+            .flatten();
+        let comment = self
+            .yamlformat
+            .map(|y| y.comment(Some(variant), &MemberId::Variant))
+            .flatten();
         Ok(singleton_hash(
             to_yaml(variant, None, None)?,
             to_yaml(value, None, None)?,
+            format,
+            comment,
         ))
     }
 
@@ -747,19 +808,22 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
         value.serialize(self)
     }
 
-    fn serialize_seq(self, len: Option<usize>) -> Result<SerializeArray> {
+    fn serialize_seq(self, len: Option<usize>) -> Result<SerializeArray<'f>> {
         let array = match len {
             None => yaml::Array::new(),
             Some(len) => yaml::Array::with_capacity(len),
         };
-        Ok(SerializeArray { array })
+        Ok(SerializeArray {
+            serializer: self,
+            array,
+        })
     }
 
-    fn serialize_tuple(self, len: usize) -> Result<SerializeArray> {
+    fn serialize_tuple(self, len: usize) -> Result<SerializeArray<'f>> {
         self.serialize_seq(Some(len))
     }
 
-    fn serialize_tuple_struct(self, _name: &'static str, len: usize) -> Result<SerializeArray> {
+    fn serialize_tuple_struct(self, _name: &'static str, len: usize) -> Result<SerializeArray<'f>> {
         self.serialize_seq(Some(len))
     }
 
@@ -769,8 +833,9 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
         _idx: u32,
         variant: &'static str,
         len: usize,
-    ) -> Result<SerializeTupleVariant> {
+    ) -> Result<SerializeTupleVariant<'f>> {
         Ok(SerializeTupleVariant {
+            serializer: self,
             name: variant,
             array: yaml::Array::with_capacity(len),
         })
@@ -796,8 +861,9 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
         _idx: u32,
         variant: &'static str,
         _len: usize,
-    ) -> Result<SerializeStructVariant> {
+    ) -> Result<SerializeStructVariant<'f>> {
         Ok(SerializeStructVariant {
+            serializer: self,
             name: variant,
             hash: yaml::Hash::new(),
         })
@@ -805,12 +871,14 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
 }
 
 #[doc(hidden)]
-pub struct SerializeArray {
+pub struct SerializeArray<'f> {
+    serializer: SerializerToYaml<'f>,
     array: yaml::Array,
 }
 
 #[doc(hidden)]
-pub struct SerializeTupleVariant {
+pub struct SerializeTupleVariant<'f> {
+    serializer: SerializerToYaml<'f>,
     name: &'static str,
     array: yaml::Array,
 }
@@ -828,12 +896,13 @@ pub struct SerializeStruct<'f> {
 }
 
 #[doc(hidden)]
-pub struct SerializeStructVariant {
+pub struct SerializeStructVariant<'f> {
+    serializer: SerializerToYaml<'f>,
     name: &'static str,
     hash: yaml::Hash,
 }
 
-impl ser::SerializeSeq for SerializeArray {
+impl<'f> ser::SerializeSeq for SerializeArray<'f> {
     type Ok = yaml::Yaml;
     type Error = Error;
 
@@ -850,7 +919,7 @@ impl ser::SerializeSeq for SerializeArray {
     }
 }
 
-impl ser::SerializeTuple for SerializeArray {
+impl<'f> ser::SerializeTuple for SerializeArray<'f> {
     type Ok = yaml::Yaml;
     type Error = Error;
 
@@ -866,7 +935,7 @@ impl ser::SerializeTuple for SerializeArray {
     }
 }
 
-impl ser::SerializeTupleStruct for SerializeArray {
+impl<'f> ser::SerializeTupleStruct for SerializeArray<'f> {
     type Ok = yaml::Yaml;
     type Error = Error;
 
@@ -874,7 +943,21 @@ impl ser::SerializeTupleStruct for SerializeArray {
     where
         V: ser::Serialize,
     {
-        ser::SerializeSeq::serialize_element(self, value)
+        let field = MemberId::Index(self.array.len() as u32);
+        let format = self.serializer.format.take().or_else(|| {
+            self.serializer
+                .yamlformat
+                .map(|y| y.format(None, &field))
+                .flatten()
+        });
+        let comment = self.serializer.comment.take().or_else(|| {
+            self.serializer
+                .yamlformat
+                .map(|y| y.comment(None, &field))
+                .flatten()
+        });
+        self.array.push(to_yaml(value, format, comment)?);
+        Ok(())
     }
 
     fn end(self) -> Result<Yaml> {
@@ -882,7 +965,7 @@ impl ser::SerializeTupleStruct for SerializeArray {
     }
 }
 
-impl ser::SerializeTupleVariant for SerializeTupleVariant {
+impl<'f> ser::SerializeTupleVariant for SerializeTupleVariant<'f> {
     type Ok = yaml::Yaml;
     type Error = Error;
 
@@ -890,14 +973,41 @@ impl ser::SerializeTupleVariant for SerializeTupleVariant {
     where
         V: ser::Serialize,
     {
-        self.array.push(to_yaml(v, None, None)?);
+        let field = MemberId::Index(self.array.len() as u32);
+        let format = self.serializer.format.take().or_else(|| {
+            self.serializer
+                .yamlformat
+                .map(|y| y.format(Some(self.name), &field))
+                .flatten()
+        });
+        let comment = self.serializer.comment.take().or_else(|| {
+            self.serializer
+                .yamlformat
+                .map(|y| y.comment(Some(self.name), &field))
+                .flatten()
+        });
+        self.array.push(to_yaml(v, format, comment)?);
         Ok(())
     }
 
-    fn end(self) -> Result<Yaml> {
+    fn end(mut self) -> Result<Yaml> {
+        let format = self.serializer.format.take().or_else(|| {
+            self.serializer
+                .yamlformat
+                .map(|y| y.format(Some(self.name), &MemberId::Variant))
+                .flatten()
+        });
+        let comment = self.serializer.comment.take().or_else(|| {
+            self.serializer
+                .yamlformat
+                .map(|y| y.comment(Some(self.name), &MemberId::Variant))
+                .flatten()
+        });
         Ok(singleton_hash(
             to_yaml(self.name, None, None)?,
             Yaml::Array(self.array),
+            format,
+            comment,
         ))
     }
 }
@@ -948,19 +1058,17 @@ impl<'f> ser::SerializeStruct for SerializeStruct<'f> {
     where
         V: ser::Serialize,
     {
-        let name = MemberId::Name(key);
-        //println!("serialize_field name={:?} value={:p}", name, value);
+        let field = MemberId::Name(key);
         let format = self.serializer.format.take().or_else(|| {
             self.serializer
                 .yamlformat
-                .map(|y| y.format(&name))
+                .map(|y| y.format(None, &field))
                 .flatten()
         });
-
         let comment = self.serializer.comment.take().or_else(|| {
             self.serializer
                 .yamlformat
-                .map(|y| y.comment(&name))
+                .map(|y| y.comment(None, &field))
                 .flatten()
         });
 
@@ -974,7 +1082,7 @@ impl<'f> ser::SerializeStruct for SerializeStruct<'f> {
     }
 }
 
-impl ser::SerializeStructVariant for SerializeStructVariant {
+impl<'f> ser::SerializeStructVariant for SerializeStructVariant<'f> {
     type Ok = yaml::Yaml;
     type Error = Error;
 
@@ -982,15 +1090,42 @@ impl ser::SerializeStructVariant for SerializeStructVariant {
     where
         V: ser::Serialize,
     {
+        let fld = MemberId::Name(field);
+        let format = self.serializer.format.take().or_else(|| {
+            self.serializer
+                .yamlformat
+                .map(|y| y.format(Some(self.name), &fld))
+                .flatten()
+        });
+        let comment = self.serializer.comment.take().or_else(|| {
+            self.serializer
+                .yamlformat
+                .map(|y| y.comment(Some(self.name), &fld))
+                .flatten()
+        });
         self.hash
-            .insert(to_yaml(field, None, None)?, to_yaml(v, None, None)?);
+            .insert(to_yaml(field, None, comment)?, to_yaml(v, format, None)?);
         Ok(())
     }
 
-    fn end(self) -> Result<Yaml> {
+    fn end(mut self) -> Result<Yaml> {
+        let format = self.serializer.format.take().or_else(|| {
+            self.serializer
+                .yamlformat
+                .map(|y| y.format(Some(self.name), &MemberId::Variant))
+                .flatten()
+        });
+        let comment = self.serializer.comment.take().or_else(|| {
+            self.serializer
+                .yamlformat
+                .map(|y| y.comment(Some(self.name), &MemberId::Variant))
+                .flatten()
+        });
         Ok(singleton_hash(
             to_yaml(self.name, None, None)?,
             Yaml::Hash(self.hash),
+            format,
+            comment,
         ))
     }
 }
@@ -1057,14 +1192,32 @@ where
     let yf = YamlFormatType::get(elem);
     let yaml = elem.serialize(SerializerToYaml::new(yf, format))?;
     if let Some(c) = comment {
-        Ok(Yaml::DocFragment(vec![Yaml::Comment(c), yaml]))
+        Ok(Yaml::DocFragment(
+            vec![Yaml::Comment(c), yaml],
+            yaml::FragStyle::None,
+        ))
     } else {
         Ok(yaml)
     }
 }
 
-fn singleton_hash(k: Yaml, v: Yaml) -> Yaml {
+fn singleton_hash(k: Yaml, v: Yaml, format: Option<Format>, comment: Option<String>) -> Yaml {
     let mut hash = yaml::Hash::new();
     hash.insert(k, v);
-    Yaml::Hash(hash)
+    let yaml = Yaml::Hash(hash);
+
+    match (format, comment) {
+        (None, Some(c)) => Yaml::DocFragment(vec![Yaml::Comment(c), yaml], yaml::FragStyle::None),
+        (Some(f), None) if f == Format::Oneline => {
+            Yaml::DocFragment(vec![yaml], yaml::FragStyle::Oneline)
+        }
+        (Some(f), Some(c)) if f == Format::Oneline => Yaml::DocFragment(
+            vec![
+                Yaml::Comment(c),
+                Yaml::DocFragment(vec![yaml], yaml::FragStyle::Oneline),
+            ],
+            yaml::FragStyle::Indented,
+        ),
+        (_, _) => yaml,
+    }
 }

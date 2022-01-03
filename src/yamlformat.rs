@@ -11,8 +11,10 @@ pub use yamlformat_derive::*;
 pub enum MemberId<'a> {
     /// `Name` identifies a named field.
     Name(&'a str),
-    /// `Index` identifies an tuple field.
+    /// `Index` identifies a tuple field.
     Index(u32),
+    /// `Variant` identifies a variant wihin an enum.
+    Variant,
 }
 
 /// `Format` describes how a field is to be formatted.
@@ -28,14 +30,16 @@ pub enum Format {
     Hex,
     /// Format an integer field as Octal.
     Octal,
+    /// Format hashes and arrays on one line.
+    Oneline,
 }
 
 /// YamlFormat is used by the serializer to choose the desired formatting.
 pub trait YamlFormat {
     /// Returns the format for a given field.
-    fn format(&self, field: &MemberId) -> Option<Format>;
+    fn format(&self, variant: Option<&str>, field: &MemberId) -> Option<Format>;
     /// Returns the comment associated with a given field.
-    fn comment(&self, field: &MemberId) -> Option<String>;
+    fn comment(&self, variant: Option<&str>, field: &MemberId) -> Option<String>;
 }
 
 #[doc(hidden)]

@@ -9,6 +9,7 @@ pub enum Format {
     Decimal,
     Hex,
     Octal,
+    Oneline,
 }
 
 #[derive(Debug, PartialEq)]
@@ -66,6 +67,7 @@ fn parse_yaml_attribute<'a>(attrs: &mut Attrs<'a>, attr: &'a Attribute) -> Resul
                     "dec" => Format::Decimal,
                     "oct" => Format::Octal,
                     "hex" => Format::Hex,
+                    "oneline" => Format::Oneline,
                     _ => Format::None,
                 };
                 if format == Format::None {
@@ -85,10 +87,10 @@ fn parse_yaml_attribute<'a>(attrs: &mut Attrs<'a>, attr: &'a Attribute) -> Resul
                         }
                         Err(_) => Comment::Field(ident.clone()),
                     };
-                    return Ok(());
+                } else {
+                    let comment: LitStr = input.parse()?;
+                    attrs.comment = Comment::Static(comment.value());
                 }
-                let comment: LitStr = input.parse()?;
-                attrs.comment = Comment::Static(comment.value());
             } else {
                 return Err(Error::new_spanned(attr, "parse error"));
             }
@@ -96,6 +98,7 @@ fn parse_yaml_attribute<'a>(attrs: &mut Attrs<'a>, attr: &'a Attribute) -> Resul
             more = input.peek(Token![,]);
             if more {
                 let _comma: Token![,] = input.parse()?;
+                more = !input.is_empty();
             }
         }
         Ok(())

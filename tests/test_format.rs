@@ -13,6 +13,14 @@ struct Coordinate {
     z: u32,
 }
 
+#[test]
+fn test_coordinate() -> Result<()> {
+    let foo = Coordinate { x: 16, y: 10, z: 8 };
+    let s = serde_yaml::to_string(&foo)?;
+    println!("{}", s);
+    Ok(())
+}
+
 // Text blocks, comments a fields within the struct.
 #[derive(Serialize, YamlFormat)]
 struct Gettysburg {
@@ -35,22 +43,14 @@ struct Gettysburg {
 }
 
 #[test]
-fn test_coordinate() -> Result<()> {
-    let foo = Coordinate { x: 16, y: 10, z: 8 };
-    let s = serde_yaml::to_string(&foo)?;
-    println!("{}", s);
-    Ok(())
-}
-
-#[test]
 fn test_gettysburg() -> Result<()> {
     let foo = Gettysburg {
         // Note: trailing newline should cause a "|+" block.
-        prelude: r#"Four score and seven years ago our fathers brought forth on this
+        prelude: r#"Four score and seven years ago our fathers brought forth, upon this
 continent, a new nation, conceived in Liberty, and dedicated to the
 proposition that all men are created equal.
 "#,
-        _prelude: "Bliss copy",
+        _prelude: "Hay copy",
 
         // Note: trailing newline should cause a "|+" block.
         middle: r#"Now we are engaged in a great civil war, testing whether that nation,
@@ -62,21 +62,20 @@ live. This we may, in all propriety do.
         _middle: "Nicolay Copy",
 
         // Note: NO trailing newline should cause a "|-" block.
-        end: r#"But in a larger sense, we can not dedicate we can not consecrate we can
-not hallow this ground. The brave men, living and dead, who struggled
-here, have consecrated it far above our poor power to add or detract. The
-world will little note, nor long remember, what we say here, but can
-never forget what they did here.
-
-It is for us, the living, rather to be dedicated here to the unfinished
-work which they have, thus far, so nobly carried on. It is rather for
-us to be here dedicated to the great task remaining before us that from
-these honored dead we take increased devotion to that cause for which
-they gave the last full measure of devotion that we here highly resolve
-that these dead shall not have died in vain; that this nation shall
-have a new birth of freedom; and that this government of the people,
+        end: r#"But, in a larger sense, we can not dedicate -- we can not consecrate --
+we can not hallow -- this ground. The brave men, living and dead, who
+struggled here, have consecrated it, far above our poor power to add or
+detract. The world will little note, nor long remember what we say here,
+but it can never forget what they did here. It is for us the living,
+rather, to be dedicated here to the unfinished work which they who
+fought here have thus far so nobly advanced. It is rather for us to be
+here dedicated to the great task remaining before us -- that from these
+honored dead we take increased devotion to that cause for which they gave
+the last full measure of devotion -- that we here highly resolve that
+these dead shall not have died in vain -- that this nation, under God,
+shall have a new birth of freedom -- and that government of the people,
 by the people, for the people, shall not perish from the earth."#,
-        _end: "Hay Copy",
+        _end: "Bliss Copy",
 
         author: "Abraham Lincoln",
     };
@@ -129,7 +128,49 @@ fn test_sfdp() -> Result<()> {
             reserved: 255,
         },
     };
-    println!("foo.header={:p}", &foo.header);
+    let s = serde_yaml::to_string(&foo)?;
+    println!("{}", s);
+    Ok(())
+}
+
+#[derive(Serialize, YamlFormat)]
+struct IntelWord(
+    #[yaml(format=hex, comment="MSB")] u8,
+    #[yaml(format=hex, comment="LSB")] u8,
+);
+
+#[test]
+fn test_intel_word() -> Result<()> {
+    let foo = IntelWord(0x80, 0x01);
+    let s = serde_yaml::to_string(&foo)?;
+    println!("{}", s);
+    Ok(())
+}
+
+#[derive(Serialize, YamlFormat)]
+enum NesAddress {
+    #[yaml(format=oneline, comment="NES file offset")]
+    File(u32),
+    #[yaml(format=oneline, comment="NES PRG bank:address")]
+    Prg(#[yaml(format=hex)] u8, #[yaml(format=hex)] u16),
+    #[yaml(format=oneline)]
+    Chr(#[yaml(format=hex)] u8, #[yaml(format=hex)] u16),
+}
+
+#[derive(Serialize)]
+struct Addresses {
+    a: NesAddress,
+    b: NesAddress,
+    c: NesAddress,
+}
+
+#[test]
+fn test_nes_address() -> Result<()> {
+    let foo = Addresses {
+        a: NesAddress::File(0x4010),
+        b: NesAddress::Prg(1, 0x8000),
+        c: NesAddress::Chr(0, 0x1000),
+    };
     let s = serde_yaml::to_string(&foo)?;
     println!("{}", s);
     Ok(())
