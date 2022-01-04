@@ -1,5 +1,5 @@
 use syn::parse::ParseStream;
-use syn::{parenthesized, token, Attribute, Error, Ident, LitStr, Result, Token};
+use syn::{parenthesized, Attribute, Error, Ident, LitStr, Result, Token};
 
 #[derive(Debug, PartialEq)]
 pub enum Format {
@@ -45,7 +45,7 @@ pub fn get(input: &[Attribute]) -> Result<Attrs> {
 
 fn function_call(input: ParseStream) -> Result<bool> {
     let content;
-    let result = parenthesized!(content in input);
+    let _result = parenthesized!(content in input);
     Ok(content.is_empty())
 }
 

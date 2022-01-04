@@ -294,7 +294,6 @@ where
 pub struct ThenWrite<'a, 'f, W, D> {
     serializer: &'a mut Serializer<'f, W>,
     delegate: D,
-    comment: Option<String>,
 }
 
 impl<'a, 'f, W, D> ThenWrite<'a, 'f, W, D> {
@@ -302,7 +301,6 @@ impl<'a, 'f, W, D> ThenWrite<'a, 'f, W, D> {
         ThenWrite {
             serializer,
             delegate,
-            comment: None,
         }
     }
 }
@@ -572,10 +570,10 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
     fn serialize_i8(self, v: i8) -> Result<Yaml> {
         match self.format {
             None => Ok(Yaml::Integer(v as i64)),
-            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#08b}", v))),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#010b}", v))),
             Some(Format::Decimal) => Ok(Yaml::Integer(v as i64)),
-            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#02x}", v))),
-            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#03o}", v))),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#04x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#05o}", v))),
             _ => Err(error::format(format!(
                 "Format {:?} not supported for type i8",
                 self.format
@@ -586,10 +584,10 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
     fn serialize_i16(self, v: i16) -> Result<Yaml> {
         match self.format {
             None => Ok(Yaml::Integer(v as i64)),
-            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#016b}", v))),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#018b}", v))),
             Some(Format::Decimal) => Ok(Yaml::Integer(v as i64)),
-            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#04x}", v))),
-            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#06o}", v))),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#06x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#08o}", v))),
             _ => Err(error::format(format!(
                 "Format {:?} not supported for type i16",
                 self.format
@@ -600,10 +598,10 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
     fn serialize_i32(self, v: i32) -> Result<Yaml> {
         match self.format {
             None => Ok(Yaml::Integer(v as i64)),
-            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#032b}", v))),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#034b}", v))),
             Some(Format::Decimal) => Ok(Yaml::Integer(v as i64)),
-            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#08x}", v))),
-            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#011o}", v))),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#010x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#013o}", v))),
             _ => Err(error::format(format!(
                 "Format {:?} not supported for type i32",
                 self.format
@@ -614,10 +612,10 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
     fn serialize_i64(self, v: i64) -> Result<Yaml> {
         match self.format {
             None => Ok(Yaml::Integer(v)),
-            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#064b}", v))),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#066b}", v))),
             Some(Format::Decimal) => Ok(Yaml::Integer(v)),
-            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#016x}", v))),
-            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#022o}", v))),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#018x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#024o}", v))),
             _ => Err(error::format(format!(
                 "Format {:?} not supported for type i64",
                 self.format
@@ -628,10 +626,10 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
     fn serialize_i128(self, v: i128) -> Result<Yaml> {
         match self.format {
             None => Ok(Yaml::Real(v.to_string())),
-            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#0128b}", v))),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#0130}", v))),
             Some(Format::Decimal) => Ok(Yaml::Real(v.to_string())),
-            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#032x}", v))),
-            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#043o}", v))),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#034x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#045o}", v))),
             _ => Err(error::format(format!(
                 "Format {:?} not supported for type i128",
                 self.format
@@ -642,10 +640,10 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
     fn serialize_u8(self, v: u8) -> Result<Yaml> {
         match self.format {
             None => Ok(Yaml::Integer(v as i64)),
-            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#08b}", v))),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#010b}", v))),
             Some(Format::Decimal) => Ok(Yaml::Integer(v as i64)),
-            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#02x}", v))),
-            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#03o}", v))),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#04x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#05o}", v))),
             _ => Err(error::format(format!(
                 "Format {:?} not supported for type u8",
                 self.format
@@ -656,10 +654,10 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
     fn serialize_u16(self, v: u16) -> Result<Yaml> {
         match self.format {
             None => Ok(Yaml::Integer(v as i64)),
-            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#016b}", v))),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#018b}", v))),
             Some(Format::Decimal) => Ok(Yaml::Integer(v as i64)),
-            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#04x}", v))),
-            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#06o}", v))),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#06x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#08o}", v))),
             _ => Err(error::format(format!(
                 "Format {:?} not supported for type u16",
                 self.format
@@ -670,10 +668,10 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
     fn serialize_u32(self, v: u32) -> Result<Yaml> {
         match self.format {
             None => Ok(Yaml::Integer(v as i64)),
-            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#032b}", v))),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#034b}", v))),
             Some(Format::Decimal) => Ok(Yaml::Integer(v as i64)),
-            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#08x}", v))),
-            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#011o}", v))),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#010x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#013o}", v))),
             _ => Err(error::format(format!(
                 "Format {:?} not supported for type u32",
                 self.format
@@ -684,10 +682,10 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
     fn serialize_u64(self, v: u64) -> Result<Yaml> {
         match self.format {
             None => Ok(Yaml::Real(v.to_string())),
-            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#064b}", v))),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#066b}", v))),
             Some(Format::Decimal) => Ok(Yaml::Real(v.to_string())),
-            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#016x}", v))),
-            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#022o}", v))),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#018x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#024o}", v))),
             _ => Err(error::format(format!(
                 "Format {:?} not supported for type u64",
                 self.format
@@ -698,10 +696,10 @@ impl<'f> ser::Serializer for SerializerToYaml<'f> {
     fn serialize_u128(self, v: u128) -> Result<Yaml> {
         match self.format {
             None => Ok(Yaml::Real(v.to_string())),
-            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#0128b}", v))),
+            Some(Format::Binary) => Ok(Yaml::Real(format!("{:#0130}", v))),
             Some(Format::Decimal) => Ok(Yaml::Real(v.to_string())),
-            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#032x}", v))),
-            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#043o}", v))),
+            Some(Format::Hex) => Ok(Yaml::Real(format!("{:#034x}", v))),
+            Some(Format::Octal) => Ok(Yaml::Real(format!("{:#045o}", v))),
             _ => Err(error::format(format!(
                 "Format {:?} not supported for type u128",
                 self.format

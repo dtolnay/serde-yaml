@@ -1,7 +1,6 @@
 //! yaml formatting.
 
 use once_cell::sync::OnceCell;
-use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Mutex;
 pub use yamlformat_derive::*;
