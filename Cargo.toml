@@ -16,7 +16,7 @@ ryu = "1.0"
 indexmap = "1.5"
 serde = "1.0.69"
 #yaml-rust = "0.4.5"
-yaml-rust = {path = "../yaml-rust"}
+yaml-rust = {git = "https://github.com/cfrantz/yaml-rust", branch="blocks_and_comments"}
 yamlformat_derive = {path = "yamlformat_derive"}
 inventory = "0.2"
 once_cell = "1.9"
