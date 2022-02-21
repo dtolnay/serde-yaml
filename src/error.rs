@@ -159,7 +159,6 @@ impl Error {
 }
 
 impl error::Error for Error {
-    // TODO: deprecated, remove in next major version.
     fn description(&self) -> &str {
         self.0.description()
     }
