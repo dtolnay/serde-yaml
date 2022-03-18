@@ -197,7 +197,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert!(!v.is_null());
     /// ```
-    pub fn is_null(&self) -> bool {
+    pub const fn is_null(&self) -> bool {
         if let Value::Null = *self {
             true
         } else {
@@ -218,7 +218,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_null(), None);
     /// ```
-    pub fn as_null(&self) -> Option<()> {
+    pub const fn as_null(&self) -> Option<()> {
         match self {
             Value::Null => Some(()),
             _ => None,
@@ -241,7 +241,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("42").unwrap();
     /// assert!(!v.is_bool());
     /// ```
-    pub fn is_bool(&self) -> bool {
+    pub const fn is_bool(&self) -> bool {
         self.as_bool().is_some()
     }
 
@@ -259,7 +259,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("42").unwrap();
     /// assert_eq!(v.as_bool(), None);
     /// ```
-    pub fn as_bool(&self) -> Option<bool> {
+    pub const fn as_bool(&self) -> Option<bool> {
         match self {
             Value::Bool(b) => Some(*b),
             _ => None,
@@ -279,7 +279,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert!(!v.is_number());
     /// ```
-    pub fn is_number(&self) -> bool {
+    pub const fn is_number(&self) -> bool {
         match self {
             Value::Number(_) => true,
             _ => false,
@@ -303,7 +303,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("null").unwrap();
     /// assert!(!v.is_i64());
     /// ```
-    pub fn is_i64(&self) -> bool {
+    pub const fn is_i64(&self) -> bool {
         self.as_i64().is_some()
     }
 
@@ -321,7 +321,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_i64(), None);
     /// ```
-    pub fn as_i64(&self) -> Option<i64> {
+    pub const fn as_i64(&self) -> Option<i64> {
         match self {
             Value::Number(n) => n.as_i64(),
             _ => None,
@@ -345,7 +345,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("null").unwrap();
     /// assert!(!v.is_u64());
     /// ```
-    pub fn is_u64(&self) -> bool {
+    pub const fn is_u64(&self) -> bool {
         self.as_u64().is_some()
     }
 
@@ -363,7 +363,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_u64(), None);
     /// ```
-    pub fn as_u64(&self) -> Option<u64> {
+    pub const fn as_u64(&self) -> Option<u64> {
         match self {
             Value::Number(n) => n.as_u64(),
             _ => None,
@@ -389,7 +389,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert!(!v.is_f64());
     /// ```
-    pub fn is_f64(&self) -> bool {
+    pub const fn is_f64(&self) -> bool {
         match self {
             Value::Number(n) => n.is_f64(),
             _ => false,
@@ -410,7 +410,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_f64(), None);
     /// ```
-    pub fn as_f64(&self) -> Option<f64> {
+    pub const fn as_f64(&self) -> Option<f64> {
         match self {
             Value::Number(i) => i.as_f64(),
             _ => None,
@@ -471,7 +471,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert!(!v.is_sequence());
     /// ```
-    pub fn is_sequence(&self) -> bool {
+    pub const fn is_sequence(&self) -> bool {
         self.as_sequence().is_some()
     }
 
@@ -489,7 +489,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_sequence(), None);
     /// ```
-    pub fn as_sequence(&self) -> Option<&Sequence> {
+    pub const fn as_sequence(&self) -> Option<&Sequence> {
         match self {
             Value::Sequence(seq) => Some(seq),
             _ => None,
@@ -532,7 +532,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert!(!v.is_mapping());
     /// ```
-    pub fn is_mapping(&self) -> bool {
+    pub const fn is_mapping(&self) -> bool {
         self.as_mapping().is_some()
     }
 
@@ -554,7 +554,7 @@ impl Value {
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_mapping(), None);
     /// ```
-    pub fn as_mapping(&self) -> Option<&Mapping> {
+    pub const fn as_mapping(&self) -> Option<&Mapping> {
         match self {
             Value::Mapping(map) => Some(map),
             _ => None,

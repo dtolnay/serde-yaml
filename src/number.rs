@@ -53,7 +53,7 @@ impl Number {
     /// ```
     #[inline]
     #[allow(clippy::cast_sign_loss)]
-    pub fn is_i64(&self) -> bool {
+    pub const fn is_i64(&self) -> bool {
         match self.n {
             N::PosInt(v) => v <= i64::max_value() as u64,
             N::NegInt(_) => true,
@@ -84,7 +84,7 @@ impl Number {
     /// assert!(!v["c"].is_u64());
     /// ```
     #[inline]
-    pub fn is_u64(&self) -> bool {
+    pub const fn is_u64(&self) -> bool {
         match self.n {
             N::PosInt(_) => true,
             N::NegInt(_) | N::Float(_) => false,
@@ -116,7 +116,7 @@ impl Number {
     /// assert!(!v["c"].is_f64());
     /// ```
     #[inline]
-    pub fn is_f64(&self) -> bool {
+    pub const fn is_f64(&self) -> bool {
         match self.n {
             N::Float(_) => true,
             N::PosInt(_) | N::NegInt(_) => false,
@@ -144,7 +144,7 @@ impl Number {
     /// assert_eq!(v["c"].as_i64(), None);
     /// ```
     #[inline]
-    pub fn as_i64(&self) -> Option<i64> {
+    pub const fn as_i64(&self) -> Option<i64> {
         match self.n {
             N::PosInt(n) => {
                 if n <= i64::max_value() as u64 {
@@ -176,7 +176,7 @@ impl Number {
     /// assert_eq!(v["c"].as_u64(), None);
     /// ```
     #[inline]
-    pub fn as_u64(&self) -> Option<u64> {
+    pub const fn as_u64(&self) -> Option<u64> {
         match self.n {
             N::PosInt(n) => Some(n),
             N::NegInt(_) | N::Float(_) => None,
@@ -208,7 +208,7 @@ impl Number {
     /// assert!(yaml(".nan").as_f64().unwrap().is_nan());
     /// ```
     #[inline]
-    pub fn as_f64(&self) -> Option<f64> {
+    pub const fn as_f64(&self) -> Option<f64> {
         match self.n {
             N::PosInt(n) => Some(n as f64),
             N::NegInt(n) => Some(n as f64),
