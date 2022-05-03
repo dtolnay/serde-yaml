@@ -13,7 +13,7 @@ keywords = ["yaml", "serde"]
 
 [dependencies]
 ryu = "1.0"
-indexmap = "1.5"
+indexmap = { version = "1.5.2", features = ["std"] }
 serde = "1.0.69"
 yaml-rust = "0.4.5"
 
