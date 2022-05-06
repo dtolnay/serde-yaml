@@ -41,7 +41,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@miri
       - run: cargo miri test
         env:
-          MIRIFLAGS: -Zmiri-tag-raw-pointers
+          MIRIFLAGS: -Zmiri-strict-provenance
 
   minimal:
     name: Minimal versions
