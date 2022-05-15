@@ -1,9 +1,8 @@
 [package]
 name = "serde_yaml-fuzz"
 version = "0.0.0"
-authors = ["David Korczynski <david@adalogics.com>"]
 publish = false
-edition = "2018"
+edition = "2021"
 
 [package.metadata]
 cargo-fuzz = true
@@ -15,5 +14,7 @@ serde_yaml = { path = ".." }
 [[bin]]
 name = "fuzz_from_slice"
 path = "fuzz_targets/fuzz_from_slice.rs"
+test = false
+doc = false
 
 [workspace]
