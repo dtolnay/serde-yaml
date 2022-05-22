@@ -88,6 +88,7 @@
     clippy::blocks_in_if_conditions,
     clippy::cast_possible_wrap,
     clippy::cast_precision_loss,
+    clippy::derive_partial_eq_without_eq,
     clippy::doc_markdown,
     clippy::items_after_statements,
     clippy::return_self_not_must_use,
