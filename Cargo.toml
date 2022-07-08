@@ -10,6 +10,7 @@ repository = "https://github.com/dtolnay/serde-yaml"
 documentation = "https://docs.rs/serde_yaml/"
 readme = "README.md"
 keywords = ["yaml", "serde"]
+categories = ["encoding"]
 
 [dependencies]
 ryu = "1.0"
