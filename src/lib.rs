@@ -76,8 +76,10 @@
     clippy::should_implement_trait,
     // things are often more readable this way
     clippy::cast_lossless,
+    clippy::checked_conversions,
     clippy::if_not_else,
     clippy::manual_assert,
+    clippy::match_like_matches_macro,
     clippy::match_same_arms,
     clippy::module_name_repetitions,
     clippy::needless_pass_by_value,
@@ -95,6 +97,8 @@
     // noisy
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
+    // todo
+    clippy::manual_strip,
 )]
 
 pub use crate::de::{from_reader, from_slice, from_str, Deserializer};
