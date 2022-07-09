@@ -1009,7 +1009,7 @@ where
     if let Ok(n) = v.parse() {
         return visitor.visit_i128(n);
     }
-    match trim_start_matches(v, '+') {
+    match v.trim_start_matches('+') {
         ".inf" | ".Inf" | ".INF" => return visitor.visit_f64(f64::INFINITY),
         _ => (),
     }
@@ -1025,14 +1025,6 @@ where
         }
     }
     visitor.visit_str(v)
-}
-
-#[allow(deprecated)]
-fn trim_start_matches(s: &str, pat: char) -> &str {
-    // str::trim_start_matches was added in 1.30, trim_left_matches deprecated
-    // in 1.33. We currently support rustc back to 1.17 so we need to continue
-    // to use the deprecated one.
-    s.trim_left_matches(pat)
 }
 
 fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
