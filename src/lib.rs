@@ -97,8 +97,6 @@
     // noisy
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
-    // todo
-    clippy::manual_strip,
 )]
 
 pub use crate::de::{from_reader, from_slice, from_str, Deserializer};
