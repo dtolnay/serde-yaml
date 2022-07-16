@@ -48,7 +48,8 @@ where
         }
     }
 
-    /// Calls [`.flush()`](io::Write::flush) on the underlying `io::Write` object.
+    /// Calls [`.flush()`](io::Write::flush) on the underlying `io::Write`
+    /// object.
     pub fn flush(&mut self) -> io::Result<()> {
         self.writer.flush()
     }
