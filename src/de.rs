@@ -5,13 +5,14 @@ use serde::de::{
     self, Deserialize, DeserializeOwned, DeserializeSeed, Expected, IgnoredAny as Ignore,
     IntoDeserializer, Unexpected, Visitor,
 };
+use std::cell::Cell;
 use std::f64;
 use std::fmt;
 use std::io;
 use std::marker::PhantomData;
 use std::mem;
+use std::rc::Rc;
 use std::str;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use yaml_rust::scanner::{Marker, TScalarStyle, TokenType};
 
@@ -61,8 +62,8 @@ pub(crate) enum Input<'a> {
     Str(&'a str),
     Slice(&'a [u8]),
     Read(Box<dyn io::Read + 'a>),
-    Iterable(Arc<Multidoc>),
-    Document(Arc<Multidoc>),
+    Iterable(Rc<Multidoc>),
+    Document(Rc<Multidoc>),
     Fail(Arc<ErrorImpl>),
 }
 
@@ -96,14 +97,14 @@ impl<'a> Deserializer<'a> {
         match &self.input {
             Input::Iterable(_) => return Err(error::more_than_one_document()),
             Input::Document(multidoc) => {
-                let mut pos = multidoc.pos.load(Ordering::Relaxed);
+                let mut pos = multidoc.pos.get();
                 let t = f(&mut DeserializerFromEvents {
                     loader: &multidoc.loader,
                     pos: &mut pos,
                     path: Path::Root,
                     remaining_depth: 128,
                 })?;
-                multidoc.pos.store(pos, Ordering::Relaxed);
+                multidoc.pos.set(pos);
                 return Ok(t);
             }
             _ => {}
@@ -130,7 +131,7 @@ impl<'a> Deserializer<'a> {
 
 pub(crate) struct Multidoc {
     loader: Loader,
-    pos: AtomicUsize,
+    pos: Cell<usize>,
 }
 
 impl<'de> Iterator for Deserializer<'de> {
@@ -139,10 +140,10 @@ impl<'de> Iterator for Deserializer<'de> {
     fn next(&mut self) -> Option<Self> {
         match &self.input {
             Input::Iterable(multidoc) => {
-                let pos = multidoc.pos.load(Ordering::Relaxed);
+                let pos = multidoc.pos.get();
                 return if multidoc.loader.event(pos).is_some() {
                     Some(Deserializer {
-                        input: Input::Document(Arc::clone(multidoc)),
+                        input: Input::Document(Rc::clone(multidoc)),
                     })
                 } else {
                     None
@@ -161,11 +162,11 @@ impl<'de> Iterator for Deserializer<'de> {
         let input = mem::replace(&mut self.input, dummy);
         match Loader::new(input) {
             Ok(loader) => {
-                let multidoc = Arc::new(Multidoc {
+                let multidoc = Rc::new(Multidoc {
                     loader,
-                    pos: AtomicUsize::new(0),
+                    pos: Cell::new(0),
                 });
-                self.input = Input::Iterable(Arc::clone(&multidoc));
+                self.input = Input::Iterable(Rc::clone(&multidoc));
                 if multidoc.loader.event(0).is_none() {
                     None
                 } else {
