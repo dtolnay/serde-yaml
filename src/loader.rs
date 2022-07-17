@@ -65,7 +65,7 @@ impl Loader {
                 YamlEvent::Alias(id) => Event::Alias(id),
                 YamlEvent::Scalar(value, style, id, tag) => {
                     loader.aliases.insert(id, loader.events.len());
-                    Event::Scalar(value, style, tag)
+                    Event::Scalar(value.into_bytes(), style, tag)
                 }
                 YamlEvent::SequenceStart(id) => {
                     loader.aliases.insert(id, loader.events.len());

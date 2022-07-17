@@ -426,7 +426,7 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
 
 pub(crate) enum Event {
     Alias(usize),
-    Scalar(String, TScalarStyle, Option<TokenType>),
+    Scalar(Vec<u8>, TScalarStyle, Option<TokenType>),
     SequenceStart,
     SequenceEnd,
     MappingStart,
@@ -614,7 +614,7 @@ impl<'a> DeserializerFromEvents<'a> {
 }
 
 fn visit_scalar<'de, V>(
-    v: &str,
+    v: &[u8],
     style: TScalarStyle,
     tag: &Option<TokenType>,
     visitor: V,
@@ -622,6 +622,10 @@ fn visit_scalar<'de, V>(
 where
     V: Visitor<'de>,
 {
+    let v = match str::from_utf8(v) {
+        Ok(v) => v,
+        Err(_) => return Err(de::Error::invalid_type(Unexpected::Bytes(v), &visitor)),
+    };
     if let Some(TokenType::Tag(handle, suffix)) = tag {
         if handle == "!!" {
             match suffix.as_ref() {
@@ -687,7 +691,7 @@ impl<'de, 'a, 'r> de::SeqAccess<'de> for SeqAccess<'a, 'r> {
 struct MapAccess<'a: 'r, 'r> {
     de: &'r mut DeserializerFromEvents<'a>,
     len: usize,
-    key: Option<&'a str>,
+    key: Option<&'a [u8]>,
 }
 
 impl<'de, 'a, 'r> de::MapAccess<'de> for MapAccess<'a, 'r> {
@@ -719,7 +723,7 @@ impl<'de, 'a, 'r> de::MapAccess<'de> for MapAccess<'a, 'r> {
         let mut value_de = DeserializerFromEvents {
             loader: self.de.loader,
             pos: self.de.pos,
-            path: if let Some(key) = self.key {
+            path: if let Some(key) = self.key.and_then(|key| str::from_utf8(key).ok()) {
                 Path::Map {
                     parent: &self.de.path,
                     key,
@@ -767,9 +771,12 @@ impl<'de, 'a, 'r> de::EnumAccess<'de> for EnumAccess<'a, 'r> {
         let variant = if let Some(tag) = self.tag {
             tag
         } else {
-            match self.de.next()?.0 {
-                Event::Scalar(s, _, _) => &**s,
-                _ => {
+            match match self.de.next()?.0 {
+                Event::Scalar(bytes, _, _) => str::from_utf8(bytes).ok(),
+                _ => None,
+            } {
+                Some(variant) => variant,
+                None => {
                     *self.de.pos -= 1;
                     let bad = BadKey { name: self.name };
                     return Err(de::Deserializer::deserialize_any(&mut *self.de, bad).unwrap_err());
@@ -1132,7 +1139,13 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     {
         let (next, marker) = self.next()?;
         match next {
-            Event::Scalar(v, _, _) => visitor.visit_str(v),
+            Event::Scalar(v, _, _) => {
+                if let Ok(v) = str::from_utf8(v) {
+                    visitor.visit_str(v)
+                } else {
+                    Err(invalid_type(next, &visitor))
+                }
+            }
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_str(visitor),
             other => Err(invalid_type(other, &visitor)),
         }
@@ -1175,16 +1188,18 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
                     true
                 } else if let Some(TokenType::Tag(handle, suffix)) = tag {
                     if handle == "!!" && suffix == "null" {
-                        if v == "~" || v == "null" {
+                        if v == b"~" || v == b"null" {
                             false
-                        } else {
+                        } else if let Ok(v) = str::from_utf8(v) {
                             return Err(de::Error::invalid_value(Unexpected::Str(v), &"null"));
+                        } else {
+                            return Err(de::Error::invalid_value(Unexpected::Bytes(v), &"null"));
                         }
                     } else {
                         true
                     }
                 } else {
-                    v != "~" && v != "null"
+                    v != b"~" && v != b"null"
                 }
             }
             Event::SequenceStart | Event::MappingStart => true,
