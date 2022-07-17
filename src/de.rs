@@ -5,7 +5,6 @@ use serde::de::{
     self, Deserialize, DeserializeOwned, DeserializeSeed, Expected, IgnoredAny as Ignore,
     IntoDeserializer, Unexpected, Visitor,
 };
-use std::collections::BTreeMap;
 use std::f64;
 use std::fmt;
 use std::io;
@@ -96,8 +95,7 @@ impl<'a> Deserializer<'a> {
         if let Input::Multidoc(multidoc) = &self.input {
             let mut pos = multidoc.pos.load(Ordering::Relaxed);
             let t = f(&mut DeserializerFromEvents {
-                events: &multidoc.loader.events,
-                aliases: &multidoc.loader.aliases,
+                loader: &multidoc.loader,
                 pos: &mut pos,
                 path: Path::Root,
                 remaining_depth: 128,
@@ -112,8 +110,7 @@ impl<'a> Deserializer<'a> {
         }
         let mut pos = 0;
         let t = f(&mut DeserializerFromEvents {
-            events: &loader.events,
-            aliases: &loader.aliases,
+            loader: &loader,
             pos: &mut pos,
             path: Path::Root,
             remaining_depth: 128,
@@ -429,9 +426,7 @@ pub(crate) enum Event {
 }
 
 struct DeserializerFromEvents<'a> {
-    events: &'a [(Event, Marker)],
-    /// Map from alias id to index in events.
-    aliases: &'a BTreeMap<usize, usize>,
+    loader: &'a Loader,
     pos: &'a mut usize,
     path: Path<'a>,
     remaining_depth: u8,
@@ -439,7 +434,7 @@ struct DeserializerFromEvents<'a> {
 
 impl<'a> DeserializerFromEvents<'a> {
     fn peek(&self) -> Result<(&'a Event, Marker)> {
-        match self.events.get(*self.pos) {
+        match self.loader.events.get(*self.pos) {
             Some(event) => Ok((&event.0, event.1)),
             None => Err(error::end_of_stream()),
         }
@@ -450,19 +445,18 @@ impl<'a> DeserializerFromEvents<'a> {
     }
 
     fn opt_next(&mut self) -> Option<(&'a Event, Marker)> {
-        self.events.get(*self.pos).map(|event| {
+        self.loader.events.get(*self.pos).map(|event| {
             *self.pos += 1;
             (&event.0, event.1)
         })
     }
 
     fn jump(&'a self, pos: &'a mut usize) -> Result<DeserializerFromEvents<'a>> {
-        match self.aliases.get(pos) {
+        match self.loader.aliases.get(pos) {
             Some(&found) => {
                 *pos = found;
                 Ok(DeserializerFromEvents {
-                    events: self.events,
-                    aliases: self.aliases,
+                    loader: self.loader,
                     pos,
                     path: Path::Alias { parent: &self.path },
                     remaining_depth: self.remaining_depth,
@@ -661,8 +655,7 @@ impl<'de, 'a, 'r> de::SeqAccess<'de> for SeqAccess<'a, 'r> {
             Event::SequenceEnd => Ok(None),
             _ => {
                 let mut element_de = DeserializerFromEvents {
-                    events: self.de.events,
-                    aliases: self.de.aliases,
+                    loader: self.de.loader,
                     pos: self.de.pos,
                     path: Path::Seq {
                         parent: &self.de.path,
@@ -710,8 +703,7 @@ impl<'de, 'a, 'r> de::MapAccess<'de> for MapAccess<'a, 'r> {
         V: DeserializeSeed<'de>,
     {
         let mut value_de = DeserializerFromEvents {
-            events: self.de.events,
-            aliases: self.de.aliases,
+            loader: self.de.loader,
             pos: self.de.pos,
             path: if let Some(key) = self.key {
                 Path::Map {
@@ -774,8 +766,7 @@ impl<'de, 'a, 'r> de::EnumAccess<'de> for EnumAccess<'a, 'r> {
         let str_de = IntoDeserializer::<Error>::into_deserializer(variant);
         let ret = seed.deserialize(str_de)?;
         let variant_visitor = DeserializerFromEvents {
-            events: self.de.events,
-            aliases: self.de.aliases,
+            loader: self.de.loader,
             pos: self.de.pos,
             path: Path::Map {
                 parent: &self.de.path,
