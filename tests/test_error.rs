@@ -243,7 +243,7 @@ fn test_infinite_recursion_objects() {
     }
 
     let yaml = "&a {'x': *a}";
-    let expected = "recursion limit exceeded";
+    let expected = "recursion limit exceeded at line 1 column 4";
     test_error::<S>(yaml, expected);
 }
 
@@ -256,7 +256,7 @@ fn test_infinite_recursion_arrays() {
     }
 
     let yaml = "&a [*a]";
-    let expected = "recursion limit exceeded";
+    let expected = "recursion limit exceeded at line 1 column 4";
     test_error::<S>(yaml, expected);
 }
 
