@@ -88,12 +88,19 @@
     clippy::single_match_else,
     // code is acceptable
     clippy::blocks_in_if_conditions,
+    clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
     clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
     clippy::derive_partial_eq_without_eq,
     clippy::doc_markdown,
     clippy::items_after_statements,
+    clippy::let_underscore_drop,
+    clippy::manual_map,
+    clippy::never_loop,
     clippy::return_self_not_must_use,
+    clippy::unsafe_removed_from_name,
+    clippy::wildcard_in_or_patterns,
     // noisy
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
@@ -118,6 +125,7 @@ pub mod seed {
 
 mod de;
 mod error;
+mod libyaml;
 mod loader;
 pub mod mapping;
 mod number;
