@@ -2,14 +2,13 @@ use crate::de::{Event, Input};
 use crate::error::{self, Result};
 use std::collections::BTreeMap;
 use std::str;
-use yaml_rust::parser::{Event as YamlEvent, MarkedEventReceiver, Parser};
+use yaml_rust::parser::{Event as YamlEvent, Parser};
 use yaml_rust::scanner::Marker;
 
 pub(crate) struct Loader {
     events: Vec<(Event, Marker)>,
     /// Map from alias id to index in events.
     aliases: BTreeMap<usize, usize>,
-    current_document_start: usize,
     /// Map from start index to number of events.
     document_lengths: BTreeMap<usize, usize>,
 }
@@ -40,13 +39,48 @@ impl Loader {
         };
 
         let mut parser = Parser::new(input.chars());
+        let mut current_document_start = 0;
         let mut loader = Loader {
             events: Vec::new(),
             aliases: BTreeMap::new(),
-            current_document_start: 0,
             document_lengths: BTreeMap::new(),
         };
-        parser.load(&mut loader, true).map_err(error::scanner)?;
+
+        loop {
+            let (event, marker) = parser.next().map_err(error::scanner)?;
+            let event = match event {
+                YamlEvent::Nothing => unreachable!(),
+                YamlEvent::StreamStart => continue,
+                YamlEvent::StreamEnd => break,
+                YamlEvent::DocumentStart => {
+                    current_document_start = loader.events.len();
+                    continue;
+                }
+                YamlEvent::DocumentEnd => {
+                    let len = loader.events.len() - current_document_start;
+                    loader.document_lengths.insert(current_document_start, len);
+                    current_document_start = loader.events.len();
+                    continue;
+                }
+                YamlEvent::Alias(id) => Event::Alias(id),
+                YamlEvent::Scalar(value, style, id, tag) => {
+                    loader.aliases.insert(id, loader.events.len());
+                    Event::Scalar(value, style, tag)
+                }
+                YamlEvent::SequenceStart(id) => {
+                    loader.aliases.insert(id, loader.events.len());
+                    Event::SequenceStart
+                }
+                YamlEvent::SequenceEnd => Event::SequenceEnd,
+                YamlEvent::MappingStart(id) => {
+                    loader.aliases.insert(id, loader.events.len());
+                    Event::MappingStart
+                }
+                YamlEvent::MappingEnd => Event::MappingEnd,
+            };
+            loader.events.push((event, marker));
+        }
+
         Ok(loader)
     }
 
@@ -60,40 +94,5 @@ impl Loader {
 
     pub fn document_len(&self, start: usize) -> usize {
         *self.document_lengths.get(&start).unwrap_or(&0)
-    }
-}
-
-impl MarkedEventReceiver for Loader {
-    fn on_event(&mut self, event: YamlEvent, marker: Marker) {
-        let event = match event {
-            YamlEvent::Nothing | YamlEvent::StreamStart | YamlEvent::StreamEnd => return,
-            YamlEvent::DocumentStart => {
-                self.current_document_start = self.events.len();
-                return;
-            }
-            YamlEvent::DocumentEnd => {
-                let len = self.events.len() - self.current_document_start;
-                self.document_lengths
-                    .insert(self.current_document_start, len);
-                self.current_document_start = self.events.len();
-                return;
-            }
-            YamlEvent::Alias(id) => Event::Alias(id),
-            YamlEvent::Scalar(value, style, id, tag) => {
-                self.aliases.insert(id, self.events.len());
-                Event::Scalar(value, style, tag)
-            }
-            YamlEvent::SequenceStart(id) => {
-                self.aliases.insert(id, self.events.len());
-                Event::SequenceStart
-            }
-            YamlEvent::SequenceEnd => Event::SequenceEnd,
-            YamlEvent::MappingStart(id) => {
-                self.aliases.insert(id, self.events.len());
-                Event::MappingStart
-            }
-            YamlEvent::MappingEnd => Event::MappingEnd,
-        };
-        self.events.push((event, marker));
     }
 }
