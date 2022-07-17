@@ -1,5 +1,6 @@
 use crate::libyaml::cstr::CStr;
 use crate::libyaml::error::{Error, Mark, Result};
+use crate::libyaml::event::{Anchor, Event, MappingStart, Scalar, ScalarStyle, SequenceStart};
 use crate::libyaml::tag::Tag;
 use crate::libyaml::util::Owned;
 use std::mem::MaybeUninit;
@@ -14,46 +15,6 @@ pub(crate) struct Parser<'input> {
 struct ParserPinned<'input> {
     sys: sys::yaml_parser_t,
     input: &'input [u8],
-}
-
-pub(crate) enum Event {
-    StreamStart,
-    StreamEnd,
-    DocumentStart,
-    DocumentEnd,
-    Alias(Anchor),
-    Scalar(Scalar),
-    SequenceStart(SequenceStart),
-    SequenceEnd,
-    MappingStart(MappingStart),
-    MappingEnd,
-}
-
-pub(crate) struct Scalar {
-    pub anchor: Option<Anchor>,
-    pub tag: Option<Tag>,
-    pub value: Box<[u8]>,
-    pub style: ScalarStyle,
-}
-
-pub(crate) struct SequenceStart {
-    pub anchor: Option<Anchor>,
-}
-
-pub(crate) struct MappingStart {
-    pub anchor: Option<Anchor>,
-}
-
-#[derive(Ord, PartialOrd, Eq, PartialEq)]
-pub(crate) struct Anchor(Box<[u8]>);
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub(crate) enum ScalarStyle {
-    Plain,
-    SingleQuoted,
-    DoubleQuoted,
-    Literal,
-    Folded,
 }
 
 impl<'input> Parser<'input> {

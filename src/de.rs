@@ -1,6 +1,6 @@
 use crate::error::{self, Error, ErrorImpl, Result};
 use crate::libyaml::error::Mark;
-use crate::libyaml::parser::ScalarStyle;
+use crate::libyaml::event::ScalarStyle;
 use crate::libyaml::tag::Tag;
 use crate::loader::Loader;
 use crate::path::Path;

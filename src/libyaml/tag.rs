@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq)]
-pub(crate) struct Tag(pub(super) Box<[u8]>);
+pub(crate) struct Tag(pub(in crate::libyaml) Box<[u8]>);
 
 impl Tag {
     pub const NULL: &'static str = "tag:yaml.org,2002:null";

@@ -1,7 +1,8 @@
 use crate::de::{Event, Input};
 use crate::error::{self, Result};
 use crate::libyaml::error::Mark;
-use crate::libyaml::parser::{Event as YamlEvent, Parser};
+use crate::libyaml::event::Event as YamlEvent;
+use crate::libyaml::parser::Parser;
 use std::collections::BTreeMap;
 use std::str;
 
