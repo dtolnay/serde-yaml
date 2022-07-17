@@ -61,7 +61,8 @@ pub(crate) enum Input<'a> {
     Str(&'a str),
     Slice(&'a [u8]),
     Read(Box<dyn io::Read + 'a>),
-    Multidoc(Arc<Multidoc>),
+    Iterable(Arc<Multidoc>),
+    Document(Arc<Multidoc>),
     Fail(Arc<ErrorImpl>),
 }
 
@@ -92,16 +93,20 @@ impl<'a> Deserializer<'a> {
     }
 
     fn de<T>(self, f: impl FnOnce(&mut DeserializerFromEvents) -> Result<T>) -> Result<T> {
-        if let Input::Multidoc(multidoc) = &self.input {
-            let mut pos = multidoc.pos.load(Ordering::Relaxed);
-            let t = f(&mut DeserializerFromEvents {
-                loader: &multidoc.loader,
-                pos: &mut pos,
-                path: Path::Root,
-                remaining_depth: 128,
-            })?;
-            multidoc.pos.store(pos, Ordering::Relaxed);
-            return Ok(t);
+        match &self.input {
+            Input::Iterable(_) => return Err(error::more_than_one_document()),
+            Input::Document(multidoc) => {
+                let mut pos = multidoc.pos.load(Ordering::Relaxed);
+                let t = f(&mut DeserializerFromEvents {
+                    loader: &multidoc.loader,
+                    pos: &mut pos,
+                    path: Path::Root,
+                    remaining_depth: 128,
+                })?;
+                multidoc.pos.store(pos, Ordering::Relaxed);
+                return Ok(t);
+            }
+            _ => {}
         }
 
         let loader = Loader::new(self.input)?;
@@ -133,16 +138,17 @@ impl<'de> Iterator for Deserializer<'de> {
 
     fn next(&mut self) -> Option<Self> {
         match &self.input {
-            Input::Multidoc(multidoc) => {
+            Input::Iterable(multidoc) => {
                 let pos = multidoc.pos.load(Ordering::Relaxed);
                 return if multidoc.loader.event(pos).is_some() {
                     Some(Deserializer {
-                        input: Input::Multidoc(Arc::clone(multidoc)),
+                        input: Input::Document(Arc::clone(multidoc)),
                     })
                 } else {
                     None
                 };
             }
+            Input::Document(_) => return None,
             Input::Fail(err) => {
                 return Some(Deserializer {
                     input: Input::Fail(Arc::clone(err)),
@@ -159,12 +165,12 @@ impl<'de> Iterator for Deserializer<'de> {
                     loader,
                     pos: AtomicUsize::new(0),
                 });
-                self.input = Input::Multidoc(Arc::clone(&multidoc));
+                self.input = Input::Iterable(Arc::clone(&multidoc));
                 if multidoc.loader.event(0).is_none() {
                     None
                 } else {
                     Some(Deserializer {
-                        input: Input::Multidoc(multidoc),
+                        input: Input::Document(multidoc),
                     })
                 }
             }

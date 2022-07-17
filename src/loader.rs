@@ -27,7 +27,7 @@ impl Loader {
                 rdr.read_to_end(&mut buffer).map_err(error::io)?;
                 Input2::Slice(&buffer)
             }
-            Input::Multidoc(_) => unreachable!(),
+            Input::Iterable(_) | Input::Document(_) => unreachable!(),
             Input::Fail(err) => return Err(error::shared(err)),
         };
 
