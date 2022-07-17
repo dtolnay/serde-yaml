@@ -15,7 +15,8 @@ categories = ["encoding"]
 [dependencies]
 ryu = "1.0"
 indexmap = { version = "1.5.2", features = ["std"] }
-serde = "1.0.69"
+serde = "1.0.139"
+unsafe-libyaml = "0.1.2"
 yaml-rust = "0.4.5"
 
 [dev-dependencies]

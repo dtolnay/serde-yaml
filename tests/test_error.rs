@@ -66,7 +66,7 @@ fn test_missing_field() {
         ---
         v: true
     "};
-    let expected = "missing field `w` at line 2 column 2";
+    let expected = "missing field `w` at line 2 column 1";
     test_error::<Basic>(yaml, expected);
 }
 
@@ -76,7 +76,7 @@ fn test_unknown_anchor() {
         ---
         *some
     "};
-    let expected = "while parsing node, found unknown anchor at line 2 column 1";
+    let expected = "unknown anchor at line 2 column 1";
     test_error::<String>(yaml, expected);
 }
 
@@ -92,7 +92,7 @@ fn test_ignored_unknown_anchor() {
         b: [*a]
         c: ~
     "};
-    let expected = "while parsing node, found unknown anchor at line 2 column 5";
+    let expected = "unknown anchor at line 2 column 5";
     test_error::<Wrapper>(yaml, expected);
 }
 
@@ -157,7 +157,7 @@ fn test_bad_bool() {
         ---
         !!bool str
     "};
-    let expected = "invalid value: string \"str\", expected a boolean at line 2 column 8";
+    let expected = "invalid value: string \"str\", expected a boolean at line 2 column 1";
     test_error::<bool>(yaml, expected);
 }
 
@@ -167,7 +167,7 @@ fn test_bad_int() {
         ---
         !!int str
     "};
-    let expected = "invalid value: string \"str\", expected an integer at line 2 column 7";
+    let expected = "invalid value: string \"str\", expected an integer at line 2 column 1";
     test_error::<i64>(yaml, expected);
 }
 
@@ -177,7 +177,7 @@ fn test_bad_float() {
         ---
         !!float str
     "};
-    let expected = "invalid value: string \"str\", expected a float at line 2 column 9";
+    let expected = "invalid value: string \"str\", expected a float at line 2 column 1";
     test_error::<f64>(yaml, expected);
 }
 
@@ -187,7 +187,7 @@ fn test_bad_null() {
         ---
         !!null str
     "};
-    let expected = "invalid value: string \"str\", expected null at line 2 column 8";
+    let expected = "invalid value: string \"str\", expected null at line 2 column 1";
     test_error::<()>(yaml, expected);
 }
 
@@ -212,16 +212,6 @@ fn test_long_tuple() {
 }
 
 #[test]
-fn test_no_location() {
-    let invalid_utf8: Result<serde_yaml::Value, serde_yaml::Error> =
-        serde_yaml::from_slice(b"\x80\xae");
-
-    let utf8_location = invalid_utf8.unwrap_err().location();
-
-    assert!(utf8_location.is_none());
-}
-
-#[test]
 fn test_invalid_scalar_type() {
     #[derive(Deserialize, Debug)]
     struct S {
@@ -230,7 +220,7 @@ fn test_invalid_scalar_type() {
     }
 
     let yaml = "x:\n";
-    let expected = "x: invalid type: unit value, expected an array of length 1 at line 2 column 1";
+    let expected = "x: invalid type: unit value, expected an array of length 1 at line 1 column 3";
     test_error::<S>(yaml, expected);
 }
 
@@ -244,7 +234,7 @@ fn test_infinite_recursion_objects() {
     }
 
     let yaml = "&a {'x': *a}";
-    let expected = "recursion limit exceeded at line 1 column 4";
+    let expected = "recursion limit exceeded at position 0";
     test_error::<S>(yaml, expected);
 }
 
@@ -258,7 +248,7 @@ fn test_infinite_recursion_arrays() {
     }
 
     let yaml = "&a [*a]";
-    let expected = "recursion limit exceeded at line 1 column 4";
+    let expected = "recursion limit exceeded at position 0";
     test_error::<S>(yaml, expected);
 }
 
@@ -272,7 +262,7 @@ fn test_finite_recursion_objects() {
     }
 
     let yaml = "{'x':".repeat(1_000) + &"}".repeat(1_000);
-    let expected = "recursion limit exceeded at line 1 column 1276";
+    let expected = "recursion limit exceeded at line 1 column 641";
     test_error::<S>(&yaml, expected);
 }
 
@@ -286,6 +276,6 @@ fn test_finite_recursion_arrays() {
     }
 
     let yaml = "[".repeat(1_000) + &"]".repeat(1_000);
-    let expected = "recursion limit exceeded at line 1 column 256";
+    let expected = "recursion limit exceeded at line 1 column 129";
     test_error::<S>(&yaml, expected);
 }

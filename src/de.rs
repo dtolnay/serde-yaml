@@ -1,4 +1,7 @@
 use crate::error::{self, Error, ErrorImpl, Result};
+use crate::libyaml::error::Mark;
+use crate::libyaml::parser::ScalarStyle;
+use crate::libyaml::tag::Tag;
 use crate::loader::Loader;
 use crate::path::Path;
 use serde::de::{
@@ -13,7 +16,6 @@ use std::mem;
 use std::rc::Rc;
 use std::str;
 use std::sync::Arc;
-use yaml_rust::scanner::{Marker, TScalarStyle, TokenType};
 
 /// A structure that deserializes YAML into Rust values.
 ///
@@ -426,7 +428,7 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
 
 pub(crate) enum Event {
     Alias(usize),
-    Scalar(Box<[u8]>, TScalarStyle, Option<TokenType>),
+    Scalar(Box<[u8]>, ScalarStyle, Option<Tag>),
     SequenceStart,
     SequenceEnd,
     MappingStart,
@@ -441,18 +443,18 @@ struct DeserializerFromEvents<'a> {
 }
 
 impl<'a> DeserializerFromEvents<'a> {
-    fn peek(&self) -> Result<(&'a Event, Marker)> {
+    fn peek(&self) -> Result<(&'a Event, Mark)> {
         match self.loader.event(*self.pos) {
             Some(event) => Ok((&event.0, event.1)),
             None => Err(error::end_of_stream()),
         }
     }
 
-    fn next(&mut self) -> Result<(&'a Event, Marker)> {
+    fn next(&mut self) -> Result<(&'a Event, Mark)> {
         self.opt_next().ok_or_else(error::end_of_stream)
     }
 
-    fn opt_next(&mut self) -> Option<(&'a Event, Marker)> {
+    fn opt_next(&mut self) -> Option<(&'a Event, Mark)> {
         self.loader.event(*self.pos).map(|event| {
             *self.pos += 1;
             (&event.0, event.1)
@@ -514,11 +516,11 @@ impl<'a> DeserializerFromEvents<'a> {
         }
     }
 
-    fn visit_sequence<'de, V>(&mut self, visitor: V, marker: Marker) -> Result<V::Value>
+    fn visit_sequence<'de, V>(&mut self, visitor: V, mark: Mark) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        let (value, len) = self.recursion_check(marker, |de| {
+        let (value, len) = self.recursion_check(mark, |de| {
             let mut seq = SeqAccess { de, len: 0 };
             let value = visitor.visit_seq(&mut seq)?;
             Ok((value, seq.len))
@@ -527,11 +529,11 @@ impl<'a> DeserializerFromEvents<'a> {
         Ok(value)
     }
 
-    fn visit_mapping<'de, V>(&mut self, visitor: V, marker: Marker) -> Result<V::Value>
+    fn visit_mapping<'de, V>(&mut self, visitor: V, mark: Mark) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        let (value, len) = self.recursion_check(marker, |de| {
+        let (value, len) = self.recursion_check(mark, |de| {
             let mut map = MapAccess {
                 de,
                 len: 0,
@@ -604,13 +606,13 @@ impl<'a> DeserializerFromEvents<'a> {
 
     fn recursion_check<F: FnOnce(&mut Self) -> Result<T>, T>(
         &mut self,
-        marker: Marker,
+        mark: Mark,
         f: F,
     ) -> Result<T> {
         let previous_depth = self.remaining_depth;
         self.remaining_depth = match previous_depth.checked_sub(1) {
             Some(depth) => depth,
-            None => return Err(error::recursion_limit_exceeded(marker)),
+            None => return Err(error::recursion_limit_exceeded(mark)),
         };
         let result = f(self);
         self.remaining_depth = previous_depth;
@@ -620,8 +622,8 @@ impl<'a> DeserializerFromEvents<'a> {
 
 fn visit_scalar<'de, V>(
     v: &[u8],
-    style: TScalarStyle,
-    tag: &Option<TokenType>,
+    style: ScalarStyle,
+    tag: &Option<Tag>,
     visitor: V,
 ) -> Result<V::Value>
 where
@@ -631,31 +633,31 @@ where
         Ok(v) => v,
         Err(_) => return Err(de::Error::invalid_type(Unexpected::Bytes(v), &visitor)),
     };
-    if let Some(TokenType::Tag(handle, suffix)) = tag {
-        if handle == "!!" {
-            match suffix.as_ref() {
-                "bool" => match v.parse::<bool>() {
-                    Ok(v) => visitor.visit_bool(v),
-                    Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a boolean")),
-                },
-                "int" => match v.parse::<i64>() {
-                    Ok(v) => visitor.visit_i64(v),
-                    Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"an integer")),
-                },
-                "float" => match v.parse::<f64>() {
-                    Ok(v) => visitor.visit_f64(v),
-                    Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a float")),
-                },
-                "null" => match v {
-                    "~" | "null" => visitor.visit_unit(),
-                    _ => Err(de::Error::invalid_value(Unexpected::Str(v), &"null")),
-                },
-                _ => visitor.visit_str(v),
+    if let Some(tag) = tag {
+        if tag == Tag::BOOL {
+            match v.parse::<bool>() {
+                Ok(v) => visitor.visit_bool(v),
+                Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a boolean")),
+            }
+        } else if tag == Tag::INT {
+            match v.parse::<i64>() {
+                Ok(v) => visitor.visit_i64(v),
+                Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"an integer")),
+            }
+        } else if tag == Tag::FLOAT {
+            match v.parse::<f64>() {
+                Ok(v) => visitor.visit_f64(v),
+                Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a float")),
+            }
+        } else if tag == Tag::NULL {
+            match v {
+                "~" | "null" => visitor.visit_unit(),
+                _ => Err(de::Error::invalid_value(Unexpected::Str(v), &"null")),
             }
         } else {
             visitor.visit_str(v)
         }
-    } else if style == TScalarStyle::Plain {
+    } else if style == ScalarStyle::Plain {
         visit_untagged_str(visitor, v)
     } else {
         visitor.visit_str(v)
@@ -891,6 +893,9 @@ fn visit_untagged_str<'de, V>(visitor: V, v: &str) -> Result<V::Value>
 where
     V: Visitor<'de>,
 {
+    if v.is_empty() {
+        return visitor.visit_unit();
+    }
     if v == "~" || v == "null" {
         return visitor.visit_unit();
     }
@@ -1009,13 +1014,13 @@ impl<'a> DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let (next, marker) = self.next()?;
+        let (next, mark) = self.next()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_scalar(visitor),
             Event::Scalar(v, style, tag) => visit_scalar(v, *style, tag, visitor),
             other => Err(invalid_type(other, &visitor)),
         }
-        .map_err(|err| error::fix_marker(err, marker, self.path))
+        .map_err(|err| error::fix_mark(err, mark, self.path))
     }
 }
 
@@ -1026,18 +1031,18 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let (next, marker) = self.next()?;
+        let (next, mark) = self.next()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_any(visitor),
             Event::Scalar(v, style, tag) => visit_scalar(v, *style, tag, visitor),
-            Event::SequenceStart => self.visit_sequence(visitor, marker),
-            Event::MappingStart => self.visit_mapping(visitor, marker),
+            Event::SequenceStart => self.visit_sequence(visitor, mark),
+            Event::MappingStart => self.visit_mapping(visitor, mark),
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
         }
         // The de::Error impl creates errors with unknown line and column. Fill
         // in the position here by looking at the current index in the input.
-        .map_err(|err| error::fix_marker(err, marker, self.path))
+        .map_err(|err| error::fix_mark(err, mark, self.path))
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
@@ -1142,7 +1147,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let (next, marker) = self.next()?;
+        let (next, mark) = self.next()?;
         match next {
             Event::Scalar(v, _, _) => {
                 if let Ok(v) = str::from_utf8(v) {
@@ -1154,7 +1159,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_str(visitor),
             other => Err(invalid_type(other, &visitor)),
         }
-        .map_err(|err: Error| error::fix_marker(err, marker, self.path))
+        .map_err(|err: Error| error::fix_mark(err, mark, self.path))
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
@@ -1189,10 +1194,10 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
                 return self.jump(&mut pos)?.deserialize_option(visitor);
             }
             Event::Scalar(v, style, tag) => {
-                if *style != TScalarStyle::Plain {
+                if *style != ScalarStyle::Plain {
                     true
-                } else if let Some(TokenType::Tag(handle, suffix)) = tag {
-                    if handle == "!!" && suffix == "null" {
+                } else if let Some(tag) = tag {
+                    if tag == Tag::NULL {
                         if **v == *b"~" || **v == *b"null" {
                             false
                         } else if let Ok(v) = str::from_utf8(v) {
@@ -1204,7 +1209,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
                         true
                     }
                 } else {
-                    **v != *b"~" && **v != *b"null"
+                    **v != *b"" && **v != *b"~" && **v != *b"null"
                 }
             }
             Event::SequenceStart | Event::MappingStart => true,
@@ -1245,13 +1250,13 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let (next, marker) = self.next()?;
+        let (next, mark) = self.next()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_seq(visitor),
-            Event::SequenceStart => self.visit_sequence(visitor, marker),
+            Event::SequenceStart => self.visit_sequence(visitor, mark),
             other => Err(invalid_type(other, &visitor)),
         }
-        .map_err(|err| error::fix_marker(err, marker, self.path))
+        .map_err(|err| error::fix_mark(err, mark, self.path))
     }
 
     fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
@@ -1277,13 +1282,13 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let (next, marker) = self.next()?;
+        let (next, mark) = self.next()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_map(visitor),
-            Event::MappingStart => self.visit_mapping(visitor, marker),
+            Event::MappingStart => self.visit_mapping(visitor, mark),
             other => Err(invalid_type(other, &visitor)),
         }
-        .map_err(|err| error::fix_marker(err, marker, self.path))
+        .map_err(|err| error::fix_mark(err, mark, self.path))
     }
 
     fn deserialize_struct<V>(
@@ -1295,16 +1300,16 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let (next, marker) = self.next()?;
+        let (next, mark) = self.next()?;
         match next {
             Event::Alias(mut pos) => self
                 .jump(&mut pos)?
                 .deserialize_struct(name, fields, visitor),
-            Event::SequenceStart => self.visit_sequence(visitor, marker),
-            Event::MappingStart => self.visit_mapping(visitor, marker),
+            Event::SequenceStart => self.visit_sequence(visitor, mark),
+            Event::MappingStart => self.visit_mapping(visitor, mark),
             other => Err(invalid_type(other, &visitor)),
         }
-        .map_err(|err| error::fix_marker(err, marker, self.path))
+        .map_err(|err| error::fix_mark(err, mark, self.path))
     }
 
     /// Parses an enum as a single key:value pair where the key identifies the
@@ -1319,23 +1324,21 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let (next, marker) = self.peek()?;
+        let (next, mark) = self.peek()?;
         match next {
             Event::Alias(mut pos) => {
                 *self.pos += 1;
                 self.jump(&mut pos)?
                     .deserialize_enum(name, variants, visitor)
             }
-            Event::Scalar(_, _, t) => {
-                if let Some(TokenType::Tag(handle, suffix)) = t {
-                    if handle == "!" {
-                        if let Some(tag) = variants.iter().find(|v| *v == suffix) {
-                            return visitor.visit_enum(EnumAccess {
-                                de: self,
-                                name,
-                                tag: Some(tag),
-                            });
-                        }
+            Event::Scalar(_, _, tag) => {
+                if let Some((b'!', tag)) = tag.as_ref().and_then(|tag| tag.split_first()) {
+                    if let Some(tag) = variants.iter().find(|v| v.as_bytes() == tag) {
+                        return visitor.visit_enum(EnumAccess {
+                            de: self,
+                            name,
+                            tag: Some(tag),
+                        });
                     }
                 }
                 visitor.visit_enum(UnitVariantAccess { de: self })
@@ -1352,7 +1355,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
             }
             Event::SequenceStart => {
                 let err = de::Error::invalid_type(Unexpected::Seq, &"string or singleton map");
-                Err(error::fix_marker(err, marker, self.path))
+                Err(error::fix_mark(err, mark, self.path))
             }
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
