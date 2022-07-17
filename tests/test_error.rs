@@ -270,7 +270,7 @@ fn test_finite_recursion_objects() {
 
     let yaml = "{x:".repeat(1_000) + &"}".repeat(1_000);
     let expected = "recursion limit exceeded at line 1 column 766";
-    test_error::<i32>(&yaml, expected);
+    test_error::<S>(&yaml, expected);
 }
 
 #[test]
