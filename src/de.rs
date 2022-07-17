@@ -426,7 +426,7 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
 
 pub(crate) enum Event {
     Alias(usize),
-    Scalar(Vec<u8>, TScalarStyle, Option<TokenType>),
+    Scalar(Box<[u8]>, TScalarStyle, Option<TokenType>),
     SequenceStart,
     SequenceEnd,
     MappingStart,
@@ -1188,7 +1188,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
                     true
                 } else if let Some(TokenType::Tag(handle, suffix)) = tag {
                     if handle == "!!" && suffix == "null" {
-                        if v == b"~" || v == b"null" {
+                        if **v == *b"~" || **v == *b"null" {
                             false
                         } else if let Ok(v) = str::from_utf8(v) {
                             return Err(de::Error::invalid_value(Unexpected::Str(v), &"null"));
@@ -1199,7 +1199,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
                         true
                     }
                 } else {
-                    v != b"~" && v != b"null"
+                    **v != *b"~" && **v != *b"null"
                 }
             }
             Event::SequenceStart | Event::MappingStart => true,
