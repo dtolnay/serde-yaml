@@ -1,4 +1,5 @@
 use crate::error::{self, Error, ErrorImpl, Result};
+use crate::loader::Loader;
 use crate::path::Path;
 use serde::de::{
     self, Deserialize, DeserializeOwned, DeserializeSeed, Expected, IgnoredAny as Ignore,
@@ -13,7 +14,6 @@ use std::mem;
 use std::str;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use yaml_rust::parser::{Event as YamlEvent, MarkedEventReceiver, Parser};
 use yaml_rust::scanner::{Marker, TScalarStyle, TokenType};
 
 /// A structure that deserializes YAML into Rust values.
@@ -58,7 +58,7 @@ pub struct Deserializer<'a> {
     input: Input<'a>,
 }
 
-enum Input<'a> {
+pub(crate) enum Input<'a> {
     Str(&'a str),
     Slice(&'a [u8]),
     Read(Box<dyn io::Read + 'a>),
@@ -106,7 +106,7 @@ impl<'a> Deserializer<'a> {
             return Ok(t);
         }
 
-        let loader = loader(self.input)?;
+        let loader = Loader::new(self.input)?;
         if loader.events.is_empty() {
             return Err(error::end_of_stream());
         }
@@ -126,40 +126,7 @@ impl<'a> Deserializer<'a> {
     }
 }
 
-fn loader(input: Input) -> Result<Loader> {
-    enum Input2<'a> {
-        Str(&'a str),
-        Slice(&'a [u8]),
-    }
-
-    let mut buffer;
-    let input = match input {
-        Input::Str(s) => Input2::Str(s),
-        Input::Slice(bytes) => Input2::Slice(bytes),
-        Input::Read(mut rdr) => {
-            buffer = Vec::new();
-            rdr.read_to_end(&mut buffer).map_err(error::io)?;
-            Input2::Slice(&buffer)
-        }
-        Input::Multidoc(_) => unreachable!(),
-        Input::Fail(err) => return Err(error::shared(err)),
-    };
-
-    let input = match input {
-        Input2::Str(s) => s,
-        Input2::Slice(bytes) => str::from_utf8(bytes).map_err(error::str_utf8)?,
-    };
-
-    let mut parser = Parser::new(input.chars());
-    let mut loader = Loader {
-        events: Vec::new(),
-        aliases: BTreeMap::new(),
-    };
-    parser.load(&mut loader, true).map_err(error::scanner)?;
-    Ok(loader)
-}
-
-struct Multidoc {
+pub(crate) struct Multidoc {
     loader: Loader,
     pos: AtomicUsize,
 }
@@ -189,7 +156,7 @@ impl<'de> Iterator for Deserializer<'de> {
 
         let dummy = Input::Str("");
         let input = mem::replace(&mut self.input, dummy);
-        match loader(input) {
+        match Loader::new(input) {
             Ok(loader) => {
                 let multidoc = Arc::new(Multidoc {
                     loader,
@@ -451,43 +418,8 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
     }
 }
 
-pub struct Loader {
-    events: Vec<(Event, Marker)>,
-    /// Map from alias id to index in events.
-    aliases: BTreeMap<usize, usize>,
-}
-
-impl MarkedEventReceiver for Loader {
-    fn on_event(&mut self, event: YamlEvent, marker: Marker) {
-        let event = match event {
-            YamlEvent::Nothing
-            | YamlEvent::StreamStart
-            | YamlEvent::StreamEnd
-            | YamlEvent::DocumentStart
-            | YamlEvent::DocumentEnd => return,
-
-            YamlEvent::Alias(id) => Event::Alias(id),
-            YamlEvent::Scalar(value, style, id, tag) => {
-                self.aliases.insert(id, self.events.len());
-                Event::Scalar(value, style, tag)
-            }
-            YamlEvent::SequenceStart(id) => {
-                self.aliases.insert(id, self.events.len());
-                Event::SequenceStart
-            }
-            YamlEvent::SequenceEnd => Event::SequenceEnd,
-            YamlEvent::MappingStart(id) => {
-                self.aliases.insert(id, self.events.len());
-                Event::MappingStart
-            }
-            YamlEvent::MappingEnd => Event::MappingEnd,
-        };
-        self.events.push((event, marker));
-    }
-}
-
 #[derive(Debug, PartialEq)]
-enum Event {
+pub(crate) enum Event {
     Alias(usize),
     Scalar(String, TScalarStyle, Option<TokenType>),
     SequenceStart,
