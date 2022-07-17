@@ -514,11 +514,11 @@ impl<'a> DeserializerFromEvents<'a> {
         }
     }
 
-    fn visit_sequence<'de, V>(&mut self, visitor: V) -> Result<V::Value>
+    fn visit_sequence<'de, V>(&mut self, visitor: V, marker: Marker) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        let (value, len) = self.recursion_check(|de| {
+        let (value, len) = self.recursion_check(marker, |de| {
             let mut seq = SeqAccess { de, len: 0 };
             let value = visitor.visit_seq(&mut seq)?;
             Ok((value, seq.len))
@@ -527,11 +527,11 @@ impl<'a> DeserializerFromEvents<'a> {
         Ok(value)
     }
 
-    fn visit_mapping<'de, V>(&mut self, visitor: V) -> Result<V::Value>
+    fn visit_mapping<'de, V>(&mut self, visitor: V, marker: Marker) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        let (value, len) = self.recursion_check(|de| {
+        let (value, len) = self.recursion_check(marker, |de| {
             let mut map = MapAccess {
                 de,
                 len: 0,
@@ -602,11 +602,16 @@ impl<'a> DeserializerFromEvents<'a> {
         }
     }
 
-    fn recursion_check<F: FnOnce(&mut Self) -> Result<T>, T>(&mut self, f: F) -> Result<T> {
+    fn recursion_check<F: FnOnce(&mut Self) -> Result<T>, T>(
+        &mut self,
+        marker: Marker,
+        f: F,
+    ) -> Result<T> {
         let previous_depth = self.remaining_depth;
-        self.remaining_depth = previous_depth
-            .checked_sub(1)
-            .ok_or_else(error::recursion_limit_exceeded)?;
+        self.remaining_depth = match previous_depth.checked_sub(1) {
+            Some(depth) => depth,
+            None => return Err(error::recursion_limit_exceeded(marker)),
+        };
         let result = f(self);
         self.remaining_depth = previous_depth;
         result
@@ -1025,8 +1030,8 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_any(visitor),
             Event::Scalar(v, style, tag) => visit_scalar(v, *style, tag, visitor),
-            Event::SequenceStart => self.visit_sequence(visitor),
-            Event::MappingStart => self.visit_mapping(visitor),
+            Event::SequenceStart => self.visit_sequence(visitor, marker),
+            Event::MappingStart => self.visit_mapping(visitor, marker),
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
         }
@@ -1243,7 +1248,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
         let (next, marker) = self.next()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_seq(visitor),
-            Event::SequenceStart => self.visit_sequence(visitor),
+            Event::SequenceStart => self.visit_sequence(visitor, marker),
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_marker(err, marker, self.path))
@@ -1275,7 +1280,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
         let (next, marker) = self.next()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_map(visitor),
-            Event::MappingStart => self.visit_mapping(visitor),
+            Event::MappingStart => self.visit_mapping(visitor, marker),
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_marker(err, marker, self.path))
@@ -1295,8 +1300,8 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
             Event::Alias(mut pos) => self
                 .jump(&mut pos)?
                 .deserialize_struct(name, fields, visitor),
-            Event::SequenceStart => self.visit_sequence(visitor),
-            Event::MappingStart => self.visit_mapping(visitor),
+            Event::SequenceStart => self.visit_sequence(visitor, marker),
+            Event::MappingStart => self.visit_mapping(visitor, marker),
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_marker(err, marker, self.path))

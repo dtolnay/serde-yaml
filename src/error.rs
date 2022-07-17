@@ -28,7 +28,7 @@ pub(crate) enum ErrorImpl {
 
     EndOfStream,
     MoreThanOneDocument,
-    RecursionLimitExceeded,
+    RecursionLimitExceeded(Marker),
 
     Shared(Arc<ErrorImpl>),
 }
@@ -130,8 +130,8 @@ pub(crate) fn string_utf8(err: string::FromUtf8Error) -> Error {
     Error(Box::new(ErrorImpl::FromUtf8(err)))
 }
 
-pub(crate) fn recursion_limit_exceeded() -> Error {
-    Error(Box::new(ErrorImpl::RecursionLimitExceeded))
+pub(crate) fn recursion_limit_exceeded(marker: Marker) -> Error {
+    Error(Box::new(ErrorImpl::RecursionLimitExceeded(marker)))
 }
 
 pub(crate) fn shared(shared: Arc<ErrorImpl>) -> Error {
@@ -222,7 +222,9 @@ impl ErrorImpl {
             ErrorImpl::MoreThanOneDocument => f.write_str(
                 "deserializing from YAML containing more than one document is not supported",
             ),
-            ErrorImpl::RecursionLimitExceeded => f.write_str("recursion limit exceeded"),
+            ErrorImpl::RecursionLimitExceeded(marker) => {
+                write!(f, "{}", ScanError::new(*marker, "recursion limit exceeded"))
+            }
             ErrorImpl::Shared(err) => err.display(f),
         }
     }
@@ -237,7 +239,10 @@ impl ErrorImpl {
             ErrorImpl::FromUtf8(from_utf8) => f.debug_tuple("FromUtf8").field(from_utf8).finish(),
             ErrorImpl::EndOfStream => f.debug_tuple("EndOfStream").finish(),
             ErrorImpl::MoreThanOneDocument => f.debug_tuple("MoreThanOneDocument").finish(),
-            ErrorImpl::RecursionLimitExceeded => f.debug_tuple("RecursionLimitExceeded").finish(),
+            ErrorImpl::RecursionLimitExceeded(marker) => f
+                .debug_tuple("RecursionLimitExceeded")
+                .field(marker)
+                .finish(),
             ErrorImpl::Shared(err) => err.debug(f),
         }
     }
