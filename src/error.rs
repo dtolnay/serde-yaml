@@ -17,7 +17,7 @@ pub struct Error(Box<ErrorImpl>);
 pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug)]
-pub enum ErrorImpl {
+pub(crate) enum ErrorImpl {
     Message(String, Option<Pos>),
 
     Emit(emitter::EmitError),
@@ -34,7 +34,7 @@ pub enum ErrorImpl {
 }
 
 #[derive(Debug)]
-pub struct Pos {
+pub(crate) struct Pos {
     marker: Marker,
     path: String,
 }
