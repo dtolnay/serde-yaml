@@ -234,6 +234,7 @@ fn test_invalid_scalar_type() {
     test_error::<S>(yaml, expected);
 }
 
+#[cfg(not(miri))]
 #[test]
 fn test_infinite_recursion_objects() {
     #[derive(Deserialize, Debug)]
@@ -247,6 +248,7 @@ fn test_infinite_recursion_objects() {
     test_error::<S>(yaml, expected);
 }
 
+#[cfg(not(miri))]
 #[test]
 fn test_infinite_recursion_arrays() {
     #[derive(Deserialize, Debug)]
@@ -260,6 +262,7 @@ fn test_infinite_recursion_arrays() {
     test_error::<S>(yaml, expected);
 }
 
+#[cfg(not(miri))]
 #[test]
 fn test_finite_recursion_objects() {
     #[derive(Deserialize, Debug)]
@@ -273,6 +276,7 @@ fn test_finite_recursion_objects() {
     test_error::<S>(&yaml, expected);
 }
 
+#[cfg(not(miri))]
 #[test]
 fn test_finite_recursion_arrays() {
     #[derive(Deserialize, Debug)]
