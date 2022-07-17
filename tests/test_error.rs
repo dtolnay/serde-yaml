@@ -242,7 +242,7 @@ fn test_infinite_recursion_objects() {
         x: Option<Box<S>>,
     }
 
-    let yaml = "&a {x: *a}";
+    let yaml = "&a {'x': *a}";
     let expected = "recursion limit exceeded";
     test_error::<S>(yaml, expected);
 }
@@ -268,8 +268,8 @@ fn test_finite_recursion_objects() {
         x: Option<Box<S>>,
     }
 
-    let yaml = "{x:".repeat(1_000) + &"}".repeat(1_000);
-    let expected = "recursion limit exceeded at line 1 column 766";
+    let yaml = "{'x':".repeat(1_000) + &"}".repeat(1_000);
+    let expected = "recursion limit exceeded at line 1 column 1276";
     test_error::<S>(&yaml, expected);
 }
 
