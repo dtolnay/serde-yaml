@@ -105,7 +105,7 @@ impl<'a> Deserializer<'a> {
         }
 
         let loader = Loader::new(self.input)?;
-        if loader.events.is_empty() {
+        if loader.event(0).is_none() {
             return Err(error::end_of_stream());
         }
         let mut pos = 0;
@@ -115,7 +115,7 @@ impl<'a> Deserializer<'a> {
             path: Path::Root,
             remaining_depth: 128,
         })?;
-        if pos == loader.events.len() {
+        if loader.event(pos).is_none() {
             Ok(t)
         } else {
             Err(error::more_than_one_document())
@@ -135,7 +135,7 @@ impl<'de> Iterator for Deserializer<'de> {
         match &self.input {
             Input::Multidoc(multidoc) => {
                 let pos = multidoc.pos.load(Ordering::Relaxed);
-                return if pos < multidoc.loader.events.len() {
+                return if multidoc.loader.event(pos).is_some() {
                     Some(Deserializer {
                         input: Input::Multidoc(Arc::clone(multidoc)),
                     })
@@ -160,7 +160,7 @@ impl<'de> Iterator for Deserializer<'de> {
                     pos: AtomicUsize::new(0),
                 });
                 self.input = Input::Multidoc(Arc::clone(&multidoc));
-                if multidoc.loader.events.is_empty() {
+                if multidoc.loader.event(0).is_none() {
                     None
                 } else {
                     Some(Deserializer {
@@ -434,7 +434,7 @@ struct DeserializerFromEvents<'a> {
 
 impl<'a> DeserializerFromEvents<'a> {
     fn peek(&self) -> Result<(&'a Event, Marker)> {
-        match self.loader.events.get(*self.pos) {
+        match self.loader.event(*self.pos) {
             Some(event) => Ok((&event.0, event.1)),
             None => Err(error::end_of_stream()),
         }
@@ -445,15 +445,15 @@ impl<'a> DeserializerFromEvents<'a> {
     }
 
     fn opt_next(&mut self) -> Option<(&'a Event, Marker)> {
-        self.loader.events.get(*self.pos).map(|event| {
+        self.loader.event(*self.pos).map(|event| {
             *self.pos += 1;
             (&event.0, event.1)
         })
     }
 
     fn jump(&'a self, pos: &'a mut usize) -> Result<DeserializerFromEvents<'a>> {
-        match self.loader.aliases.get(pos) {
-            Some(&found) => {
+        match self.loader.alias(*pos) {
+            Some(found) => {
                 *pos = found;
                 Ok(DeserializerFromEvents {
                     loader: self.loader,

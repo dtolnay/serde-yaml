@@ -6,9 +6,9 @@ use yaml_rust::parser::{Event as YamlEvent, MarkedEventReceiver, Parser};
 use yaml_rust::scanner::Marker;
 
 pub(crate) struct Loader {
-    pub events: Vec<(Event, Marker)>,
+    events: Vec<(Event, Marker)>,
     /// Map from alias id to index in events.
-    pub aliases: BTreeMap<usize, usize>,
+    aliases: BTreeMap<usize, usize>,
 }
 
 impl Loader {
@@ -43,6 +43,14 @@ impl Loader {
         };
         parser.load(&mut loader, true).map_err(error::scanner)?;
         Ok(loader)
+    }
+
+    pub fn event(&self, pos: usize) -> Option<&(Event, Marker)> {
+        self.events.get(pos)
+    }
+
+    pub fn alias(&self, id: usize) -> Option<usize> {
+        self.aliases.get(&id).copied()
     }
 }
 
