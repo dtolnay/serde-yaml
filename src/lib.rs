@@ -118,6 +118,7 @@ pub mod seed {
 
 mod de;
 mod error;
+mod loader;
 pub mod mapping;
 mod number;
 mod path;
