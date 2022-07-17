@@ -9,6 +9,9 @@ pub(crate) struct Loader {
     events: Vec<(Event, Marker)>,
     /// Map from alias id to index in events.
     aliases: BTreeMap<usize, usize>,
+    current_document_start: usize,
+    /// Map from start index to number of events.
+    document_lengths: BTreeMap<usize, usize>,
 }
 
 impl Loader {
@@ -40,6 +43,8 @@ impl Loader {
         let mut loader = Loader {
             events: Vec::new(),
             aliases: BTreeMap::new(),
+            current_document_start: 0,
+            document_lengths: BTreeMap::new(),
         };
         parser.load(&mut loader, true).map_err(error::scanner)?;
         Ok(loader)
@@ -52,17 +57,27 @@ impl Loader {
     pub fn alias(&self, id: usize) -> Option<usize> {
         self.aliases.get(&id).copied()
     }
+
+    pub fn document_len(&self, start: usize) -> usize {
+        *self.document_lengths.get(&start).unwrap_or(&0)
+    }
 }
 
 impl MarkedEventReceiver for Loader {
     fn on_event(&mut self, event: YamlEvent, marker: Marker) {
         let event = match event {
-            YamlEvent::Nothing
-            | YamlEvent::StreamStart
-            | YamlEvent::StreamEnd
-            | YamlEvent::DocumentStart
-            | YamlEvent::DocumentEnd => return,
-
+            YamlEvent::Nothing | YamlEvent::StreamStart | YamlEvent::StreamEnd => return,
+            YamlEvent::DocumentStart => {
+                self.current_document_start = self.events.len();
+                return;
+            }
+            YamlEvent::DocumentEnd => {
+                let len = self.events.len() - self.current_document_start;
+                self.document_lengths
+                    .insert(self.current_document_start, len);
+                self.current_document_start = self.events.len();
+                return;
+            }
             YamlEvent::Alias(id) => Event::Alias(id),
             YamlEvent::Scalar(value, style, id, tag) => {
                 self.aliases.insert(id, self.events.len());

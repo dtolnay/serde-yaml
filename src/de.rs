@@ -5,7 +5,6 @@ use serde::de::{
     self, Deserialize, DeserializeOwned, DeserializeSeed, Expected, IgnoredAny as Ignore,
     IntoDeserializer, Unexpected, Visitor,
 };
-use std::cell::Cell;
 use std::f64;
 use std::fmt;
 use std::io;
@@ -62,8 +61,8 @@ pub(crate) enum Input<'a> {
     Str(&'a str),
     Slice(&'a [u8]),
     Read(Box<dyn io::Read + 'a>),
-    Iterable(Rc<Multidoc>),
-    Document(Rc<Multidoc>),
+    Iterable(Multidoc),
+    Document(Multidoc),
     Fail(Arc<ErrorImpl>),
 }
 
@@ -97,14 +96,13 @@ impl<'a> Deserializer<'a> {
         match &self.input {
             Input::Iterable(_) => return Err(error::more_than_one_document()),
             Input::Document(multidoc) => {
-                let mut pos = multidoc.pos.get();
+                let mut pos = multidoc.pos;
                 let t = f(&mut DeserializerFromEvents {
                     loader: &multidoc.loader,
                     pos: &mut pos,
                     path: Path::Root,
                     remaining_depth: 128,
                 })?;
-                multidoc.pos.set(pos);
                 return Ok(t);
             }
             _ => {}
@@ -130,20 +128,24 @@ impl<'a> Deserializer<'a> {
 }
 
 pub(crate) struct Multidoc {
-    loader: Loader,
-    pos: Cell<usize>,
+    loader: Rc<Loader>,
+    pos: usize,
 }
 
 impl<'de> Iterator for Deserializer<'de> {
     type Item = Self;
 
     fn next(&mut self) -> Option<Self> {
-        match &self.input {
+        match &mut self.input {
             Input::Iterable(multidoc) => {
-                let pos = multidoc.pos.get();
+                let pos = multidoc.pos;
                 return if multidoc.loader.event(pos).is_some() {
+                    multidoc.pos += multidoc.loader.document_len(pos);
                     Some(Deserializer {
-                        input: Input::Document(Rc::clone(multidoc)),
+                        input: Input::Document(Multidoc {
+                            loader: Rc::clone(&multidoc.loader),
+                            pos,
+                        }),
                     })
                 } else {
                     None
@@ -162,16 +164,16 @@ impl<'de> Iterator for Deserializer<'de> {
         let input = mem::replace(&mut self.input, dummy);
         match Loader::new(input) {
             Ok(loader) => {
-                let multidoc = Rc::new(Multidoc {
-                    loader,
-                    pos: Cell::new(0),
+                let loader = Rc::new(loader);
+                self.input = Input::Iterable(Multidoc {
+                    loader: Rc::clone(&loader),
+                    pos: loader.document_len(0),
                 });
-                self.input = Input::Iterable(Rc::clone(&multidoc));
-                if multidoc.loader.event(0).is_none() {
+                if loader.event(0).is_none() {
                     None
                 } else {
                     Some(Deserializer {
-                        input: Input::Document(multidoc),
+                        input: Input::Document(Multidoc { loader, pos: 0 }),
                     })
                 }
             }
