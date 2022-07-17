@@ -424,7 +424,6 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
     }
 }
 
-#[derive(Debug, PartialEq)]
 pub(crate) enum Event {
     Alias(usize),
     Scalar(String, TScalarStyle, Option<TokenType>),
@@ -551,7 +550,10 @@ impl<'a> DeserializerFromEvents<'a> {
             while de::SeqAccess::next_element::<Ignore>(&mut seq)?.is_some() {}
             seq.len
         };
-        assert_eq!(Event::SequenceEnd, *self.next()?.0);
+        match self.next()?.0 {
+            Event::SequenceEnd => {}
+            _ => panic!("expected a SequenceEnd event"),
+        }
         if total == len {
             Ok(())
         } else {
@@ -579,7 +581,10 @@ impl<'a> DeserializerFromEvents<'a> {
             while de::MapAccess::next_entry::<Ignore, Ignore>(&mut map)?.is_some() {}
             map.len
         };
-        assert_eq!(Event::MappingEnd, *self.next()?.0);
+        match self.next()?.0 {
+            Event::MappingEnd => {}
+            _ => panic!("expected a MappingEnd event"),
+        }
         if total == len {
             Ok(())
         } else {
