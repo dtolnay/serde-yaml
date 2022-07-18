@@ -19,24 +19,25 @@ struct ParserPinned<'input> {
 }
 
 #[derive(Debug)]
-pub(crate) enum Event {
+pub(crate) enum Event<'input> {
     StreamStart,
     StreamEnd,
     DocumentStart,
     DocumentEnd,
     Alias(Anchor),
-    Scalar(Scalar),
+    Scalar(Scalar<'input>),
     SequenceStart(SequenceStart),
     SequenceEnd,
     MappingStart(MappingStart),
     MappingEnd,
 }
 
-pub(crate) struct Scalar {
+pub(crate) struct Scalar<'input> {
     pub anchor: Option<Anchor>,
     pub tag: Option<Tag>,
     pub value: Box<[u8]>,
     pub style: ScalarStyle,
+    pub repr: Option<&'input [u8]>,
 }
 
 #[derive(Debug)]
@@ -77,7 +78,7 @@ impl<'input> Parser<'input> {
         Parser { pin }
     }
 
-    pub fn next(&mut self) -> Result<(Event, Mark)> {
+    pub fn next(&mut self) -> Result<(Event<'input>, Mark)> {
         let mut event = MaybeUninit::<sys::yaml_event_t>::uninit();
         unsafe {
             let parser = addr_of_mut!((*self.pin.ptr).sys);
@@ -85,7 +86,7 @@ impl<'input> Parser<'input> {
             if sys::yaml_parser_parse(parser, event) == 0 {
                 return Err(Error::parse_error(parser));
             }
-            let ret = convert_event(&*event);
+            let ret = convert_event(&*event, &(*self.pin.ptr).input);
             let mark = Mark {
                 sys: (*event).start_mark,
             };
@@ -95,7 +96,10 @@ impl<'input> Parser<'input> {
     }
 }
 
-unsafe fn convert_event(sys: &sys::yaml_event_t) -> Event {
+unsafe fn convert_event<'input>(
+    sys: &sys::yaml_event_t,
+    input: &Cow<'input, [u8]>,
+) -> Event<'input> {
     match sys.type_ {
         sys::YAML_STREAM_START_EVENT => Event::StreamStart,
         sys::YAML_STREAM_END_EVENT => Event::StreamEnd,
@@ -116,6 +120,11 @@ unsafe fn convert_event(sys: &sys::yaml_event_t) -> Event {
                 sys::YAML_LITERAL_SCALAR_STYLE => ScalarStyle::Literal,
                 sys::YAML_FOLDED_SCALAR_STYLE => ScalarStyle::Folded,
                 sys::YAML_ANY_SCALAR_STYLE | _ => unreachable!(),
+            },
+            repr: if let Cow::Borrowed(input) = input {
+                Some(&input[sys.start_mark.index as usize..sys.end_mark.index as usize])
+            } else {
+                None
             },
         }),
         sys::YAML_SEQUENCE_START_EVENT => Event::SequenceStart(SequenceStart {
@@ -143,13 +152,14 @@ unsafe fn optional_tag(tag: *const u8) -> Option<Tag> {
     Some(Tag(Box::from(cstr.to_bytes())))
 }
 
-impl Debug for Scalar {
+impl<'input> Debug for Scalar<'input> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         let Scalar {
             anchor,
             tag,
             value,
             style,
+            repr: _,
         } = self;
 
         struct LossySlice<'a>(&'a [u8]);
