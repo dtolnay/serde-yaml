@@ -138,10 +138,10 @@ fn test_float() {
 
 #[test]
 fn test_float32() {
-    let thing: f32 = 25.6;
+    let thing: f32 = 25.5;
     let yaml = indoc! {"
         ---
-        25.6
+        25.5
     "};
     test_serde(&thing, yaml);
 
