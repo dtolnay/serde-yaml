@@ -1,3 +1,5 @@
+//! The Value enum, a loosely typed way of representing any valid YAML value.
+
 mod de;
 mod from;
 mod index;
