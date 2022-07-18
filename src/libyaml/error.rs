@@ -1,5 +1,6 @@
 use crate::libyaml::cstr::CStr;
 use std::fmt::{self, Debug, Display};
+use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use unsafe_libyaml as sys;
 
@@ -20,7 +21,7 @@ impl Error {
             kind: (*parser).error,
             problem: match NonNull::new((*parser).problem as *mut _) {
                 Some(problem) => CStr::from_ptr(problem),
-                None => CStr::from_bytes_with_nul(b"libyaml failed but there is no error\0"),
+                None => CStr::from_bytes_with_nul(b"libyaml parser failed but there is no error\0"),
             },
             problem_offset: (*parser).problem_offset,
             problem_mark: Mark {
@@ -32,6 +33,26 @@ impl Error {
             },
             context_mark: Mark {
                 sys: (*parser).context_mark,
+            },
+        }
+    }
+
+    pub unsafe fn emit_error(emitter: *const sys::yaml_emitter_t) -> Self {
+        Error {
+            kind: (*emitter).error,
+            problem: match NonNull::new((*emitter).problem as *mut _) {
+                Some(problem) => CStr::from_ptr(problem),
+                None => {
+                    CStr::from_bytes_with_nul(b"libyaml emitter failed but there is no error\0")
+                }
+            },
+            problem_offset: 0,
+            problem_mark: Mark {
+                sys: MaybeUninit::<sys::yaml_mark_t>::zeroed().assume_init(),
+            },
+            context: None,
+            context_mark: Mark {
+                sys: MaybeUninit::<sys::yaml_mark_t>::zeroed().assume_init(),
             },
         }
     }
