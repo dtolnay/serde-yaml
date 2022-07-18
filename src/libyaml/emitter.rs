@@ -7,6 +7,7 @@ use std::ptr::{self, addr_of_mut};
 use std::slice;
 use unsafe_libyaml as sys;
 
+#[derive(Debug)]
 pub(crate) enum Error {
     Libyaml(libyaml::error::Error),
     Io(io::Error),

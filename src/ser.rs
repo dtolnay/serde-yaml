@@ -22,7 +22,7 @@ use std::str;
 ///
 /// fn main() -> Result<()> {
 ///     let mut buffer = Vec::new();
-///     let mut ser = serde_yaml::Serializer::new(&mut buffer)?;
+///     let mut ser = serde_yaml::Serializer::new(&mut buffer);
 ///
 ///     let mut object = BTreeMap::new();
 ///     object.insert("k", 107);
@@ -46,17 +46,17 @@ where
     W: io::Write,
 {
     /// Creates a new YAML serializer.
-    pub fn new(writer: W) -> Result<Self> {
+    pub fn new(writer: W) -> Self {
         let mut emitter = Emitter::new({
             let writer = Box::new(writer);
             unsafe { mem::transmute::<Box<dyn io::Write>, Box<dyn io::Write>>(writer) }
         });
-        emitter.emit(Event::StreamStart)?;
-        Ok(Serializer {
+        emitter.emit(Event::StreamStart).unwrap();
+        Serializer {
             depth: 0,
             emitter,
             writer: PhantomData,
-        })
+        }
     }
 
     /// Calls [`.flush()`](io::Write::flush) on the underlying `io::Write`
@@ -528,7 +528,7 @@ where
     W: io::Write,
     T: ?Sized + ser::Serialize,
 {
-    let mut serializer = Serializer::new(writer)?;
+    let mut serializer = Serializer::new(writer);
     value.serialize(&mut serializer)
 }
 
