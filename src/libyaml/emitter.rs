@@ -45,12 +45,12 @@ pub(crate) enum ScalarStyle {
 }
 
 impl<'a> Emitter<'a> {
-    pub fn new(write: Box<dyn io::Write + 'a>) -> libyaml::Result<Emitter<'a>> {
+    pub fn new(write: Box<dyn io::Write + 'a>) -> Emitter<'a> {
         let owned = Owned::<EmitterPinned>::new_uninit();
         let pin = unsafe {
             let emitter = addr_of_mut!((*owned.ptr).sys);
             if sys::yaml_emitter_initialize(emitter) == 0 {
-                return Err(libyaml::Error::emit_error(emitter));
+                panic!("malloc error: {}", libyaml::Error::emit_error(emitter));
             }
             sys::yaml_emitter_set_unicode(emitter, 1);
             addr_of_mut!((*owned.ptr).write).write(write);
@@ -58,7 +58,7 @@ impl<'a> Emitter<'a> {
             sys::yaml_emitter_set_output(emitter, Some(write_handler), owned.ptr.cast());
             Owned::assume_init(owned)
         };
-        Ok(Emitter { pin })
+        Emitter { pin }
     }
 
     pub fn emit(&mut self, event: Event) -> Result<(), Error> {

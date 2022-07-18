@@ -5,4 +5,4 @@ pub mod parser;
 pub mod tag;
 mod util;
 
-use self::error::{Error, Result};
+use self::error::Error;

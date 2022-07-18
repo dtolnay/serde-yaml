@@ -50,7 +50,7 @@ where
         let mut emitter = Emitter::new({
             let writer = Box::new(writer);
             unsafe { mem::transmute::<Box<dyn io::Write>, Box<dyn io::Write>>(writer) }
-        })?;
+        });
         emitter.emit(Event::StreamStart)?;
         Ok(Serializer {
             depth: 0,
