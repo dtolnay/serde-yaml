@@ -6,16 +6,14 @@ mod index;
 mod partial_eq;
 mod ser;
 
-use crate::ser::SerializerToYaml;
 use crate::{Error, Mapping};
 use serde::de::{Deserialize, DeserializeOwned, IntoDeserializer};
 use serde::Serialize;
 use std::f64;
 use std::hash::{Hash, Hasher};
-use std::str::FromStr;
-use yaml_rust::Yaml;
 
 pub use self::index::Index;
+pub use self::ser::Serializer;
 pub use crate::number::Number;
 
 /// Represents any valid YAML value.
@@ -91,7 +89,7 @@ pub fn to_value<T>(value: T) -> Result<Value, Error>
 where
     T: Serialize,
 {
-    value.serialize(SerializerToYaml).map(yaml_to_value)
+    value.serialize(Serializer)
 }
 
 /// Interpret a `serde_yaml::Value` as an instance of type `T`.
@@ -589,40 +587,6 @@ impl Value {
             Value::Mapping(map) => Some(map),
             _ => None,
         }
-    }
-}
-
-fn yaml_to_value(yaml: Yaml) -> Value {
-    match yaml {
-        Yaml::Real(f) => {
-            if f == ".inf" {
-                Value::Number(f64::INFINITY.into())
-            } else if f == "-.inf" {
-                Value::Number(f64::NEG_INFINITY.into())
-            } else if f == ".nan" {
-                Value::Number(f64::NAN.into())
-            } else if let Ok(n) = u64::from_str(&f) {
-                Value::Number(n.into())
-            } else if let Ok(n) = i64::from_str(&f) {
-                Value::Number(n.into())
-            } else if let Ok(n) = f64::from_str(&f) {
-                Value::Number(n.into())
-            } else {
-                Value::String(f)
-            }
-        }
-        Yaml::Integer(i) => Value::Number(i.into()),
-        Yaml::String(s) => Value::String(s),
-        Yaml::Boolean(b) => Value::Bool(b),
-        Yaml::Array(sequence) => Value::Sequence(sequence.into_iter().map(yaml_to_value).collect()),
-        Yaml::Hash(hash) => Value::Mapping(
-            hash.into_iter()
-                .map(|(k, v)| (yaml_to_value(k), yaml_to_value(v)))
-                .collect(),
-        ),
-        Yaml::Alias(_) => panic!("alias unsupported"),
-        Yaml::Null => Value::Null,
-        Yaml::BadValue => panic!("bad value"),
     }
 }
 
