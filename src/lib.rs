@@ -97,6 +97,7 @@
     clippy::items_after_statements,
     clippy::let_underscore_drop,
     clippy::manual_map,
+    clippy::missing_panics_doc,
     clippy::never_loop,
     clippy::return_self_not_must_use,
     clippy::unsafe_removed_from_name,
