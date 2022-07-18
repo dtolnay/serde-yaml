@@ -1,4 +1,4 @@
-use crate::libyaml::error as libyaml;
+use crate::libyaml::{emitter, error as libyaml};
 use crate::path::Path;
 use serde::{de, ser};
 use std::error;
@@ -7,7 +7,6 @@ use std::io;
 use std::result;
 use std::string;
 use std::sync::Arc;
-use yaml_rust::emitter;
 
 /// An error that happened serializing or deserializing YAML data.
 pub struct Error(Box<ErrorImpl>);
@@ -20,7 +19,6 @@ pub(crate) enum ErrorImpl {
     Message(String, Option<Pos>),
 
     Libyaml(libyaml::Error),
-    Emit(emitter::EmitError),
     Io(io::Error),
     FromUtf8(string::FromUtf8Error),
 
@@ -113,10 +111,6 @@ pub(crate) fn io(err: io::Error) -> Error {
     Error(Box::new(ErrorImpl::Io(err)))
 }
 
-pub(crate) fn emitter(err: emitter::EmitError) -> Error {
-    Error(Box::new(ErrorImpl::Emit(err)))
-}
-
 pub(crate) fn string_utf8(err: string::FromUtf8Error) -> Error {
     Error(Box::new(ErrorImpl::FromUtf8(err)))
 }
@@ -156,6 +150,15 @@ impl Error {
 impl From<libyaml::Error> for Error {
     fn from(err: libyaml::Error) -> Self {
         Error(Box::new(ErrorImpl::Libyaml(err)))
+    }
+}
+
+impl From<emitter::Error> for Error {
+    fn from(err: emitter::Error) -> Self {
+        match err {
+            emitter::Error::Libyaml(err) => Self::from(err),
+            emitter::Error::Io(err) => io(err),
+        }
     }
 }
 
@@ -212,8 +215,6 @@ impl ErrorImpl {
                 }
             }
             ErrorImpl::Libyaml(err) => Display::fmt(err, f),
-            ErrorImpl::Emit(emitter::EmitError::FmtError(_)) => f.write_str("yaml-rust fmt error"),
-            ErrorImpl::Emit(emitter::EmitError::BadHashmapKey) => f.write_str("bad hash map key"),
             ErrorImpl::Io(err) => Display::fmt(err, f),
             ErrorImpl::FromUtf8(err) => Display::fmt(err, f),
             ErrorImpl::EndOfStream => f.write_str("EOF while parsing a value"),
@@ -232,7 +233,6 @@ impl ErrorImpl {
         match self {
             ErrorImpl::Message(msg, pos) => f.debug_tuple("Message").field(msg).field(pos).finish(),
             ErrorImpl::Libyaml(err) => f.debug_tuple("Libyaml").field(err).finish(),
-            ErrorImpl::Emit(emit) => f.debug_tuple("Emit").field(emit).finish(),
             ErrorImpl::Io(io) => f.debug_tuple("Io").field(io).finish(),
             ErrorImpl::FromUtf8(from_utf8) => f.debug_tuple("FromUtf8").field(from_utf8).finish(),
             ErrorImpl::EndOfStream => f.debug_tuple("EndOfStream").finish(),
