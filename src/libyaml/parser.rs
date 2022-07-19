@@ -57,19 +57,19 @@ pub(crate) enum ScalarStyle {
 }
 
 impl<'input> Parser<'input> {
-    pub fn new(input: &'input [u8]) -> Result<Parser<'input>> {
+    pub fn new(input: &'input [u8]) -> Parser<'input> {
         let owned = Owned::<ParserPinned>::new_uninit();
         let pin = unsafe {
             let parser = addr_of_mut!((*owned.ptr).sys);
             if sys::yaml_parser_initialize(parser) == 0 {
-                return Err(Error::parse_error(parser));
+                panic!("malloc error: {}", Error::parse_error(parser));
             }
             sys::yaml_parser_set_encoding(parser, sys::YAML_UTF8_ENCODING);
             sys::yaml_parser_set_input_string(parser, input.as_ptr(), input.len() as u64);
             addr_of_mut!((*owned.ptr).input).write(input);
             Owned::assume_init(owned)
         };
-        Ok(Parser { pin })
+        Parser { pin }
     }
 
     pub fn next(&mut self) -> Result<(Event, Mark)> {

@@ -38,7 +38,7 @@ impl Loader {
             Input2::Slice(bytes) => bytes,
         };
 
-        let mut parser = Parser::new(input)?;
+        let mut parser = Parser::new(input);
         let mut current_document_start = 0;
         let mut anchors = BTreeMap::new();
         let mut loader = Loader {
