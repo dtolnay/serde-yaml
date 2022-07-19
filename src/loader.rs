@@ -4,7 +4,6 @@ use crate::libyaml::error::Mark;
 use crate::libyaml::parser::{Event as YamlEvent, Parser};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
-use std::str;
 
 pub(crate) struct Loader {
     events: Vec<(Event, Mark)>,
@@ -16,27 +15,17 @@ pub(crate) struct Loader {
 
 impl Loader {
     pub fn new(input: Input) -> Result<Self> {
-        enum Input2<'a> {
-            Str(&'a str),
-            Slice(&'a [u8]),
-        }
-
         let mut buffer;
         let input = match input {
-            Input::Str(s) => Input2::Str(s),
-            Input::Slice(bytes) => Input2::Slice(bytes),
+            Input::Str(s) => s.as_bytes(),
+            Input::Slice(bytes) => bytes,
             Input::Read(mut rdr) => {
                 buffer = Vec::new();
                 rdr.read_to_end(&mut buffer).map_err(error::io)?;
-                Input2::Slice(&buffer)
+                &buffer
             }
             Input::Iterable(_) | Input::Document(_) => unreachable!(),
             Input::Fail(err) => return Err(error::shared(err)),
-        };
-
-        let input = match input {
-            Input2::Str(s) => s.as_bytes(),
-            Input2::Slice(bytes) => bytes,
         };
 
         let mut parser = Parser::new(Cow::Borrowed(input));
