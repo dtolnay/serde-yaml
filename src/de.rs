@@ -473,7 +473,7 @@ impl<'a> DeserializerFromEvents<'a> {
         })
     }
 
-    fn jump(&'a self, pos: &'a mut usize) -> Result<DeserializerFromEvents<'a>> {
+    fn jump<'b>(&'b self, pos: &'b mut usize) -> Result<DeserializerFromEvents<'b>> {
         match self.loader.alias(*pos) {
             Some(found) => {
                 *pos = found;
