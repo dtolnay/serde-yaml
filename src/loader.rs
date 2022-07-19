@@ -5,16 +5,18 @@ use crate::libyaml::parser::{Event as YamlEvent, Parser};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-pub(crate) struct Loader {
+pub(crate) struct Loader<'input> {
+    parser: Option<Parser<'input>>,
+}
+
+pub(crate) struct Document {
     events: Vec<(Event, Mark)>,
     /// Map from alias id to index in events.
     aliases: BTreeMap<usize, usize>,
-    /// Map from start index to number of events.
-    document_lengths: BTreeMap<usize, usize>,
 }
 
-impl Loader {
-    pub fn new(input: Input) -> Result<Self> {
+impl<'input> Loader<'input> {
+    pub fn new(input: Input<'input>) -> Result<Self> {
         let input = match input {
             Input::Str(s) => Cow::Borrowed(s.as_bytes()),
             Input::Slice(bytes) => Cow::Borrowed(bytes),
@@ -27,30 +29,33 @@ impl Loader {
             Input::Fail(err) => return Err(error::shared(err)),
         };
 
-        let mut parser = Parser::new(input);
-        let mut current_document_start = 0;
+        Ok(Loader {
+            parser: Some(Parser::new(input)),
+        })
+    }
+
+    pub fn next_document(&mut self) -> Result<Option<Document>> {
+        let parser = match &mut self.parser {
+            Some(parser) => parser,
+            None => return Ok(None),
+        };
+
         let mut anchors = BTreeMap::new();
-        let mut loader = Loader {
+        let mut document = Document {
             events: Vec::new(),
             aliases: BTreeMap::new(),
-            document_lengths: BTreeMap::new(),
         };
 
         loop {
             let (event, mark) = parser.next()?;
             let event = match event {
                 YamlEvent::StreamStart => continue,
-                YamlEvent::StreamEnd => break,
-                YamlEvent::DocumentStart => {
-                    current_document_start = loader.events.len();
-                    continue;
+                YamlEvent::StreamEnd => {
+                    self.parser = None;
+                    return Ok(None);
                 }
-                YamlEvent::DocumentEnd => {
-                    let len = loader.events.len() - current_document_start;
-                    loader.document_lengths.insert(current_document_start, len);
-                    current_document_start = loader.events.len();
-                    continue;
-                }
+                YamlEvent::DocumentStart => continue,
+                YamlEvent::DocumentEnd => return Ok(Some(document)),
                 YamlEvent::Alias(alias) => match anchors.get(&alias) {
                     Some(id) => Event::Alias(*id),
                     None => return Err(error::unknown_anchor(mark)),
@@ -59,7 +64,7 @@ impl Loader {
                     if let Some(anchor) = scalar.anchor {
                         let id = anchors.len();
                         anchors.insert(anchor, id);
-                        loader.aliases.insert(id, loader.events.len());
+                        document.aliases.insert(id, document.events.len());
                     }
                     Event::Scalar(scalar.value, scalar.style, scalar.tag)
                 }
@@ -67,7 +72,7 @@ impl Loader {
                     if let Some(anchor) = sequence_start.anchor {
                         let id = anchors.len();
                         anchors.insert(anchor, id);
-                        loader.aliases.insert(id, loader.events.len());
+                        document.aliases.insert(id, document.events.len());
                     }
                     Event::SequenceStart
                 }
@@ -76,27 +81,23 @@ impl Loader {
                     if let Some(anchor) = mapping_start.anchor {
                         let id = anchors.len();
                         anchors.insert(anchor, id);
-                        loader.aliases.insert(id, loader.events.len());
+                        document.aliases.insert(id, document.events.len());
                     }
                     Event::MappingStart
                 }
                 YamlEvent::MappingEnd => Event::MappingEnd,
             };
-            loader.events.push((event, mark));
+            document.events.push((event, mark));
         }
-
-        Ok(loader)
     }
+}
 
+impl Document {
     pub fn event(&self, pos: usize) -> Option<(&Event, Mark)> {
         self.events.get(pos).map(|(event, mark)| (event, *mark))
     }
 
     pub fn alias(&self, id: usize) -> Option<usize> {
         self.aliases.get(&id).copied()
-    }
-
-    pub fn document_len(&self, start: usize) -> usize {
-        *self.document_lengths.get(&start).unwrap_or(&0)
     }
 }

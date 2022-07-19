@@ -2,7 +2,7 @@ use crate::error::{self, Error, ErrorImpl, Result};
 use crate::libyaml::error::Mark;
 use crate::libyaml::parser::ScalarStyle;
 use crate::libyaml::tag::Tag;
-use crate::loader::Loader;
+use crate::loader::{Document, Loader};
 use crate::path::Path;
 use serde::de::{
     self, Deserialize, DeserializeOwned, DeserializeSeed, Expected, IgnoredAny as Ignore,
@@ -13,7 +13,6 @@ use std::fmt;
 use std::io;
 use std::marker::PhantomData;
 use std::mem;
-use std::rc::Rc;
 use std::str;
 use std::sync::Arc;
 
@@ -63,8 +62,8 @@ pub(crate) enum Input<'a> {
     Str(&'a str),
     Slice(&'a [u8]),
     Read(Box<dyn io::Read + 'a>),
-    Iterable(Multidoc),
-    Document(Multidoc),
+    Iterable(Loader<'a>),
+    Document(Document),
     Fail(Arc<ErrorImpl>),
 }
 
@@ -97,10 +96,10 @@ impl<'a> Deserializer<'a> {
     fn de<T>(self, f: impl FnOnce(&mut DeserializerFromEvents) -> Result<T>) -> Result<T> {
         match &self.input {
             Input::Iterable(_) => return Err(error::more_than_one_document()),
-            Input::Document(multidoc) => {
-                let mut pos = multidoc.pos;
+            Input::Document(document) => {
+                let mut pos = 0;
                 let t = f(&mut DeserializerFromEvents {
-                    loader: &multidoc.loader,
+                    document,
                     pos: &mut pos,
                     path: Path::Root,
                     remaining_depth: 128,
@@ -110,18 +109,19 @@ impl<'a> Deserializer<'a> {
             _ => {}
         }
 
-        let loader = Loader::new(self.input)?;
-        if loader.event(0).is_none() {
-            return Err(error::end_of_stream());
-        }
+        let mut loader = Loader::new(self.input)?;
+        let document = match loader.next_document()? {
+            Some(document) => document,
+            None => return Err(error::end_of_stream()),
+        };
         let mut pos = 0;
         let t = f(&mut DeserializerFromEvents {
-            loader: &loader,
+            document: &document,
             pos: &mut pos,
             path: Path::Root,
             remaining_depth: 128,
         })?;
-        if loader.event(pos).is_none() {
+        if let Ok(None) = loader.next_document() {
             Ok(t)
         } else {
             Err(error::more_than_one_document())
@@ -129,28 +129,24 @@ impl<'a> Deserializer<'a> {
     }
 }
 
-pub(crate) struct Multidoc {
-    loader: Rc<Loader>,
-    pos: usize,
-}
-
 impl<'de> Iterator for Deserializer<'de> {
     type Item = Self;
 
     fn next(&mut self) -> Option<Self> {
         match &mut self.input {
-            Input::Iterable(multidoc) => {
-                let pos = multidoc.pos;
-                return if multidoc.loader.event(pos).is_some() {
-                    multidoc.pos += multidoc.loader.document_len(pos);
-                    Some(Deserializer {
-                        input: Input::Document(Multidoc {
-                            loader: Rc::clone(&multidoc.loader),
-                            pos,
-                        }),
-                    })
-                } else {
-                    None
+            Input::Iterable(loader) => {
+                return match loader.next_document() {
+                    Ok(None) => None,
+                    Ok(Some(document)) => Some(Deserializer {
+                        input: Input::Document(document),
+                    }),
+                    Err(err) => {
+                        let fail = err.shared();
+                        self.input = Input::Fail(Arc::clone(&fail));
+                        Some(Deserializer {
+                            input: Input::Fail(fail),
+                        })
+                    }
                 };
             }
             Input::Document(_) => return None,
@@ -166,18 +162,8 @@ impl<'de> Iterator for Deserializer<'de> {
         let input = mem::replace(&mut self.input, dummy);
         match Loader::new(input) {
             Ok(loader) => {
-                let loader = Rc::new(loader);
-                self.input = Input::Iterable(Multidoc {
-                    loader: Rc::clone(&loader),
-                    pos: loader.document_len(0),
-                });
-                if loader.event(0).is_none() {
-                    None
-                } else {
-                    Some(Deserializer {
-                        input: Input::Document(Multidoc { loader, pos: 0 }),
-                    })
-                }
+                self.input = Input::Iterable(loader);
+                self.next()
             }
             Err(err) => {
                 let fail = err.shared();
@@ -436,7 +422,7 @@ pub(crate) enum Event {
 }
 
 struct DeserializerFromEvents<'a> {
-    loader: &'a Loader,
+    document: &'a Document,
     pos: &'a mut usize,
     path: Path<'a>,
     remaining_depth: u8,
@@ -448,7 +434,7 @@ impl<'a> DeserializerFromEvents<'a> {
     }
 
     fn peek_event_mark(&self) -> Result<(&'a Event, Mark)> {
-        match self.loader.event(*self.pos) {
+        match self.document.event(*self.pos) {
             Some((event, mark)) => Ok((event, mark)),
             None => Err(error::end_of_stream()),
         }
@@ -467,18 +453,18 @@ impl<'a> DeserializerFromEvents<'a> {
     }
 
     fn opt_next_event_mark(&mut self) -> Option<(&'a Event, Mark)> {
-        self.loader.event(*self.pos).map(|(event, mark)| {
+        self.document.event(*self.pos).map(|(event, mark)| {
             *self.pos += 1;
             (event, mark)
         })
     }
 
     fn jump<'b>(&'b self, pos: &'b mut usize) -> Result<DeserializerFromEvents<'b>> {
-        match self.loader.alias(*pos) {
+        match self.document.alias(*pos) {
             Some(found) => {
                 *pos = found;
                 Ok(DeserializerFromEvents {
-                    loader: self.loader,
+                    document: self.document,
                     pos,
                     path: Path::Alias { parent: &self.path },
                     remaining_depth: self.remaining_depth,
@@ -692,7 +678,7 @@ impl<'de, 'a, 'r> de::SeqAccess<'de> for SeqAccess<'a, 'r> {
             Event::SequenceEnd => Ok(None),
             _ => {
                 let mut element_de = DeserializerFromEvents {
-                    loader: self.de.loader,
+                    document: self.de.document,
                     pos: self.de.pos,
                     path: Path::Seq {
                         parent: &self.de.path,
@@ -740,7 +726,7 @@ impl<'de, 'a, 'r> de::MapAccess<'de> for MapAccess<'a, 'r> {
         V: DeserializeSeed<'de>,
     {
         let mut value_de = DeserializerFromEvents {
-            loader: self.de.loader,
+            document: self.de.document,
             pos: self.de.pos,
             path: if let Some(key) = self.key.and_then(|key| str::from_utf8(key).ok()) {
                 Path::Map {
@@ -806,7 +792,7 @@ impl<'de, 'a, 'r> de::EnumAccess<'de> for EnumAccess<'a, 'r> {
         let str_de = IntoDeserializer::<Error>::into_deserializer(variant);
         let ret = seed.deserialize(str_de)?;
         let variant_visitor = DeserializerFromEvents {
-            loader: self.de.loader,
+            document: self.de.document,
             pos: self.de.pos,
             path: Path::Map {
                 parent: &self.de.path,
