@@ -15,20 +15,19 @@ pub(crate) struct Loader {
 
 impl Loader {
     pub fn new(input: Input) -> Result<Self> {
-        let mut buffer;
         let input = match input {
-            Input::Str(s) => s.as_bytes(),
-            Input::Slice(bytes) => bytes,
+            Input::Str(s) => Cow::Borrowed(s.as_bytes()),
+            Input::Slice(bytes) => Cow::Borrowed(bytes),
             Input::Read(mut rdr) => {
-                buffer = Vec::new();
+                let mut buffer = Vec::new();
                 rdr.read_to_end(&mut buffer).map_err(error::io)?;
-                &buffer
+                Cow::Owned(buffer)
             }
             Input::Iterable(_) | Input::Document(_) => unreachable!(),
             Input::Fail(err) => return Err(error::shared(err)),
         };
 
-        let mut parser = Parser::new(Cow::Borrowed(input));
+        let mut parser = Parser::new(input);
         let mut current_document_start = 0;
         let mut anchors = BTreeMap::new();
         let mut loader = Loader {
