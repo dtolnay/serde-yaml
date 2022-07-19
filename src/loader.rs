@@ -99,8 +99,8 @@ impl Loader {
         Ok(loader)
     }
 
-    pub fn event(&self, pos: usize) -> Option<&(Event, Mark)> {
-        self.events.get(pos)
+    pub fn event(&self, pos: usize) -> Option<(&Event, Mark)> {
+        self.events.get(pos).map(|(event, mark)| (event, *mark))
     }
 
     pub fn alias(&self, id: usize) -> Option<usize> {
