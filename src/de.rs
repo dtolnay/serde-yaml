@@ -443,18 +443,18 @@ struct DeserializerFromEvents<'a> {
 }
 
 impl<'a> DeserializerFromEvents<'a> {
-    fn peek(&self) -> Result<(&'a Event, Mark)> {
+    fn peek_event_mark(&self) -> Result<(&'a Event, Mark)> {
         match self.loader.event(*self.pos) {
             Some((event, mark)) => Ok((event, mark)),
             None => Err(error::end_of_stream()),
         }
     }
 
-    fn next(&mut self) -> Result<(&'a Event, Mark)> {
-        self.opt_next().ok_or_else(error::end_of_stream)
+    fn next_event_mark(&mut self) -> Result<(&'a Event, Mark)> {
+        self.opt_next_event_mark().ok_or_else(error::end_of_stream)
     }
 
-    fn opt_next(&mut self) -> Option<(&'a Event, Mark)> {
+    fn opt_next_event_mark(&mut self) -> Option<(&'a Event, Mark)> {
         self.loader.event(*self.pos).map(|(event, mark)| {
             *self.pos += 1;
             (event, mark)
@@ -484,7 +484,7 @@ impl<'a> DeserializerFromEvents<'a> {
 
         let mut stack = Vec::new();
 
-        while let Some((event, _)) = self.opt_next() {
+        while let Some((event, _)) = self.opt_next_event_mark() {
             match event {
                 Event::Alias(_) | Event::Scalar(_, _, _) => {}
                 Event::SequenceStart => {
@@ -552,7 +552,7 @@ impl<'a> DeserializerFromEvents<'a> {
             while de::SeqAccess::next_element::<Ignore>(&mut seq)?.is_some() {}
             seq.len
         };
-        match self.next()?.0 {
+        match self.next_event_mark()?.0 {
             Event::SequenceEnd => {}
             _ => panic!("expected a SequenceEnd event"),
         }
@@ -583,7 +583,7 @@ impl<'a> DeserializerFromEvents<'a> {
             while de::MapAccess::next_entry::<Ignore, Ignore>(&mut map)?.is_some() {}
             map.len
         };
-        match self.next()?.0 {
+        match self.next_event_mark()?.0 {
             Event::MappingEnd => {}
             _ => panic!("expected a MappingEnd event"),
         }
@@ -676,7 +676,7 @@ impl<'de, 'a, 'r> de::SeqAccess<'de> for SeqAccess<'a, 'r> {
     where
         T: DeserializeSeed<'de>,
     {
-        match self.de.peek()?.0 {
+        match self.de.peek_event_mark()?.0 {
             Event::SequenceEnd => Ok(None),
             _ => {
                 let mut element_de = DeserializerFromEvents {
@@ -708,7 +708,7 @@ impl<'de, 'a, 'r> de::MapAccess<'de> for MapAccess<'a, 'r> {
     where
         K: DeserializeSeed<'de>,
     {
-        match self.de.peek()?.0 {
+        match self.de.peek_event_mark()?.0 {
             Event::MappingEnd => Ok(None),
             Event::Scalar(key, _, _) => {
                 self.len += 1;
@@ -778,7 +778,7 @@ impl<'de, 'a, 'r> de::EnumAccess<'de> for EnumAccess<'a, 'r> {
         let variant = if let Some(tag) = self.tag {
             tag
         } else {
-            match match self.de.next()?.0 {
+            match match self.de.next_event_mark()?.0 {
                 Event::Scalar(bytes, _, _) => str::from_utf8(bytes).ok(),
                 _ => None,
             } {
@@ -1014,7 +1014,7 @@ impl<'a> DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let (next, mark) = self.next()?;
+        let (next, mark) = self.next_event_mark()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_scalar(visitor),
             Event::Scalar(v, style, tag) => visit_scalar(v, *style, tag, visitor),
@@ -1031,7 +1031,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let (next, mark) = self.next()?;
+        let (next, mark) = self.next_event_mark()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_any(visitor),
             Event::Scalar(v, style, tag) => visit_scalar(v, *style, tag, visitor),
@@ -1147,7 +1147,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let (next, mark) = self.next()?;
+        let (next, mark) = self.next_event_mark()?;
         match next {
             Event::Scalar(v, _, _) => {
                 if let Ok(v) = str::from_utf8(v) {
@@ -1188,7 +1188,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let is_some = match self.peek()?.0 {
+        let is_some = match self.peek_event_mark()?.0 {
             Event::Alias(mut pos) => {
                 *self.pos += 1;
                 return self.jump(&mut pos)?.deserialize_option(visitor);
@@ -1250,7 +1250,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let (next, mark) = self.next()?;
+        let (next, mark) = self.next_event_mark()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_seq(visitor),
             Event::SequenceStart => self.visit_sequence(visitor, mark),
@@ -1282,7 +1282,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let (next, mark) = self.next()?;
+        let (next, mark) = self.next_event_mark()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_map(visitor),
             Event::MappingStart => self.visit_mapping(visitor, mark),
@@ -1300,7 +1300,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let (next, mark) = self.next()?;
+        let (next, mark) = self.next_event_mark()?;
         match next {
             Event::Alias(mut pos) => self
                 .jump(&mut pos)?
@@ -1324,7 +1324,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        let (next, mark) = self.peek()?;
+        let (next, mark) = self.peek_event_mark()?;
         match next {
             Event::Alias(mut pos) => {
                 *self.pos += 1;
