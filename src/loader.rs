@@ -2,6 +2,7 @@ use crate::de::{Event, Input};
 use crate::error::{self, Result};
 use crate::libyaml::error::Mark;
 use crate::libyaml::parser::{Event as YamlEvent, Parser};
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::str;
 
@@ -38,7 +39,7 @@ impl Loader {
             Input2::Slice(bytes) => bytes,
         };
 
-        let mut parser = Parser::new(input);
+        let mut parser = Parser::new(Cow::Borrowed(input));
         let mut current_document_start = 0;
         let mut anchors = BTreeMap::new();
         let mut loader = Loader {

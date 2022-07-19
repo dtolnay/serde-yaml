@@ -2,6 +2,7 @@ use crate::libyaml::cstr::CStr;
 use crate::libyaml::error::{Error, Mark, Result};
 use crate::libyaml::tag::Tag;
 use crate::libyaml::util::Owned;
+use std::borrow::Cow;
 use std::mem::MaybeUninit;
 use std::ptr::{addr_of_mut, NonNull};
 use std::slice;
@@ -13,7 +14,7 @@ pub(crate) struct Parser<'input> {
 
 struct ParserPinned<'input> {
     sys: sys::yaml_parser_t,
-    input: &'input [u8],
+    input: Cow<'input, [u8]>,
 }
 
 pub(crate) enum Event {
@@ -57,7 +58,7 @@ pub(crate) enum ScalarStyle {
 }
 
 impl<'input> Parser<'input> {
-    pub fn new(input: &'input [u8]) -> Parser<'input> {
+    pub fn new(input: Cow<'input, [u8]>) -> Parser<'input> {
         let owned = Owned::<ParserPinned>::new_uninit();
         let pin = unsafe {
             let parser = addr_of_mut!((*owned.ptr).sys);
