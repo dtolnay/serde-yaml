@@ -445,7 +445,7 @@ struct DeserializerFromEvents<'a> {
 impl<'a> DeserializerFromEvents<'a> {
     fn peek(&self) -> Result<(&'a Event, Mark)> {
         match self.loader.event(*self.pos) {
-            Some(event) => Ok((&event.0, event.1)),
+            Some((event, mark)) => Ok((event, *mark)),
             None => Err(error::end_of_stream()),
         }
     }
@@ -455,9 +455,9 @@ impl<'a> DeserializerFromEvents<'a> {
     }
 
     fn opt_next(&mut self) -> Option<(&'a Event, Mark)> {
-        self.loader.event(*self.pos).map(|event| {
+        self.loader.event(*self.pos).map(|(event, mark)| {
             *self.pos += 1;
-            (&event.0, event.1)
+            (event, *mark)
         })
     }
 
