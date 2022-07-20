@@ -1,4 +1,4 @@
-use crate::error::{self, Error, ErrorImpl, Result};
+use crate::error::{self, Error, ErrorImpl};
 use crate::libyaml::error::Mark;
 use crate::libyaml::parser::{Scalar, ScalarStyle};
 use crate::libyaml::tag::Tag;
@@ -13,8 +13,11 @@ use std::fmt;
 use std::io;
 use std::marker::PhantomData;
 use std::mem;
+use std::num::ParseIntError;
 use std::str;
 use std::sync::Arc;
+
+type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// A structure that deserializes YAML into Rust values.
 ///
@@ -884,6 +887,60 @@ fn parse_bool(scalar: &str) -> Option<bool> {
     }
 }
 
+fn parse_unsigned_int<T>(
+    scalar: &str,
+    from_str_radix: fn(&str, radix: u32) -> Result<T, ParseIntError>,
+) -> Option<T> {
+    let unpositive = scalar.strip_prefix('+').unwrap_or(scalar);
+    if let Some(rest) = unpositive.strip_prefix("0x") {
+        if let Ok(int) = from_str_radix(rest, 16) {
+            return Some(int);
+        }
+    }
+    if let Some(rest) = unpositive.strip_prefix("0o") {
+        if let Ok(int) = from_str_radix(rest, 8) {
+            return Some(int);
+        }
+    }
+    if let Some(rest) = unpositive.strip_prefix("0b") {
+        if let Ok(int) = from_str_radix(rest, 2) {
+            return Some(int);
+        }
+    }
+    if digits_but_not_number(scalar) {
+        return None;
+    }
+    from_str_radix(unpositive, 10).ok()
+}
+
+fn parse_negative_int<T>(
+    scalar: &str,
+    from_str_radix: fn(&str, radix: u32) -> Result<T, ParseIntError>,
+) -> Option<T> {
+    if let Some(rest) = scalar.strip_prefix("-0x") {
+        let negative = format!("-{}", rest);
+        if let Ok(int) = from_str_radix(&negative, 16) {
+            return Some(int);
+        }
+    }
+    if let Some(rest) = scalar.strip_prefix("-0o") {
+        let negative = format!("-{}", rest);
+        if let Ok(int) = from_str_radix(&negative, 8) {
+            return Some(int);
+        }
+    }
+    if let Some(rest) = scalar.strip_prefix("-0b") {
+        let negative = format!("-{}", rest);
+        if let Ok(int) = from_str_radix(&negative, 2) {
+            return Some(int);
+        }
+    }
+    if digits_but_not_number(scalar) {
+        return None;
+    }
+    from_str_radix(scalar, 10).ok()
+}
+
 fn digits_but_not_number(scalar: &str) -> bool {
     // Leading zero(s) followed by numeric characters is a string according to
     // the YAML 1.2 spec. https://yaml.org/spec/1.2/spec.html#id2761292
@@ -901,53 +958,20 @@ where
     if let Some(boolean) = parse_bool(v) {
         return visitor.visit_bool(boolean);
     }
-    if let Some(rest) = Option::or(v.strip_prefix("0x"), v.strip_prefix("+0x")) {
-        if let Ok(n) = u64::from_str_radix(rest, 16) {
-            return visitor.visit_u64(n);
-        }
+    if let Some(int) = parse_unsigned_int(v, u64::from_str_radix) {
+        return visitor.visit_u64(int);
     }
-    if let Some(rest) = v.strip_prefix("-0x") {
-        let negative = format!("-{}", rest);
-        if let Ok(n) = i64::from_str_radix(&negative, 16) {
-            return visitor.visit_i64(n);
-        }
+    if let Some(int) = parse_negative_int(v, i64::from_str_radix) {
+        return visitor.visit_i64(int);
     }
-    if let Some(rest) = Option::or(v.strip_prefix("0o"), v.strip_prefix("+0o")) {
-        if let Ok(n) = u64::from_str_radix(rest, 8) {
-            return visitor.visit_u64(n);
-        }
+    if let Some(int) = parse_unsigned_int(v, u128::from_str_radix) {
+        return visitor.visit_u128(int);
     }
-    if let Some(rest) = v.strip_prefix("-0o") {
-        let negative = format!("-{}", rest);
-        if let Ok(n) = i64::from_str_radix(&negative, 8) {
-            return visitor.visit_i64(n);
-        }
-    }
-    if let Some(rest) = Option::or(v.strip_prefix("0b"), v.strip_prefix("+0b")) {
-        if let Ok(n) = u64::from_str_radix(rest, 2) {
-            return visitor.visit_u64(n);
-        }
-    }
-    if let Some(rest) = v.strip_prefix("-0b") {
-        let negative = format!("-{}", rest);
-        if let Ok(n) = i64::from_str_radix(&negative, 2) {
-            return visitor.visit_i64(n);
-        }
+    if let Some(int) = parse_negative_int(v, i128::from_str_radix) {
+        return visitor.visit_i128(int);
     }
     if digits_but_not_number(v) {
         return visitor.visit_str(v);
-    }
-    if let Ok(n) = v.parse() {
-        return visitor.visit_u64(n);
-    }
-    if let Ok(n) = v.parse() {
-        return visitor.visit_u128(n);
-    }
-    if let Ok(n) = v.parse() {
-        return visitor.visit_i64(n);
-    }
-    if let Ok(n) = v.parse() {
-        return visitor.visit_i128(n);
     }
     match v.trim_start_matches('+') {
         ".inf" | ".Inf" | ".INF" => return visitor.visit_f64(f64::INFINITY),
