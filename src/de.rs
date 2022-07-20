@@ -597,20 +597,20 @@ impl<'a> DeserializerFromEvents<'a> {
     }
 }
 
-fn visit_scalar<'de, V>(
-    v: &[u8],
-    style: ScalarStyle,
-    tag: &Option<Tag>,
-    visitor: V,
-) -> Result<V::Value>
+fn visit_scalar<'de, V>(visitor: V, scalar: &Scalar) -> Result<V::Value>
 where
     V: Visitor<'de>,
 {
-    let v = match str::from_utf8(v) {
+    let v = match str::from_utf8(&scalar.value) {
         Ok(v) => v,
-        Err(_) => return Err(de::Error::invalid_type(Unexpected::Bytes(v), &visitor)),
+        Err(_) => {
+            return Err(de::Error::invalid_type(
+                Unexpected::Bytes(&scalar.value),
+                &visitor,
+            ))
+        }
     };
-    if let Some(tag) = tag {
+    if let Some(tag) = &scalar.tag {
         if tag == Tag::BOOL {
             match v.parse::<bool>() {
                 Ok(v) => visitor.visit_bool(v),
@@ -634,7 +634,7 @@ where
         } else {
             visitor.visit_str(v)
         }
-    } else if style == ScalarStyle::Plain {
+    } else if scalar.style == ScalarStyle::Plain {
         visit_untagged_str(visitor, v)
     } else {
         visitor.visit_str(v)
@@ -974,7 +974,7 @@ fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
         Event::Alias(_) => unreachable!(),
         Event::Scalar(scalar) => {
             let get_type = InvalidType { exp };
-            match visit_scalar(&scalar.value, scalar.style, &scalar.tag, get_type) {
+            match visit_scalar(get_type, scalar) {
                 Ok(void) => match void {},
                 Err(invalid_type) => invalid_type,
             }
@@ -994,9 +994,7 @@ impl<'a> DeserializerFromEvents<'a> {
         let (next, mark) = self.next_event_mark()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_scalar(visitor),
-            Event::Scalar(scalar) => {
-                visit_scalar(&scalar.value, scalar.style, &scalar.tag, visitor)
-            }
+            Event::Scalar(scalar) => visit_scalar(visitor, scalar),
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
@@ -1013,9 +1011,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
         let (next, mark) = self.next_event_mark()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_any(visitor),
-            Event::Scalar(scalar) => {
-                visit_scalar(&scalar.value, scalar.style, &scalar.tag, visitor)
-            }
+            Event::Scalar(scalar) => visit_scalar(visitor, scalar),
             Event::SequenceStart => self.visit_sequence(visitor, mark),
             Event::MappingStart => self.visit_mapping(visitor, mark),
             Event::SequenceEnd => panic!("unexpected end of sequence"),
