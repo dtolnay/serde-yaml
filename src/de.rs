@@ -55,10 +55,10 @@ use std::sync::Arc;
 /// }
 /// ```
 pub struct Deserializer<'a> {
-    input: Input<'a>,
+    progress: Progress<'a>,
 }
 
-pub(crate) enum Input<'a> {
+pub(crate) enum Progress<'a> {
     Str(&'a str),
     Slice(&'a [u8]),
     Read(Box<dyn io::Read + 'a>),
@@ -70,14 +70,14 @@ pub(crate) enum Input<'a> {
 impl<'a> Deserializer<'a> {
     /// Creates a YAML deserializer from a `&str`.
     pub fn from_str(s: &'a str) -> Self {
-        let input = Input::Str(s);
-        Deserializer { input }
+        let progress = Progress::Str(s);
+        Deserializer { progress }
     }
 
     /// Creates a YAML deserializer from a `&[u8]`.
     pub fn from_slice(v: &'a [u8]) -> Self {
-        let input = Input::Slice(v);
-        Deserializer { input }
+        let progress = Progress::Slice(v);
+        Deserializer { progress }
     }
 
     /// Creates a YAML deserializer from an `io::Read`.
@@ -89,14 +89,14 @@ impl<'a> Deserializer<'a> {
     where
         R: io::Read + 'a,
     {
-        let input = Input::Read(Box::new(rdr));
-        Deserializer { input }
+        let progress = Progress::Read(Box::new(rdr));
+        Deserializer { progress }
     }
 
     fn de<T>(self, f: impl FnOnce(&mut DeserializerFromEvents) -> Result<T>) -> Result<T> {
-        match &self.input {
-            Input::Iterable(_) => return Err(error::more_than_one_document()),
-            Input::Document(document) => {
+        match &self.progress {
+            Progress::Iterable(_) => return Err(error::more_than_one_document()),
+            Progress::Document(document) => {
                 let mut pos = 0;
                 let t = f(&mut DeserializerFromEvents {
                     document,
@@ -109,7 +109,7 @@ impl<'a> Deserializer<'a> {
             _ => {}
         }
 
-        let mut loader = Loader::new(self.input)?;
+        let mut loader = Loader::new(self.progress)?;
         let document = match loader.next_document()? {
             Some(document) => document,
             None => return Err(error::end_of_stream()),
@@ -133,43 +133,43 @@ impl<'de> Iterator for Deserializer<'de> {
     type Item = Self;
 
     fn next(&mut self) -> Option<Self> {
-        match &mut self.input {
-            Input::Iterable(loader) => {
+        match &mut self.progress {
+            Progress::Iterable(loader) => {
                 return match loader.next_document() {
                     Ok(None) => None,
                     Ok(Some(document)) => Some(Deserializer {
-                        input: Input::Document(document),
+                        progress: Progress::Document(document),
                     }),
                     Err(err) => {
                         let fail = err.shared();
-                        self.input = Input::Fail(Arc::clone(&fail));
+                        self.progress = Progress::Fail(Arc::clone(&fail));
                         Some(Deserializer {
-                            input: Input::Fail(fail),
+                            progress: Progress::Fail(fail),
                         })
                     }
                 };
             }
-            Input::Document(_) => return None,
-            Input::Fail(err) => {
+            Progress::Document(_) => return None,
+            Progress::Fail(err) => {
                 return Some(Deserializer {
-                    input: Input::Fail(Arc::clone(err)),
+                    progress: Progress::Fail(Arc::clone(err)),
                 });
             }
             _ => {}
         }
 
-        let dummy = Input::Str("");
-        let input = mem::replace(&mut self.input, dummy);
+        let dummy = Progress::Str("");
+        let input = mem::replace(&mut self.progress, dummy);
         match Loader::new(input) {
             Ok(loader) => {
-                self.input = Input::Iterable(loader);
+                self.progress = Progress::Iterable(loader);
                 self.next()
             }
             Err(err) => {
                 let fail = err.shared();
-                self.input = Input::Fail(Arc::clone(&fail));
+                self.progress = Progress::Fail(Arc::clone(&fail));
                 Some(Deserializer {
-                    input: Input::Fail(fail),
+                    progress: Progress::Fail(fail),
                 })
             }
         }

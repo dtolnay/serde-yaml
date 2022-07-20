@@ -1,4 +1,4 @@
-use crate::de::{Event, Input};
+use crate::de::{Event, Progress};
 use crate::error::{self, Result};
 use crate::libyaml::error::Mark;
 use crate::libyaml::parser::{Event as YamlEvent, Parser};
@@ -16,17 +16,17 @@ pub(crate) struct Document {
 }
 
 impl<'input> Loader<'input> {
-    pub fn new(input: Input<'input>) -> Result<Self> {
-        let input = match input {
-            Input::Str(s) => Cow::Borrowed(s.as_bytes()),
-            Input::Slice(bytes) => Cow::Borrowed(bytes),
-            Input::Read(mut rdr) => {
+    pub fn new(progress: Progress<'input>) -> Result<Self> {
+        let input = match progress {
+            Progress::Str(s) => Cow::Borrowed(s.as_bytes()),
+            Progress::Slice(bytes) => Cow::Borrowed(bytes),
+            Progress::Read(mut rdr) => {
                 let mut buffer = Vec::new();
                 rdr.read_to_end(&mut buffer).map_err(error::io)?;
                 Cow::Owned(buffer)
             }
-            Input::Iterable(_) | Input::Document(_) => unreachable!(),
-            Input::Fail(err) => return Err(error::shared(err)),
+            Progress::Iterable(_) | Progress::Document(_) => unreachable!(),
+            Progress::Fail(err) => return Err(error::shared(err)),
         };
 
         Ok(Loader {
