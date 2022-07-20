@@ -195,7 +195,7 @@ fn test_number_as_string() {
 
 #[test]
 fn test_i128_big() {
-    let expected: i128 = ::std::i64::MIN as i128 - 1;
+    let expected: i128 = i64::MIN as i128 - 1;
     let yaml = indoc! {"
         -9223372036854775809
     "};
@@ -204,7 +204,7 @@ fn test_i128_big() {
 
 #[test]
 fn test_u128_big() {
-    let expected: u128 = ::std::u64::MAX as u128 + 1;
+    let expected: u128 = u64::MAX as u128 + 1;
     let yaml = indoc! {"
         18446744073709551616
     "};

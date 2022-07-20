@@ -49,7 +49,7 @@ fn test_int() {
 
 #[test]
 fn test_int_max_u64() {
-    let thing = ::std::u64::MAX;
+    let thing = u64::MAX;
     let yaml = indoc! {"
         18446744073709551615
     "};
@@ -58,7 +58,7 @@ fn test_int_max_u64() {
 
 #[test]
 fn test_int_min_i64() {
-    let thing = ::std::i64::MIN;
+    let thing = i64::MIN;
     let yaml = indoc! {"
         -9223372036854775808
     "};
@@ -67,7 +67,7 @@ fn test_int_min_i64() {
 
 #[test]
 fn test_int_max_i64() {
-    let thing = ::std::i64::MAX;
+    let thing = i64::MAX;
     let yaml = indoc! {"
         9223372036854775807
     "};
