@@ -445,14 +445,13 @@ impl<'a> DeserializerFromEvents<'a> {
     }
 
     fn next_event_mark(&mut self) -> Result<(&'a Event, Mark)> {
-        self.opt_next_event_mark().ok_or_else(error::end_of_stream)
-    }
-
-    fn opt_next_event_mark(&mut self) -> Option<(&'a Event, Mark)> {
-        self.document.events.get(*self.pos).map(|(event, mark)| {
-            *self.pos += 1;
-            (event, *mark)
-        })
+        match self.document.events.get(*self.pos) {
+            Some((event, mark)) => {
+                *self.pos += 1;
+                Ok((event, *mark))
+            }
+            None => Err(error::end_of_stream()),
+        }
     }
 
     fn jump<'b>(&'b self, pos: &'b mut usize) -> Result<DeserializerFromEvents<'b>> {
