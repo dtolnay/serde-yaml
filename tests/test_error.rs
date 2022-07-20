@@ -1,5 +1,6 @@
 use indoc::indoc;
 use serde_derive::Deserialize;
+use serde_yaml::Deserializer;
 use std::fmt::Debug;
 
 fn test_error<T>(yaml: &str, expected: &str)
@@ -106,6 +107,26 @@ fn test_two_documents() {
     "};
     let expected = "deserializing from YAML containing more than one document is not supported";
     test_error::<usize>(yaml, expected);
+}
+
+#[test]
+fn test_second_document_syntax_error() {
+    let yaml = indoc! {"
+        ---
+        0
+        ---
+        ]
+    "};
+
+    let mut de = Deserializer::from_str(yaml);
+    let first_doc = de.next().unwrap();
+    let result = <usize as serde::Deserialize>::deserialize(first_doc);
+    assert_eq!(0, result.unwrap());
+
+    let second_doc = de.next().unwrap();
+    let result = <usize as serde::Deserialize>::deserialize(second_doc);
+    let expected = "did not find expected node content at line 4 column 1, while parsing a block node at line 4 column 1";
+    assert_eq!(expected, result.unwrap_err().to_string());
 }
 
 #[test]
