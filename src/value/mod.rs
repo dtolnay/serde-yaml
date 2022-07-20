@@ -151,7 +151,6 @@ impl Value {
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// #
     /// let object = yaml(r#"
-    /// ---
     /// A: [a, á, à]
     /// B: [b, b́]
     /// C: [c, ć, ć̣, ḉ]

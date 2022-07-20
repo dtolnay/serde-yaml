@@ -36,7 +36,6 @@ where
 #[test]
 fn test_alias() {
     let yaml = indoc! {"
-        ---
         first:
           &alias
           1
@@ -62,7 +61,6 @@ fn test_option() {
         c: Option<bool>,
     }
     let yaml = indoc! {"
-        ---
         b:
         c: true
     "};
@@ -86,7 +84,6 @@ fn test_option_alias() {
         f: Option<bool>,
     }
     let yaml = indoc! {"
-        ---
         none_f:
           &none_f
           ~
@@ -138,7 +135,6 @@ fn test_enum_alias() {
         b: E,
     }
     let yaml = indoc! {"
-        ---
         aref:
           &aref
           A
@@ -171,7 +167,6 @@ fn test_enum_tag() {
         b: E,
     }
     let yaml = indoc! {"
-        ---
         a: !A foo
         b: !B bar
     "};
@@ -189,7 +184,6 @@ fn test_number_as_string() {
         value: String,
     }
     let yaml = indoc! {"
-        ---
         # Cannot be represented as u128
         value: 340282366920938463463374607431768211457
     "};
@@ -203,7 +197,6 @@ fn test_number_as_string() {
 fn test_i128_big() {
     let expected: i128 = ::std::i64::MIN as i128 - 1;
     let yaml = indoc! {"
-        ---
         -9223372036854775809
     "};
     assert_eq!(expected, serde_yaml::from_str::<i128>(yaml).unwrap());
@@ -213,7 +206,6 @@ fn test_i128_big() {
 fn test_u128_big() {
     let expected: u128 = ::std::u64::MAX as u128 + 1;
     let yaml = indoc! {"
-        ---
         18446744073709551616
     "};
     assert_eq!(expected, serde_yaml::from_str::<u128>(yaml).unwrap());
@@ -227,7 +219,6 @@ fn test_number_alias_as_string() {
         value: String,
     }
     let yaml = indoc! {"
-        ---
         version: &a 1.10
         value: *a
     "};
@@ -245,7 +236,6 @@ fn test_de_mapping() {
         pub substructure: serde_yaml::Mapping,
     }
     let yaml = indoc! {"
-        ---
         substructure:
           a: 'foo'
           b: 'bar'
@@ -276,7 +266,6 @@ fn test_bomb() {
     // This would deserialize an astronomical number of elements if we were
     // vulnerable.
     let yaml = indoc! {"
-        ---
         a: &a ~
         b: &b [*a,*a,*a,*a,*a,*a,*a,*a,*a]
         c: &c [*b,*b,*b,*b,*b,*b,*b,*b,*b]

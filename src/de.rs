@@ -28,7 +28,7 @@ use std::sync::Arc;
 /// use serde_yaml::Value;
 ///
 /// fn main() -> Result<()> {
-///     let input = "---\nk: 107\n";
+///     let input = "k: 107\n";
 ///     let de = serde_yaml::Deserializer::from_str(input);
 ///     let value = Value::deserialize(de)?;
 ///     println!("{:?}", value);

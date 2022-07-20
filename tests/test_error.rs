@@ -38,13 +38,12 @@ fn test_incorrect_nested_type() {
         d: bool,
     }
     let yaml = indoc! {"
-        ---
         b:
           - C:
               d: fase
     "};
     let expected =
-        "b[0].C.d: invalid type: string \"fase\", expected a boolean at line 4 column 10";
+        "b[0].C.d: invalid type: string \"fase\", expected a boolean at line 3 column 10";
     test_error::<A>(yaml, expected);
 }
 
@@ -89,11 +88,10 @@ fn test_ignored_unknown_anchor() {
         c: (),
     }
     let yaml = indoc! {"
-        ---
         b: [*a]
         c: ~
     "};
-    let expected = "unknown anchor at line 2 column 5";
+    let expected = "unknown anchor at line 1 column 5";
     test_error::<Wrapper>(yaml, expected);
 }
 
@@ -136,7 +134,6 @@ fn test_variant_map_wrong_size() {
         V(usize),
     }
     let yaml = indoc! {r#"
-        ---
         "V": 16
         "other": 32
     "#};

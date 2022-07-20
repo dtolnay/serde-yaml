@@ -103,7 +103,6 @@ impl Number {
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// #
     /// let v = yaml(r#"
-    /// ---
     /// a: 256.0
     /// b: 64
     /// c: -64
@@ -133,7 +132,6 @@ impl Number {
     /// #
     /// let big = i64::MAX as u64 + 10;
     /// let v = yaml(r#"
-    /// ---
     /// a: 64
     /// b: 9223372036854775817
     /// c: 256.0
@@ -165,7 +163,6 @@ impl Number {
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// #
     /// let v = yaml(r#"
-    /// ---
     /// a: 64
     /// b: -64
     /// c: 256.0
@@ -189,7 +186,6 @@ impl Number {
     /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// let v = yaml(r#"
-    /// ---
     /// a: 256.0
     /// b: 64
     /// c: -64
