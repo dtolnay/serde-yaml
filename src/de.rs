@@ -884,6 +884,13 @@ fn parse_bool(scalar: &str) -> Option<bool> {
     }
 }
 
+fn digits_but_not_number(scalar: &str) -> bool {
+    // Leading zero(s) followed by numeric characters is a string according to
+    // the YAML 1.2 spec. https://yaml.org/spec/1.2/spec.html#id2761292
+    let scalar = scalar.strip_prefix(['-', '+']).unwrap_or(scalar);
+    scalar.len() > 1 && scalar.starts_with('0') && scalar[1..].bytes().all(|b| b.is_ascii_digit())
+}
+
 fn visit_untagged_str<'de, V>(visitor: V, v: &str) -> Result<V::Value>
 where
     V: Visitor<'de>,
@@ -930,14 +937,7 @@ where
             return visitor.visit_i64(n);
         }
     }
-    if {
-        let v = v.strip_prefix(['-', '+']).unwrap_or(v);
-        v.len() > 1 && v.starts_with('0') && v[1..].bytes().all(|b| b.is_ascii_digit())
-    } {
-        // After handling the different number encodings above if we are left
-        // with leading zero(s) followed by numeric characters this is in fact a
-        // string according to the YAML 1.2 spec.
-        // https://yaml.org/spec/1.2/spec.html#id2761292
+    if digits_but_not_number(v) {
         return visitor.visit_str(v);
     }
     if let Ok(n) = v.parse() {
