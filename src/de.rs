@@ -866,6 +866,16 @@ where
     }
 }
 
+fn parse_bool(scalar: &str) -> Option<bool> {
+    if scalar == "true" {
+        Some(true)
+    } else if scalar == "false" {
+        Some(false)
+    } else {
+        None
+    }
+}
+
 fn visit_untagged_str<'de, V>(visitor: V, v: &str) -> Result<V::Value>
 where
     V: Visitor<'de>,
@@ -876,11 +886,8 @@ where
     if v == "~" || v == "null" {
         return visitor.visit_unit();
     }
-    if v == "true" {
-        return visitor.visit_bool(true);
-    }
-    if v == "false" {
-        return visitor.visit_bool(false);
+    if let Some(boolean) = parse_bool(v) {
+        return visitor.visit_bool(boolean);
     }
     if let Some(rest) = Option::or(v.strip_prefix("0x"), v.strip_prefix("+0x")) {
         if let Ok(n) = u64::from_str_radix(rest, 16) {
@@ -1026,7 +1033,22 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        self.deserialize_scalar(visitor)
+        let (next, mark) = self.next_event_mark()?;
+        loop {
+            match next {
+                Event::Alias(mut pos) => break self.jump(&mut pos)?.deserialize_bool(visitor),
+                Event::Scalar(scalar) if scalar.style == ScalarStyle::Plain => {
+                    if let Ok(value) = str::from_utf8(&scalar.value) {
+                        if let Some(boolean) = parse_bool(value) {
+                            break visitor.visit_bool(boolean);
+                        }
+                    }
+                }
+                _ => {}
+            }
+            break Err(invalid_type(next, &visitor));
+        }
+        .map_err(|err| error::fix_mark(err, mark, self.path))
     }
 
     fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value>
