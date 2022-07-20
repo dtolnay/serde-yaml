@@ -1,8 +1,9 @@
-use crate::libyaml::cstr::CStr;
+use crate::libyaml::cstr::{self, CStr};
 use crate::libyaml::error::{Error, Mark, Result};
 use crate::libyaml::tag::Tag;
 use crate::libyaml::util::Owned;
 use std::borrow::Cow;
+use std::fmt::{self, Debug};
 use std::mem::MaybeUninit;
 use std::ptr::{addr_of_mut, NonNull};
 use std::slice;
@@ -17,6 +18,7 @@ struct ParserPinned<'input> {
     input: Cow<'input, [u8]>,
 }
 
+#[derive(Debug)]
 pub(crate) enum Event {
     StreamStart,
     StreamEnd,
@@ -30,6 +32,7 @@ pub(crate) enum Event {
     MappingEnd,
 }
 
+#[derive(Debug)]
 pub(crate) struct Scalar {
     pub anchor: Option<Anchor>,
     pub tag: Option<Tag>,
@@ -37,10 +40,12 @@ pub(crate) struct Scalar {
     pub style: ScalarStyle,
 }
 
+#[derive(Debug)]
 pub(crate) struct SequenceStart {
     pub anchor: Option<Anchor>,
 }
 
+#[derive(Debug)]
 pub(crate) struct MappingStart {
     pub anchor: Option<Anchor>,
 }
@@ -137,6 +142,12 @@ unsafe fn optional_tag(tag: *const u8) -> Option<Tag> {
     let ptr = NonNull::new(tag as *mut i8)?;
     let cstr = CStr::from_ptr(ptr);
     Some(Tag(Box::from(cstr.to_bytes())))
+}
+
+impl Debug for Anchor {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        cstr::debug_lossy(&self.0, formatter)
+    }
 }
 
 impl<'input> Drop for ParserPinned<'input> {

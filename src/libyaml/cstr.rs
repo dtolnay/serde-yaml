@@ -81,7 +81,7 @@ fn display_lossy(mut bytes: &[u8], formatter: &mut fmt::Formatter) -> fmt::Resul
     }
 }
 
-fn debug_lossy(mut bytes: &[u8], formatter: &mut fmt::Formatter) -> fmt::Result {
+pub(crate) fn debug_lossy(mut bytes: &[u8], formatter: &mut fmt::Formatter) -> fmt::Result {
     formatter.write_char('"')?;
 
     while !bytes.is_empty() {

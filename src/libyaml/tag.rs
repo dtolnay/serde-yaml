@@ -1,3 +1,5 @@
+use crate::libyaml::cstr;
+use std::fmt::{self, Debug};
 use std::ops::Deref;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq)]
@@ -20,5 +22,11 @@ impl Deref for Tag {
     type Target = [u8];
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl Debug for Tag {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        cstr::debug_lossy(&self.0, formatter)
     }
 }

@@ -403,6 +403,7 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
     }
 }
 
+#[derive(Debug)]
 pub(crate) enum Event {
     Alias(usize),
     Scalar(Scalar),
