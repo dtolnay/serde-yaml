@@ -895,10 +895,7 @@ fn visit_untagged_str<'de, V>(visitor: V, v: &str) -> Result<V::Value>
 where
     V: Visitor<'de>,
 {
-    if v.is_empty() {
-        return visitor.visit_unit();
-    }
-    if let Some(()) = parse_null(v.as_bytes()) {
+    if v.is_empty() || parse_null(v.as_bytes()) == Some(()) {
         return visitor.visit_unit();
     }
     if let Some(boolean) = parse_bool(v) {
