@@ -8,7 +8,7 @@ where
     T: serde::de::DeserializeOwned + Debug,
 {
     let result = serde_yaml::from_str::<T>(yaml);
-    assert_eq!(expected, format!("{}", result.unwrap_err()));
+    assert_eq!(expected, result.unwrap_err().to_string());
 }
 
 #[test]
