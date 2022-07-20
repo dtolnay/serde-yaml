@@ -931,7 +931,7 @@ where
         }
     }
     if {
-        let v = v.trim_start_matches(&['-', '+'][..]);
+        let v = v.strip_prefix(['-', '+']).unwrap_or(v);
         v.len() > 1 && v.starts_with('0') && v[1..].bytes().all(|b| b.is_ascii_digit())
     } {
         // After handling the different number encodings above if we are left
