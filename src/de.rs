@@ -597,50 +597,6 @@ impl<'a> DeserializerFromEvents<'a> {
     }
 }
 
-fn visit_scalar<'de, V>(visitor: V, scalar: &Scalar) -> Result<V::Value>
-where
-    V: Visitor<'de>,
-{
-    let v = match str::from_utf8(&scalar.value) {
-        Ok(v) => v,
-        Err(_) => {
-            return Err(de::Error::invalid_type(
-                Unexpected::Bytes(&scalar.value),
-                &visitor,
-            ))
-        }
-    };
-    if let Some(tag) = &scalar.tag {
-        if tag == Tag::BOOL {
-            match v.parse::<bool>() {
-                Ok(v) => visitor.visit_bool(v),
-                Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a boolean")),
-            }
-        } else if tag == Tag::INT {
-            match v.parse::<i64>() {
-                Ok(v) => visitor.visit_i64(v),
-                Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"an integer")),
-            }
-        } else if tag == Tag::FLOAT {
-            match v.parse::<f64>() {
-                Ok(v) => visitor.visit_f64(v),
-                Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a float")),
-            }
-        } else if tag == Tag::NULL {
-            match v {
-                "~" | "null" => visitor.visit_unit(),
-                _ => Err(de::Error::invalid_value(Unexpected::Str(v), &"null")),
-            }
-        } else {
-            visitor.visit_str(v)
-        }
-    } else if scalar.style == ScalarStyle::Plain {
-        visit_untagged_str(visitor, v)
-    } else {
-        visitor.visit_str(v)
-    }
-}
-
 struct SeqAccess<'a: 'r, 'r> {
     de: &'r mut DeserializerFromEvents<'a>,
     len: usize,
@@ -863,6 +819,50 @@ impl<'de, 'a, 'r> de::VariantAccess<'de> for UnitVariantAccess<'a, 'r> {
             Unexpected::UnitVariant,
             &"struct variant",
         ))
+    }
+}
+
+fn visit_scalar<'de, V>(visitor: V, scalar: &Scalar) -> Result<V::Value>
+where
+    V: Visitor<'de>,
+{
+    let v = match str::from_utf8(&scalar.value) {
+        Ok(v) => v,
+        Err(_) => {
+            return Err(de::Error::invalid_type(
+                Unexpected::Bytes(&scalar.value),
+                &visitor,
+            ))
+        }
+    };
+    if let Some(tag) = &scalar.tag {
+        if tag == Tag::BOOL {
+            match v.parse::<bool>() {
+                Ok(v) => visitor.visit_bool(v),
+                Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a boolean")),
+            }
+        } else if tag == Tag::INT {
+            match v.parse::<i64>() {
+                Ok(v) => visitor.visit_i64(v),
+                Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"an integer")),
+            }
+        } else if tag == Tag::FLOAT {
+            match v.parse::<f64>() {
+                Ok(v) => visitor.visit_f64(v),
+                Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a float")),
+            }
+        } else if tag == Tag::NULL {
+            match v {
+                "~" | "null" => visitor.visit_unit(),
+                _ => Err(de::Error::invalid_value(Unexpected::Str(v), &"null")),
+            }
+        } else {
+            visitor.visit_str(v)
+        }
+    } else if scalar.style == ScalarStyle::Plain {
+        visit_untagged_str(visitor, v)
+    } else {
+        visitor.visit_str(v)
     }
 }
 
