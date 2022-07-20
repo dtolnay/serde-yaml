@@ -852,7 +852,7 @@ where
                 Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a float")),
             }
         } else if tag == Tag::NULL {
-            match parse_null(v) {
+            match parse_null(v.as_bytes()) {
                 Some(()) => visitor.visit_unit(),
                 None => Err(de::Error::invalid_value(Unexpected::Str(v), &"null")),
             }
@@ -866,8 +866,8 @@ where
     }
 }
 
-fn parse_null(scalar: &str) -> Option<()> {
-    if scalar == "~" || scalar == "null" {
+fn parse_null(scalar: &[u8]) -> Option<()> {
+    if scalar == b"~" || scalar == b"null" {
         Some(())
     } else {
         None
@@ -891,7 +891,7 @@ where
     if v.is_empty() {
         return visitor.visit_unit();
     }
-    if let Some(()) = parse_null(v) {
+    if let Some(()) = parse_null(v.as_bytes()) {
         return visitor.visit_unit();
     }
     if let Some(boolean) = parse_bool(v) {
@@ -1205,7 +1205,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
                     true
                 } else if let Some(tag) = &scalar.tag {
                     if tag == Tag::NULL {
-                        if *scalar.value == *b"~" || *scalar.value == *b"null" {
+                        if let Some(()) = parse_null(&scalar.value) {
                             false
                         } else if let Ok(v) = str::from_utf8(&scalar.value) {
                             return Err(de::Error::invalid_value(Unexpected::Str(v), &"null"));
@@ -1219,7 +1219,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
                         true
                     }
                 } else {
-                    *scalar.value != *b"" && *scalar.value != *b"~" && *scalar.value != *b"null"
+                    !scalar.value.is_empty() && parse_null(&scalar.value).is_none()
                 }
             }
             Event::SequenceStart | Event::MappingStart => true,
