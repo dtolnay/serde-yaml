@@ -852,9 +852,9 @@ where
                 Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a float")),
             }
         } else if tag == Tag::NULL {
-            match v {
-                "~" | "null" => visitor.visit_unit(),
-                _ => Err(de::Error::invalid_value(Unexpected::Str(v), &"null")),
+            match parse_null(v) {
+                Some(()) => visitor.visit_unit(),
+                None => Err(de::Error::invalid_value(Unexpected::Str(v), &"null")),
             }
         } else {
             visitor.visit_str(v)
@@ -863,6 +863,14 @@ where
         visit_untagged_str(visitor, v)
     } else {
         visitor.visit_str(v)
+    }
+}
+
+fn parse_null(scalar: &str) -> Option<()> {
+    if scalar == "~" || scalar == "null" {
+        Some(())
+    } else {
+        None
     }
 }
 
@@ -883,7 +891,7 @@ where
     if v.is_empty() {
         return visitor.visit_unit();
     }
-    if v == "~" || v == "null" {
+    if let Some(()) = parse_null(v) {
         return visitor.visit_unit();
     }
     if let Some(boolean) = parse_bool(v) {
