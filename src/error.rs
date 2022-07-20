@@ -91,11 +91,7 @@ impl Error {
     /// assert_eq!(location.column(), 1);
     /// ```
     pub fn location(&self) -> Option<Location> {
-        match self.0.as_ref() {
-            ErrorImpl::Message(_, Some(pos)) => Some(Location::from_mark(pos.mark)),
-            ErrorImpl::Libyaml(err) => Some(Location::from_mark(err.mark())),
-            _ => None,
-        }
+        self.0.location()
     }
 }
 
@@ -195,6 +191,15 @@ impl de::Error for Error {
 }
 
 impl ErrorImpl {
+    fn location(&self) -> Option<Location> {
+        match self {
+            ErrorImpl::Message(_, Some(pos)) => Some(Location::from_mark(pos.mark)),
+            ErrorImpl::Libyaml(err) => Some(Location::from_mark(err.mark())),
+            ErrorImpl::Shared(err) => err.location(),
+            _ => None,
+        }
+    }
+
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match self {
             ErrorImpl::Io(err) => Some(err),
