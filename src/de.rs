@@ -1,6 +1,6 @@
 use crate::error::{self, Error, ErrorImpl, Result};
 use crate::libyaml::error::Mark;
-use crate::libyaml::parser::ScalarStyle;
+use crate::libyaml::parser::{Scalar, ScalarStyle};
 use crate::libyaml::tag::Tag;
 use crate::loader::{Document, Loader};
 use crate::path::Path;
@@ -402,7 +402,7 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
 
 pub(crate) enum Event {
     Alias(usize),
-    Scalar(Box<[u8]>, ScalarStyle, Option<Tag>),
+    Scalar(Scalar),
     SequenceStart,
     SequenceEnd,
     MappingStart,
@@ -467,7 +467,7 @@ impl<'a> DeserializerFromEvents<'a> {
 
         loop {
             match self.next_event()? {
-                Event::Alias(_) | Event::Scalar(_, _, _) => {}
+                Event::Alias(_) | Event::Scalar(_) => {}
                 Event::SequenceStart => {
                     stack.push(Nest::Sequence);
                 }
@@ -687,9 +687,9 @@ impl<'de, 'a, 'r> de::MapAccess<'de> for MapAccess<'a, 'r> {
     {
         match self.de.peek_event()? {
             Event::MappingEnd => Ok(None),
-            Event::Scalar(key, _, _) => {
+            Event::Scalar(scalar) => {
                 self.len += 1;
-                self.key = Some(key);
+                self.key = Some(&scalar.value);
                 seed.deserialize(&mut *self.de).map(Some)
             }
             _ => {
@@ -756,7 +756,7 @@ impl<'de, 'a, 'r> de::EnumAccess<'de> for EnumAccess<'a, 'r> {
             tag
         } else {
             match match self.de.next_event()? {
-                Event::Scalar(bytes, _, _) => str::from_utf8(bytes).ok(),
+                Event::Scalar(scalar) => str::from_utf8(&scalar.value).ok(),
                 _ => None,
             } {
                 Some(variant) => variant,
@@ -972,9 +972,9 @@ fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
 
     match event {
         Event::Alias(_) => unreachable!(),
-        Event::Scalar(v, style, tag) => {
+        Event::Scalar(scalar) => {
             let get_type = InvalidType { exp };
-            match visit_scalar(v, *style, tag, get_type) {
+            match visit_scalar(&scalar.value, scalar.style, &scalar.tag, get_type) {
                 Ok(void) => match void {},
                 Err(invalid_type) => invalid_type,
             }
@@ -994,7 +994,9 @@ impl<'a> DeserializerFromEvents<'a> {
         let (next, mark) = self.next_event_mark()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_scalar(visitor),
-            Event::Scalar(v, style, tag) => visit_scalar(v, *style, tag, visitor),
+            Event::Scalar(scalar) => {
+                visit_scalar(&scalar.value, scalar.style, &scalar.tag, visitor)
+            }
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
@@ -1011,7 +1013,9 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
         let (next, mark) = self.next_event_mark()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_any(visitor),
-            Event::Scalar(v, style, tag) => visit_scalar(v, *style, tag, visitor),
+            Event::Scalar(scalar) => {
+                visit_scalar(&scalar.value, scalar.style, &scalar.tag, visitor)
+            }
             Event::SequenceStart => self.visit_sequence(visitor, mark),
             Event::MappingStart => self.visit_mapping(visitor, mark),
             Event::SequenceEnd => panic!("unexpected end of sequence"),
@@ -1126,8 +1130,8 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     {
         let (next, mark) = self.next_event_mark()?;
         match next {
-            Event::Scalar(v, _, _) => {
-                if let Ok(v) = str::from_utf8(v) {
+            Event::Scalar(scalar) => {
+                if let Ok(v) = str::from_utf8(&scalar.value) {
                     visitor.visit_str(v)
                 } else {
                     Err(invalid_type(next, &visitor))
@@ -1170,23 +1174,26 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
                 *self.pos += 1;
                 return self.jump(&mut pos)?.deserialize_option(visitor);
             }
-            Event::Scalar(v, style, tag) => {
-                if *style != ScalarStyle::Plain {
+            Event::Scalar(scalar) => {
+                if scalar.style != ScalarStyle::Plain {
                     true
-                } else if let Some(tag) = tag {
+                } else if let Some(tag) = &scalar.tag {
                     if tag == Tag::NULL {
-                        if **v == *b"~" || **v == *b"null" {
+                        if *scalar.value == *b"~" || *scalar.value == *b"null" {
                             false
-                        } else if let Ok(v) = str::from_utf8(v) {
+                        } else if let Ok(v) = str::from_utf8(&scalar.value) {
                             return Err(de::Error::invalid_value(Unexpected::Str(v), &"null"));
                         } else {
-                            return Err(de::Error::invalid_value(Unexpected::Bytes(v), &"null"));
+                            return Err(de::Error::invalid_value(
+                                Unexpected::Bytes(&scalar.value),
+                                &"null",
+                            ));
                         }
                     } else {
                         true
                     }
                 } else {
-                    **v != *b"" && **v != *b"~" && **v != *b"null"
+                    *scalar.value != *b"" && *scalar.value != *b"~" && *scalar.value != *b"null"
                 }
             }
             Event::SequenceStart | Event::MappingStart => true,
@@ -1308,8 +1315,8 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
                 self.jump(&mut pos)?
                     .deserialize_enum(name, variants, visitor)
             }
-            Event::Scalar(_, _, tag) => {
-                if let Some((b'!', tag)) = tag.as_ref().and_then(|tag| tag.split_first()) {
+            Event::Scalar(scalar) => {
+                if let Some((b'!', tag)) = scalar.tag.as_ref().and_then(|tag| tag.split_first()) {
                     if let Some(tag) = variants.iter().find(|v| v.as_bytes() == tag) {
                         return visitor.visit_enum(EnumAccess {
                             de: self,

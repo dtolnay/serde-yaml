@@ -72,13 +72,13 @@ impl<'input> Loader<'input> {
                         return Some(document);
                     }
                 },
-                YamlEvent::Scalar(scalar) => {
-                    if let Some(anchor) = scalar.anchor {
+                YamlEvent::Scalar(mut scalar) => {
+                    if let Some(anchor) = scalar.anchor.take() {
                         let id = anchors.len();
                         anchors.insert(anchor, id);
                         document.aliases.insert(id, document.events.len());
                     }
-                    Event::Scalar(scalar.value, scalar.style, scalar.tag)
+                    Event::Scalar(scalar)
                 }
                 YamlEvent::SequenceStart(sequence_start) => {
                     if let Some(anchor) = sequence_start.anchor {
