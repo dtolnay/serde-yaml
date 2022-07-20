@@ -32,7 +32,6 @@ pub(crate) enum Event {
     MappingEnd,
 }
 
-#[derive(Debug)]
 pub(crate) struct Scalar {
     pub anchor: Option<Anchor>,
     pub tag: Option<Tag>,
@@ -142,6 +141,33 @@ unsafe fn optional_tag(tag: *const u8) -> Option<Tag> {
     let ptr = NonNull::new(tag as *mut i8)?;
     let cstr = CStr::from_ptr(ptr);
     Some(Tag(Box::from(cstr.to_bytes())))
+}
+
+impl Debug for Scalar {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        let Scalar {
+            anchor,
+            tag,
+            value,
+            style,
+        } = self;
+
+        struct LossySlice<'a>(&'a [u8]);
+
+        impl<'a> Debug for LossySlice<'a> {
+            fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                cstr::debug_lossy(self.0, formatter)
+            }
+        }
+
+        formatter
+            .debug_struct("Scalar")
+            .field("anchor", anchor)
+            .field("tag", tag)
+            .field("value", &LossySlice(value))
+            .field("style", style)
+            .finish()
+    }
 }
 
 impl Debug for Anchor {
