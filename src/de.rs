@@ -110,10 +110,7 @@ impl<'a> Deserializer<'a> {
         }
 
         let mut loader = Loader::new(self.progress)?;
-        let document = match loader.next_document()? {
-            Some(document) => document,
-            None => return Err(error::end_of_stream()),
-        };
+        let document = loader.next_document().ok_or_else(error::end_of_stream)?;
         let mut pos = 0;
         let t = f(&mut DeserializerFromEvents {
             document: &document,
@@ -121,7 +118,7 @@ impl<'a> Deserializer<'a> {
             path: Path::Root,
             remaining_depth: 128,
         })?;
-        if let Ok(None) = loader.next_document() {
+        if loader.next_document().is_none() {
             Ok(t)
         } else {
             Err(error::more_than_one_document())
@@ -135,19 +132,10 @@ impl<'de> Iterator for Deserializer<'de> {
     fn next(&mut self) -> Option<Self> {
         match &mut self.progress {
             Progress::Iterable(loader) => {
-                return match loader.next_document() {
-                    Ok(None) => None,
-                    Ok(Some(document)) => Some(Deserializer {
-                        progress: Progress::Document(document),
-                    }),
-                    Err(err) => {
-                        let fail = err.shared();
-                        self.progress = Progress::Fail(Arc::clone(&fail));
-                        Some(Deserializer {
-                            progress: Progress::Fail(fail),
-                        })
-                    }
-                };
+                let document = loader.next_document()?;
+                return Some(Deserializer {
+                    progress: Progress::Document(document),
+                });
             }
             Progress::Document(_) => return None,
             Progress::Fail(err) => {
@@ -436,7 +424,10 @@ impl<'a> DeserializerFromEvents<'a> {
     fn peek_event_mark(&self) -> Result<(&'a Event, Mark)> {
         match self.document.events.get(*self.pos) {
             Some((event, mark)) => Ok((event, *mark)),
-            None => Err(error::end_of_stream()),
+            None => Err(match &self.document.error {
+                Some(parse_error) => error::shared(Arc::clone(parse_error)),
+                None => error::end_of_stream(),
+            }),
         }
     }
 
@@ -445,13 +436,10 @@ impl<'a> DeserializerFromEvents<'a> {
     }
 
     fn next_event_mark(&mut self) -> Result<(&'a Event, Mark)> {
-        match self.document.events.get(*self.pos) {
-            Some((event, mark)) => {
-                *self.pos += 1;
-                Ok((event, *mark))
-            }
-            None => Err(error::end_of_stream()),
-        }
+        self.peek_event_mark().map(|(event, mark)| {
+            *self.pos += 1;
+            (event, mark)
+        })
     }
 
     fn jump<'b>(&'b self, pos: &'b mut usize) -> Result<DeserializerFromEvents<'b>> {

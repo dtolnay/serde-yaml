@@ -1,9 +1,10 @@
 use crate::de::{Event, Progress};
-use crate::error::{self, Result};
+use crate::error::{self, Error, ErrorImpl, Result};
 use crate::libyaml::error::Mark;
 use crate::libyaml::parser::{Event as YamlEvent, Parser};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 pub(crate) struct Loader<'input> {
     parser: Option<Parser<'input>>,
@@ -11,6 +12,7 @@ pub(crate) struct Loader<'input> {
 
 pub(crate) struct Document {
     pub events: Vec<(Event, Mark)>,
+    pub error: Option<Arc<ErrorImpl>>,
     /// Map from alias id to index in events.
     pub aliases: BTreeMap<usize, usize>,
 }
@@ -34,31 +36,41 @@ impl<'input> Loader<'input> {
         })
     }
 
-    pub fn next_document(&mut self) -> Result<Option<Document>> {
+    pub fn next_document(&mut self) -> Option<Document> {
         let parser = match &mut self.parser {
             Some(parser) => parser,
-            None => return Ok(None),
+            None => return None,
         };
 
         let mut anchors = BTreeMap::new();
         let mut document = Document {
             events: Vec::new(),
+            error: None,
             aliases: BTreeMap::new(),
         };
 
         loop {
-            let (event, mark) = parser.next()?;
+            let (event, mark) = match parser.next() {
+                Ok((event, mark)) => (event, mark),
+                Err(err) => {
+                    document.error = Some(Error::from(err).shared());
+                    return Some(document);
+                }
+            };
             let event = match event {
                 YamlEvent::StreamStart => continue,
                 YamlEvent::StreamEnd => {
                     self.parser = None;
-                    return Ok(None);
+                    return None;
                 }
                 YamlEvent::DocumentStart => continue,
-                YamlEvent::DocumentEnd => return Ok(Some(document)),
+                YamlEvent::DocumentEnd => return Some(document),
                 YamlEvent::Alias(alias) => match anchors.get(&alias) {
                     Some(id) => Event::Alias(*id),
-                    None => return Err(error::unknown_anchor(mark)),
+                    None => {
+                        document.error = Some(error::unknown_anchor(mark).shared());
+                        return Some(document);
+                    }
                 },
                 YamlEvent::Scalar(scalar) => {
                     if let Some(anchor) = scalar.anchor {
