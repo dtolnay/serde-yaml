@@ -434,8 +434,8 @@ impl<'a> DeserializerFromEvents<'a> {
     }
 
     fn peek_event_mark(&self) -> Result<(&'a Event, Mark)> {
-        match self.document.event(*self.pos) {
-            Some((event, mark)) => Ok((event, mark)),
+        match self.document.events.get(*self.pos) {
+            Some((event, mark)) => Ok((event, *mark)),
             None => Err(error::end_of_stream()),
         }
     }
@@ -453,16 +453,16 @@ impl<'a> DeserializerFromEvents<'a> {
     }
 
     fn opt_next_event_mark(&mut self) -> Option<(&'a Event, Mark)> {
-        self.document.event(*self.pos).map(|(event, mark)| {
+        self.document.events.get(*self.pos).map(|(event, mark)| {
             *self.pos += 1;
-            (event, mark)
+            (event, *mark)
         })
     }
 
     fn jump<'b>(&'b self, pos: &'b mut usize) -> Result<DeserializerFromEvents<'b>> {
-        match self.document.alias(*pos) {
+        match self.document.aliases.get(pos) {
             Some(found) => {
-                *pos = found;
+                *pos = *found;
                 Ok(DeserializerFromEvents {
                     document: self.document,
                     pos,

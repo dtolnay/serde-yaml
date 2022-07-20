@@ -10,9 +10,9 @@ pub(crate) struct Loader<'input> {
 }
 
 pub(crate) struct Document {
-    events: Vec<(Event, Mark)>,
+    pub events: Vec<(Event, Mark)>,
     /// Map from alias id to index in events.
-    aliases: BTreeMap<usize, usize>,
+    pub aliases: BTreeMap<usize, usize>,
 }
 
 impl<'input> Loader<'input> {
@@ -89,15 +89,5 @@ impl<'input> Loader<'input> {
             };
             document.events.push((event, mark));
         }
-    }
-}
-
-impl Document {
-    pub fn event(&self, pos: usize) -> Option<(&Event, Mark)> {
-        self.events.get(pos).map(|(event, mark)| (event, *mark))
-    }
-
-    pub fn alias(&self, id: usize) -> Option<usize> {
-        self.aliases.get(&id).copied()
     }
 }
