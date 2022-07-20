@@ -200,6 +200,11 @@ fn test_i128_big() {
         -9223372036854775809
     "};
     assert_eq!(expected, serde_yaml::from_str::<i128>(yaml).unwrap());
+
+    let octal = indoc! {"
+        -0o1000000000000000000001
+    "};
+    assert_eq!(expected, serde_yaml::from_str::<i128>(octal).unwrap());
 }
 
 #[test]
@@ -209,6 +214,11 @@ fn test_u128_big() {
         18446744073709551616
     "};
     assert_eq!(expected, serde_yaml::from_str::<u128>(yaml).unwrap());
+
+    let octal = indoc! {"
+        0o2000000000000000000000
+    "};
+    assert_eq!(expected, serde_yaml::from_str::<u128>(octal).unwrap());
 }
 
 #[test]
