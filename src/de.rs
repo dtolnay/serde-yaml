@@ -914,6 +914,50 @@ fn parse_unsigned_int<T>(
     from_str_radix(unpositive, 10).ok()
 }
 
+fn parse_signed_int<T>(
+    scalar: &str,
+    from_str_radix: fn(&str, radix: u32) -> Result<T, ParseIntError>,
+) -> Option<T> {
+    let unpositive = scalar.strip_prefix('+').unwrap_or(scalar);
+    if let Some(rest) = unpositive.strip_prefix("0x") {
+        if let Ok(int) = from_str_radix(rest, 16) {
+            return Some(int);
+        }
+    }
+    if let Some(rest) = scalar.strip_prefix("-0x") {
+        let negative = format!("-{}", rest);
+        if let Ok(int) = from_str_radix(&negative, 16) {
+            return Some(int);
+        }
+    }
+    if let Some(rest) = unpositive.strip_prefix("0o") {
+        if let Ok(int) = from_str_radix(rest, 8) {
+            return Some(int);
+        }
+    }
+    if let Some(rest) = scalar.strip_prefix("-0o") {
+        let negative = format!("-{}", rest);
+        if let Ok(int) = from_str_radix(&negative, 8) {
+            return Some(int);
+        }
+    }
+    if let Some(rest) = unpositive.strip_prefix("0b") {
+        if let Ok(int) = from_str_radix(rest, 2) {
+            return Some(int);
+        }
+    }
+    if let Some(rest) = scalar.strip_prefix("-0b") {
+        let negative = format!("-{}", rest);
+        if let Ok(int) = from_str_radix(&negative, 2) {
+            return Some(int);
+        }
+    }
+    if digits_but_not_number(scalar) {
+        return None;
+    }
+    from_str_radix(unpositive, 10).ok()
+}
+
 fn parse_negative_int<T>(
     scalar: &str,
     from_str_radix: fn(&str, radix: u32) -> Result<T, ParseIntError>,
@@ -1092,84 +1136,159 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        self.deserialize_scalar(visitor)
+        self.deserialize_i64(visitor)
     }
 
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_scalar(visitor)
+        self.deserialize_i64(visitor)
     }
 
     fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_scalar(visitor)
+        self.deserialize_i64(visitor)
     }
 
     fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_scalar(visitor)
+        let (next, mark) = self.next_event_mark()?;
+        loop {
+            match next {
+                Event::Alias(mut pos) => break self.jump(&mut pos)?.deserialize_i64(visitor),
+                Event::Scalar(scalar) if scalar.style == ScalarStyle::Plain => {
+                    if let Ok(value) = str::from_utf8(&scalar.value) {
+                        if let Some(int) = parse_signed_int(value, i64::from_str_radix) {
+                            break visitor.visit_i64(int);
+                        }
+                    }
+                }
+                _ => {}
+            }
+            break Err(invalid_type(next, &visitor));
+        }
+        .map_err(|err| error::fix_mark(err, mark, self.path))
     }
 
     fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_scalar(visitor)
+        let (next, mark) = self.next_event_mark()?;
+        loop {
+            match next {
+                Event::Alias(mut pos) => break self.jump(&mut pos)?.deserialize_i128(visitor),
+                Event::Scalar(scalar) if scalar.style == ScalarStyle::Plain => {
+                    if let Ok(value) = str::from_utf8(&scalar.value) {
+                        if let Some(int) = parse_signed_int(value, i128::from_str_radix) {
+                            break visitor.visit_i128(int);
+                        }
+                    }
+                }
+                _ => {}
+            }
+            break Err(invalid_type(next, &visitor));
+        }
+        .map_err(|err| error::fix_mark(err, mark, self.path))
     }
 
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_scalar(visitor)
+        self.deserialize_u64(visitor)
     }
 
     fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_scalar(visitor)
+        self.deserialize_u64(visitor)
     }
 
     fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_scalar(visitor)
+        self.deserialize_u64(visitor)
     }
 
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_scalar(visitor)
+        let (next, mark) = self.next_event_mark()?;
+        loop {
+            match next {
+                Event::Alias(mut pos) => break self.jump(&mut pos)?.deserialize_u64(visitor),
+                Event::Scalar(scalar) if scalar.style == ScalarStyle::Plain => {
+                    if let Ok(value) = str::from_utf8(&scalar.value) {
+                        if let Some(int) = parse_unsigned_int(value, u64::from_str_radix) {
+                            break visitor.visit_u64(int);
+                        }
+                    }
+                }
+                _ => {}
+            }
+            break Err(invalid_type(next, &visitor));
+        }
+        .map_err(|err| error::fix_mark(err, mark, self.path))
     }
 
     fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_scalar(visitor)
+        let (next, mark) = self.next_event_mark()?;
+        loop {
+            match next {
+                Event::Alias(mut pos) => break self.jump(&mut pos)?.deserialize_u128(visitor),
+                Event::Scalar(scalar) if scalar.style == ScalarStyle::Plain => {
+                    if let Ok(value) = str::from_utf8(&scalar.value) {
+                        if let Some(int) = parse_unsigned_int(value, u128::from_str_radix) {
+                            break visitor.visit_u128(int);
+                        }
+                    }
+                }
+                _ => {}
+            }
+            break Err(invalid_type(next, &visitor));
+        }
+        .map_err(|err| error::fix_mark(err, mark, self.path))
     }
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_scalar(visitor)
+        self.deserialize_f64(visitor)
     }
 
     fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_scalar(visitor)
+        let (next, mark) = self.next_event_mark()?;
+        loop {
+            match next {
+                Event::Alias(mut pos) => break self.jump(&mut pos)?.deserialize_f64(visitor),
+                Event::Scalar(scalar) if scalar.style == ScalarStyle::Plain => {
+                    if let Ok(value) = str::from_utf8(&scalar.value) {
+                        if let Some(float) = parse_f64(value) {
+                            break visitor.visit_f64(float);
+                        }
+                    }
+                }
+                _ => {}
+            }
+            break Err(invalid_type(next, &visitor));
+        }
+        .map_err(|err| error::fix_mark(err, mark, self.path))
     }
 
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
