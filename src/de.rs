@@ -973,14 +973,13 @@ where
     if digits_but_not_number(v) {
         return visitor.visit_str(v);
     }
-    match v.strip_prefix('+').unwrap_or(v) {
-        ".inf" | ".Inf" | ".INF" => return visitor.visit_f64(f64::INFINITY),
-        _ => {}
+    if let ".inf" | ".Inf" | ".INF" = v.strip_prefix('+').unwrap_or(v) {
+         return visitor.visit_f64(f64::INFINITY);
     }
-    if v == "-.inf" || v == "-.Inf" || v == "-.INF" {
+    if let "-.inf" | "-.Inf" | "-.INF" = v {
         return visitor.visit_f64(f64::NEG_INFINITY);
     }
-    if v == ".nan" || v == ".NaN" || v == ".NAN" {
+    if let ".nan" | ".NaN" | ".NAN" = v {
         return visitor.visit_f64(f64::NAN);
     }
     if let Ok(n) = v.parse::<f64>() {
