@@ -941,6 +941,25 @@ fn parse_negative_int<T>(
     from_str_radix(scalar, 10).ok()
 }
 
+fn parse_f64(scalar: &str) -> Option<f64> {
+    let unpositive = scalar.strip_prefix('+').unwrap_or(scalar);
+    if let ".inf" | ".Inf" | ".INF" = unpositive {
+        return Some(f64::INFINITY);
+    }
+    if let "-.inf" | "-.Inf" | "-.INF" = scalar {
+        return Some(f64::NEG_INFINITY);
+    }
+    if let ".nan" | ".NaN" | ".NAN" = scalar {
+        return Some(f64::NAN);
+    }
+    if let Ok(float) = unpositive.parse::<f64>() {
+        if float.is_finite() {
+            return Some(float);
+        }
+    }
+    None
+}
+
 fn digits_but_not_number(scalar: &str) -> bool {
     // Leading zero(s) followed by numeric characters is a string according to
     // the YAML 1.2 spec. https://yaml.org/spec/1.2/spec.html#id2761292
@@ -973,19 +992,8 @@ where
     if digits_but_not_number(v) {
         return visitor.visit_str(v);
     }
-    if let ".inf" | ".Inf" | ".INF" = v.strip_prefix('+').unwrap_or(v) {
-         return visitor.visit_f64(f64::INFINITY);
-    }
-    if let "-.inf" | "-.Inf" | "-.INF" = v {
-        return visitor.visit_f64(f64::NEG_INFINITY);
-    }
-    if let ".nan" | ".NaN" | ".NAN" = v {
-        return visitor.visit_f64(f64::NAN);
-    }
-    if let Ok(n) = v.parse::<f64>() {
-        if n.is_finite() {
-            return visitor.visit_f64(n);
-        }
+    if let Some(float) = parse_f64(v) {
+        return visitor.visit_f64(float);
     }
     visitor.visit_str(v)
 }
