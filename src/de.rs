@@ -975,7 +975,7 @@ where
     }
     match v.strip_prefix('+').unwrap_or(v) {
         ".inf" | ".Inf" | ".INF" => return visitor.visit_f64(f64::INFINITY),
-        _ => (),
+        _ => {}
     }
     if v == "-.inf" || v == "-.Inf" || v == "-.INF" {
         return visitor.visit_f64(f64::NEG_INFINITY);
