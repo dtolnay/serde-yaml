@@ -973,7 +973,7 @@ where
     if digits_but_not_number(v) {
         return visitor.visit_str(v);
     }
-    match v.trim_start_matches('+') {
+    match v.strip_prefix('+').unwrap_or(v) {
         ".inf" | ".Inf" | ".INF" => return visitor.visit_f64(f64::INFINITY),
         _ => (),
     }
