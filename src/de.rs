@@ -448,10 +448,6 @@ impl<'a> DeserializerFromEvents<'a> {
         self.opt_next_event_mark().ok_or_else(error::end_of_stream)
     }
 
-    fn opt_next_event(&mut self) -> Option<&'a Event> {
-        self.opt_next_event_mark().map(|(event, _mark)| event)
-    }
-
     fn opt_next_event_mark(&mut self) -> Option<(&'a Event, Mark)> {
         self.document.events.get(*self.pos).map(|(event, mark)| {
             *self.pos += 1;
@@ -474,7 +470,7 @@ impl<'a> DeserializerFromEvents<'a> {
         }
     }
 
-    fn ignore_any(&mut self) {
+    fn ignore_any(&mut self) -> Result<()> {
         enum Nest {
             Sequence,
             Mapping,
@@ -482,8 +478,8 @@ impl<'a> DeserializerFromEvents<'a> {
 
         let mut stack = Vec::new();
 
-        while let Some(event) = self.opt_next_event() {
-            match event {
+        loop {
+            match self.next_event()? {
                 Event::Alias(_) | Event::Scalar(_, _, _) => {}
                 Event::SequenceStart => {
                     stack.push(Nest::Sequence);
@@ -505,12 +501,8 @@ impl<'a> DeserializerFromEvents<'a> {
                 },
             }
             if stack.is_empty() {
-                return;
+                return Ok(());
             }
-        }
-
-        if !stack.is_empty() {
-            panic!("missing end event");
         }
     }
 
@@ -1371,7 +1363,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
     where
         V: Visitor<'de>,
     {
-        self.ignore_any();
+        self.ignore_any()?;
         visitor.visit_unit()
     }
 }
