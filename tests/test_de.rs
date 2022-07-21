@@ -34,6 +34,17 @@ where
 }
 
 #[test]
+fn test_borrowed() {
+    let yaml = indoc! {"
+        - first
+        - second
+        - third
+    "};
+    let expected = vec!["first", "second", "third"];
+    test_de(yaml, &expected);
+}
+
+#[test]
 fn test_alias() {
     let yaml = indoc! {"
         first:
