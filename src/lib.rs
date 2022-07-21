@@ -71,6 +71,7 @@
 #![allow(
     // buggy
     clippy::iter_not_returning_iterator, // https://github.com/rust-lang/rust-clippy/issues/8285
+    clippy::ptr_arg, // https://github.com/rust-lang/rust-clippy/issues/9218
     clippy::question_mark, // https://github.com/rust-lang/rust-clippy/issues/7859
     // private Deserializer::next
     clippy::should_implement_trait,
