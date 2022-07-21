@@ -841,19 +841,19 @@ where
     };
     if let Some(tag) = &scalar.tag {
         if tag == Tag::BOOL {
-            match v.parse::<bool>() {
-                Ok(v) => visitor.visit_bool(v),
-                Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a boolean")),
+            match parse_bool(v) {
+                Some(v) => visitor.visit_bool(v),
+                None => Err(de::Error::invalid_value(Unexpected::Str(v), &"a boolean")),
             }
         } else if tag == Tag::INT {
-            match v.parse::<i64>() {
-                Ok(v) => visitor.visit_i64(v),
+            match visit_int(visitor, v) {
+                Ok(result) => result,
                 Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"an integer")),
             }
         } else if tag == Tag::FLOAT {
-            match v.parse::<f64>() {
-                Ok(v) => visitor.visit_f64(v),
-                Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"a float")),
+            match parse_f64(v) {
+                Some(v) => visitor.visit_f64(v),
+                None => Err(de::Error::invalid_value(Unexpected::Str(v), &"a float")),
             }
         } else if tag == Tag::NULL {
             match parse_null(v.as_bytes()) {
@@ -1012,6 +1012,25 @@ fn digits_but_not_number(scalar: &str) -> bool {
     scalar.len() > 1 && scalar.starts_with('0') && scalar[1..].bytes().all(|b| b.is_ascii_digit())
 }
 
+fn visit_int<'de, V>(visitor: V, v: &str) -> Result<Result<V::Value>, V>
+where
+    V: Visitor<'de>,
+{
+    if let Some(int) = parse_unsigned_int(v, u64::from_str_radix) {
+        return Ok(visitor.visit_u64(int));
+    }
+    if let Some(int) = parse_negative_int(v, i64::from_str_radix) {
+        return Ok(visitor.visit_i64(int));
+    }
+    if let Some(int) = parse_unsigned_int(v, u128::from_str_radix) {
+        return Ok(visitor.visit_u128(int));
+    }
+    if let Some(int) = parse_negative_int(v, i128::from_str_radix) {
+        return Ok(visitor.visit_i128(int));
+    }
+    Err(visitor)
+}
+
 fn visit_untagged_str<'de, V>(visitor: V, v: &str) -> Result<V::Value>
 where
     V: Visitor<'de>,
@@ -1022,18 +1041,10 @@ where
     if let Some(boolean) = parse_bool(v) {
         return visitor.visit_bool(boolean);
     }
-    if let Some(int) = parse_unsigned_int(v, u64::from_str_radix) {
-        return visitor.visit_u64(int);
-    }
-    if let Some(int) = parse_negative_int(v, i64::from_str_radix) {
-        return visitor.visit_i64(int);
-    }
-    if let Some(int) = parse_unsigned_int(v, u128::from_str_radix) {
-        return visitor.visit_u128(int);
-    }
-    if let Some(int) = parse_negative_int(v, i128::from_str_radix) {
-        return visitor.visit_i128(int);
-    }
+    let visitor = match visit_int(visitor, v) {
+        Ok(result) => return result,
+        Err(visitor) => visitor,
+    };
     if digits_but_not_number(v) {
         return visitor.visit_str(v);
     }
