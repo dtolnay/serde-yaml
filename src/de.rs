@@ -1590,9 +1590,9 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
 /// type.
 ///
 /// YAML currently does not support zero-copy deserialization.
-pub fn from_str<T>(s: &str) -> Result<T>
+pub fn from_str<'de, T>(s: &'de str) -> Result<T>
 where
-    T: DeserializeOwned,
+    T: Deserialize<'de>,
 {
     from_str_seed(s, PhantomData)
 }
@@ -1608,9 +1608,9 @@ where
 /// type.
 ///
 /// YAML currently does not support zero-copy deserialization.
-pub fn from_str_seed<T, S>(s: &str, seed: S) -> Result<T>
+pub fn from_str_seed<'de, T, S>(s: &'de str, seed: S) -> Result<T>
 where
-    S: for<'de> DeserializeSeed<'de, Value = T>,
+    S: DeserializeSeed<'de, Value = T>,
 {
     seed.deserialize(Deserializer::from_str(s))
 }
@@ -1660,9 +1660,9 @@ where
 /// type.
 ///
 /// YAML currently does not support zero-copy deserialization.
-pub fn from_slice<T>(v: &[u8]) -> Result<T>
+pub fn from_slice<'de, T>(v: &'de [u8]) -> Result<T>
 where
-    T: DeserializeOwned,
+    T: Deserialize<'de>,
 {
     from_slice_seed(v, PhantomData)
 }
@@ -1678,9 +1678,9 @@ where
 /// type.
 ///
 /// YAML currently does not support zero-copy deserialization.
-pub fn from_slice_seed<T, S>(v: &[u8], seed: S) -> Result<T>
+pub fn from_slice_seed<'de, T, S>(v: &'de [u8], seed: S) -> Result<T>
 where
-    S: for<'de> DeserializeSeed<'de, Value = T>,
+    S: DeserializeSeed<'de, Value = T>,
 {
     seed.deserialize(Deserializer::from_slice(v))
 }

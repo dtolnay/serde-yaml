@@ -10,9 +10,9 @@ use serde_yaml::Value;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
-fn test_de<T>(yaml: &str, expected: &T)
+fn test_de<'de, T>(yaml: &'de str, expected: &T)
 where
-    T: serde::de::DeserializeOwned + PartialEq + Debug,
+    T: serde::de::Deserialize<'de> + PartialEq + Debug,
 {
     let deserialized: T = serde_yaml::from_str(yaml).unwrap();
     assert_eq!(*expected, deserialized);
@@ -21,10 +21,10 @@ where
     serde_yaml::from_str::<serde::de::IgnoredAny>(yaml).unwrap();
 }
 
-fn test_de_seed<T, S>(yaml: &str, seed: S, expected: &T)
+fn test_de_seed<'de, T, S>(yaml: &'de str, seed: S, expected: &T)
 where
     T: PartialEq + Debug,
-    S: for<'de> serde::de::DeserializeSeed<'de, Value = T>,
+    S: serde::de::DeserializeSeed<'de, Value = T>,
 {
     let deserialized: T = serde_yaml::seed::from_str_seed(yaml, seed).unwrap();
     assert_eq!(*expected, deserialized);
