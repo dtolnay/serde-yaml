@@ -834,7 +834,7 @@ impl<'de, 'document, 'variant> de::VariantAccess<'de>
     }
 }
 
-fn visit_scalar<'de, V>(visitor: V, scalar: &Scalar) -> Result<V::Value>
+fn visit_scalar<'de, V>(visitor: V, scalar: &Scalar<'de>) -> Result<V::Value>
 where
     V: Visitor<'de>,
 {
@@ -849,33 +849,50 @@ where
     };
     if let Some(tag) = &scalar.tag {
         if tag == Tag::BOOL {
-            match parse_bool(v) {
+            return match parse_bool(v) {
                 Some(v) => visitor.visit_bool(v),
                 None => Err(de::Error::invalid_value(Unexpected::Str(v), &"a boolean")),
-            }
+            };
         } else if tag == Tag::INT {
-            match visit_int(visitor, v) {
+            return match visit_int(visitor, v) {
                 Ok(result) => result,
                 Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"an integer")),
-            }
+            };
         } else if tag == Tag::FLOAT {
-            match parse_f64(v) {
+            return match parse_f64(v) {
                 Some(v) => visitor.visit_f64(v),
                 None => Err(de::Error::invalid_value(Unexpected::Str(v), &"a float")),
-            }
+            };
         } else if tag == Tag::NULL {
-            match parse_null(v.as_bytes()) {
+            return match parse_null(v.as_bytes()) {
                 Some(()) => visitor.visit_unit(),
                 None => Err(de::Error::invalid_value(Unexpected::Str(v), &"null")),
-            }
-        } else {
-            visitor.visit_str(v)
+            };
         }
     } else if scalar.style == ScalarStyle::Plain {
-        visit_untagged_str(visitor, v)
+        return visit_untagged_scalar(visitor, scalar, v);
+    }
+    if let Some(borrowed) = parse_borrowed_str(scalar, v) {
+        visitor.visit_borrowed_str(borrowed)
     } else {
         visitor.visit_str(v)
     }
+}
+
+fn parse_borrowed_str<'de>(scalar: &Scalar<'de>, utf8_value: &str) -> Option<&'de str> {
+    let borrowed_repr = scalar.repr?;
+    let expected_offset = match scalar.style {
+        ScalarStyle::Plain => 0,
+        ScalarStyle::SingleQuoted | ScalarStyle::DoubleQuoted => 1,
+        ScalarStyle::Literal | ScalarStyle::Folded => return None,
+    };
+    let expected_end = borrowed_repr.len().checked_sub(expected_offset)?;
+    let expected_start = expected_end.checked_sub(utf8_value.len())?;
+    let borrowed_bytes = borrowed_repr.get(expected_start..expected_end)?;
+    if borrowed_bytes == utf8_value.as_bytes() {
+        return Some(unsafe { str::from_utf8_unchecked(borrowed_bytes) });
+    }
+    None
 }
 
 fn parse_null(scalar: &[u8]) -> Option<()> {
@@ -1039,7 +1056,7 @@ where
     Err(visitor)
 }
 
-fn visit_untagged_str<'de, V>(visitor: V, v: &str) -> Result<V::Value>
+fn visit_untagged_scalar<'de, V>(visitor: V, scalar: &Scalar<'de>, v: &str) -> Result<V::Value>
 where
     V: Visitor<'de>,
 {
@@ -1053,13 +1070,16 @@ where
         Ok(result) => return result,
         Err(visitor) => visitor,
     };
-    if digits_but_not_number(v) {
-        return visitor.visit_str(v);
+    if !digits_but_not_number(v) {
+        if let Some(float) = parse_f64(v) {
+            return visitor.visit_f64(float);
+        }
     }
-    if let Some(float) = parse_f64(v) {
-        return visitor.visit_f64(float);
+    if let Some(borrowed) = parse_borrowed_str(scalar, v) {
+        visitor.visit_borrowed_str(borrowed)
+    } else {
+        visitor.visit_str(v)
     }
-    visitor.visit_str(v)
 }
 
 fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
@@ -1325,7 +1345,11 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
         match next {
             Event::Scalar(scalar) => {
                 if let Ok(v) = str::from_utf8(&scalar.value) {
-                    visitor.visit_str(v)
+                    if let Some(borrowed) = parse_borrowed_str(scalar, v) {
+                        visitor.visit_borrowed_str(borrowed)
+                    } else {
+                        visitor.visit_str(v)
+                    }
                 } else {
                     Err(invalid_type(next, &visitor))
                 }
