@@ -36,11 +36,11 @@ where
 #[test]
 fn test_borrowed() {
     let yaml = indoc! {"
-        - first
-        - second
-        - third
+        - plain
+        - 'single quoted'
+        - \"double quoted\"
     "};
-    let expected = vec!["first", "second", "third"];
+    let expected = vec!["plain", "single quoted", "double quoted"];
     test_de(yaml, &expected);
 }
 
