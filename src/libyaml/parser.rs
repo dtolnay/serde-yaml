@@ -67,7 +67,7 @@ impl<'input> Parser<'input> {
         let owned = Owned::<ParserPinned>::new_uninit();
         let pin = unsafe {
             let parser = addr_of_mut!((*owned.ptr).sys);
-            if sys::yaml_parser_initialize(parser) == 0 {
+            if sys::yaml_parser_initialize(parser).fail {
                 panic!("malloc error: {}", Error::parse_error(parser));
             }
             sys::yaml_parser_set_encoding(parser, sys::YAML_UTF8_ENCODING);
@@ -83,7 +83,7 @@ impl<'input> Parser<'input> {
         unsafe {
             let parser = addr_of_mut!((*self.pin.ptr).sys);
             let event = event.as_mut_ptr();
-            if sys::yaml_parser_parse(parser, event) == 0 {
+            if sys::yaml_parser_parse(parser, event).fail {
                 return Err(Error::parse_error(parser));
             }
             let ret = convert_event(&*event, &(*self.pin.ptr).input);

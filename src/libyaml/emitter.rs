@@ -50,13 +50,13 @@ impl<'a> Emitter<'a> {
         let owned = Owned::<EmitterPinned>::new_uninit();
         let pin = unsafe {
             let emitter = addr_of_mut!((*owned.ptr).sys);
-            if sys::yaml_emitter_initialize(emitter) == 0 {
+            if sys::yaml_emitter_initialize(emitter).fail {
                 panic!("malloc error: {}", libyaml::Error::emit_error(emitter));
             }
-            sys::yaml_emitter_set_unicode(emitter, 1);
+            sys::yaml_emitter_set_unicode(emitter, true);
             addr_of_mut!((*owned.ptr).write).write(write);
             addr_of_mut!((*owned.ptr).write_error).write(None);
-            sys::yaml_emitter_set_output(emitter, Some(write_handler), owned.ptr.cast());
+            sys::yaml_emitter_set_output(emitter, write_handler, owned.ptr.cast());
             Owned::assume_init(owned)
         };
         Emitter { pin }
@@ -76,7 +76,7 @@ impl<'a> Emitter<'a> {
                     let version_directive = ptr::null_mut();
                     let tag_directives_start = ptr::null_mut();
                     let tag_directives_end = ptr::null_mut();
-                    let implicit = 1;
+                    let implicit = true;
                     sys::yaml_document_start_event_initialize(
                         sys_event,
                         version_directive,
@@ -86,7 +86,7 @@ impl<'a> Emitter<'a> {
                     )
                 }
                 Event::DocumentEnd => {
-                    let implicit = 1;
+                    let implicit = true;
                     sys::yaml_document_end_event_initialize(sys_event, implicit)
                 }
                 Event::Scalar(scalar) => {
@@ -94,8 +94,8 @@ impl<'a> Emitter<'a> {
                     let tag = ptr::null();
                     let value = scalar.value.as_ptr();
                     let length = scalar.value.len() as i32;
-                    let plain_implicit = 1;
-                    let quoted_implicit = 1;
+                    let plain_implicit = true;
+                    let quoted_implicit = true;
                     let style = match scalar.style {
                         ScalarStyle::Any => sys::YAML_ANY_SCALAR_STYLE,
                         ScalarStyle::Plain => sys::YAML_PLAIN_SCALAR_STYLE,
@@ -114,7 +114,7 @@ impl<'a> Emitter<'a> {
                 Event::SequenceStart => {
                     let anchor = ptr::null();
                     let tag = ptr::null();
-                    let implicit = 1;
+                    let implicit = true;
                     let style = sys::YAML_ANY_SEQUENCE_STYLE;
                     sys::yaml_sequence_start_event_initialize(
                         sys_event, anchor, tag, implicit, style,
@@ -124,7 +124,7 @@ impl<'a> Emitter<'a> {
                 Event::MappingStart => {
                     let anchor = ptr::null();
                     let tag = ptr::null();
-                    let implicit = 1;
+                    let implicit = true;
                     let style = sys::YAML_ANY_MAPPING_STYLE;
                     sys::yaml_mapping_start_event_initialize(
                         sys_event, anchor, tag, implicit, style,
@@ -132,10 +132,10 @@ impl<'a> Emitter<'a> {
                 }
                 Event::MappingEnd => sys::yaml_mapping_end_event_initialize(sys_event),
             };
-            if initialize_status == 0 {
+            if initialize_status.fail {
                 return Err(Error::Libyaml(libyaml::Error::emit_error(emitter)));
             }
-            if sys::yaml_emitter_emit(emitter, sys_event) == 0 {
+            if sys::yaml_emitter_emit(emitter, sys_event).fail {
                 return Err(self.error());
             }
         }
@@ -145,7 +145,7 @@ impl<'a> Emitter<'a> {
     pub fn flush(&mut self) -> Result<(), Error> {
         unsafe {
             let emitter = addr_of_mut!((*self.pin.ptr).sys);
-            if sys::yaml_emitter_flush(emitter) == 0 {
+            if sys::yaml_emitter_flush(emitter).fail {
                 return Err(self.error());
             }
         }
