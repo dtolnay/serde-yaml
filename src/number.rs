@@ -4,7 +4,6 @@ use serde::{forward_to_deserialize_any, Deserialize, Deserializer, Serialize, Se
 use std::cmp::Ordering;
 use std::fmt::{self, Debug, Display};
 use std::hash::{Hash, Hasher};
-use std::i64;
 
 /// Represents a YAML number, whether integer or floating point.
 #[derive(Clone, PartialEq, PartialOrd)]
@@ -32,8 +31,6 @@ impl Number {
     /// return the integer value.
     ///
     /// ```
-    /// # use std::i64;
-    /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// #
     /// let big = i64::MAX as u64 + 10;
@@ -126,8 +123,6 @@ impl Number {
     /// None otherwise.
     ///
     /// ```
-    /// # use std::i64;
-    /// #
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// #
     /// let big = i64::MAX as u64 + 10;
