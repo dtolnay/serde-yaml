@@ -356,7 +356,10 @@ fn test_numbers() {
     }
 
     // NOT numbers.
-    let cases = ["0127", "+0127", "-0127"];
+    let cases = [
+        "0127", "+0127", "-0127", "++.inf", "+-.inf", "++1", "+-1", "-+1", "--1", "0x+1", "0x-1",
+        "-0x+1", "-0x-1", "++0x1", "+-0x1", "-+0x1", "--0x1",
+    ];
     for yaml in &cases {
         let value = serde_yaml::from_str::<Value>(yaml).unwrap();
         match value {
