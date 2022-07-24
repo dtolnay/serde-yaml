@@ -919,19 +919,31 @@ fn parse_unsigned_int<T>(
 ) -> Option<T> {
     let unpositive = scalar.strip_prefix('+').unwrap_or(scalar);
     if let Some(rest) = unpositive.strip_prefix("0x") {
+        if rest.starts_with(['+', '-']) {
+            return None;
+        }
         if let Ok(int) = from_str_radix(rest, 16) {
             return Some(int);
         }
     }
     if let Some(rest) = unpositive.strip_prefix("0o") {
+        if rest.starts_with(['+', '-']) {
+            return None;
+        }
         if let Ok(int) = from_str_radix(rest, 8) {
             return Some(int);
         }
     }
     if let Some(rest) = unpositive.strip_prefix("0b") {
+        if rest.starts_with(['+', '-']) {
+            return None;
+        }
         if let Ok(int) = from_str_radix(rest, 2) {
             return Some(int);
         }
+    }
+    if unpositive.starts_with(['+', '-']) {
+        return None;
     }
     if digits_but_not_number(scalar) {
         return None;
@@ -943,8 +955,18 @@ fn parse_signed_int<T>(
     scalar: &str,
     from_str_radix: fn(&str, radix: u32) -> Result<T, ParseIntError>,
 ) -> Option<T> {
-    let unpositive = scalar.strip_prefix('+').unwrap_or(scalar);
+    let unpositive = if let Some(unpositive) = scalar.strip_prefix('+') {
+        if unpositive.starts_with(['+', '-']) {
+            return None;
+        }
+        unpositive
+    } else {
+        scalar
+    };
     if let Some(rest) = unpositive.strip_prefix("0x") {
+        if rest.starts_with(['+', '-']) {
+            return None;
+        }
         if let Ok(int) = from_str_radix(rest, 16) {
             return Some(int);
         }
@@ -956,6 +978,9 @@ fn parse_signed_int<T>(
         }
     }
     if let Some(rest) = unpositive.strip_prefix("0o") {
+        if rest.starts_with(['+', '-']) {
+            return None;
+        }
         if let Ok(int) = from_str_radix(rest, 8) {
             return Some(int);
         }
@@ -967,6 +992,9 @@ fn parse_signed_int<T>(
         }
     }
     if let Some(rest) = unpositive.strip_prefix("0b") {
+        if rest.starts_with(['+', '-']) {
+            return None;
+        }
         if let Ok(int) = from_str_radix(rest, 2) {
             return Some(int);
         }
@@ -1012,7 +1040,14 @@ fn parse_negative_int<T>(
 }
 
 fn parse_f64(scalar: &str) -> Option<f64> {
-    let unpositive = scalar.strip_prefix('+').unwrap_or(scalar);
+    let unpositive = if let Some(unpositive) = scalar.strip_prefix('+') {
+        if unpositive.starts_with(['+', '-']) {
+            return None;
+        }
+        unpositive
+    } else {
+        scalar
+    };
     if let ".inf" | ".Inf" | ".INF" = unpositive {
         return Some(f64::INFINITY);
     }
