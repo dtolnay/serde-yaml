@@ -9,7 +9,6 @@ use indoc::indoc;
 use serde_derive::{Deserialize, Serialize};
 use serde_yaml::Value;
 use std::collections::BTreeMap;
-use std::f64;
 use std::fmt::Debug;
 
 fn test_serde<T>(thing: &T, yaml: &str)

@@ -4,7 +4,6 @@ use serde::de::IntoDeserializer;
 use serde::Deserialize;
 use serde_derive::Deserialize;
 use serde_yaml::{Number, Value};
-use std::f64;
 
 #[test]
 fn test_nan() {

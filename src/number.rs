@@ -192,7 +192,6 @@ impl Number {
     /// ```
     ///
     /// ```
-    /// # use std::f64;
     /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
     /// assert_eq!(yaml(".inf").as_f64(), Some(f64::INFINITY));
     /// assert_eq!(yaml("-.inf").as_f64(), Some(f64::NEG_INFINITY));
@@ -210,8 +209,6 @@ impl Number {
     /// Returns true if this value is NaN and false otherwise.
     ///
     /// ```
-    /// # use std::f64;
-    /// #
     /// # use serde_yaml::Number;
     /// #
     /// assert!(!Number::from(256.0).is_nan());
@@ -236,8 +233,6 @@ impl Number {
     /// false otherwise.
     ///
     /// ```
-    /// # use std::f64;
-    /// #
     /// # use serde_yaml::Number;
     /// #
     /// assert!(!Number::from(256.0).is_infinite());
@@ -261,8 +256,6 @@ impl Number {
     /// Returns true if this number is neither infinite nor NaN.
     ///
     /// ```
-    /// # use std::f64;
-    /// #
     /// # use serde_yaml::Number;
     /// #
     /// assert!(Number::from(256.0).is_finite());

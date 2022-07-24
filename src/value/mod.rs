@@ -9,7 +9,6 @@ mod ser;
 use crate::{Error, Mapping};
 use serde::de::{Deserialize, DeserializeOwned, IntoDeserializer};
 use serde::Serialize;
-use std::f64;
 use std::hash::{Hash, Hasher};
 
 pub use self::index::Index;

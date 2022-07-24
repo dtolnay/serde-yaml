@@ -8,7 +8,6 @@ use serde::de::{
     self, Deserialize, DeserializeOwned, DeserializeSeed, Expected, IgnoredAny as Ignore,
     IntoDeserializer, Unexpected, Visitor,
 };
-use std::f64;
 use std::fmt;
 use std::io;
 use std::marker::PhantomData;
