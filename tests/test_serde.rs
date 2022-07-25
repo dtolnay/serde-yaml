@@ -207,14 +207,12 @@ fn test_multiline_string() {
         no_trailing_newline: "aaa\nbbb".to_owned(),
     };
     let yaml = indoc! {r#"
-        trailing_newline: 'aaa
-
+        trailing_newline: |
+          aaa
           bbb
-
-          '
-        no_trailing_newline: 'aaa
-
-          bbb'
+        no_trailing_newline: |-
+          aaa
+          bbb
     "#};
     test_serde(&thing, yaml);
 }
