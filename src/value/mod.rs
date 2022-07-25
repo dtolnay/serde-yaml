@@ -125,19 +125,20 @@ impl Value {
     /// or the given index is not within the bounds of the sequence.
     ///
     /// ```
-    /// # use serde_yaml::Value;
-    /// #
-    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
-    /// #
-    /// let object: Value = yaml(r#"{ A: 65, B: 66, C: 67 }"#);
+    /// # fn main() -> serde_yaml::Result<()> {
+    /// use serde_yaml::Value;
+    ///
+    /// let object: Value = serde_yaml::from_str(r#"{ A: 65, B: 66, C: 67 }"#)?;
     /// let x = object.get("A").unwrap();
     /// assert_eq!(x, 65);
     ///
-    /// let sequence: Value = yaml(r#"[ "A", "B", "C" ]"#);
+    /// let sequence: Value = serde_yaml::from_str(r#"[ "A", "B", "C" ]"#)?;
     /// let x = sequence.get(2).unwrap();
     /// assert_eq!(x, &Value::String("C".into()));
     ///
     /// assert_eq!(sequence.get("A"), None);
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// Square brackets can also be used to index into a value in a more concise
@@ -147,14 +148,13 @@ impl Value {
     /// ```
     /// # use serde_yaml::Value;
     /// #
-    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
-    /// #
-    /// let object = yaml(r#"
+    /// # fn main() -> serde_yaml::Result<()> {
+    /// let object: Value = serde_yaml::from_str(r#"
     /// A: [a, á, à]
     /// B: [b, b́]
     /// C: [c, ć, ć̣, ḉ]
     /// 42: true
-    /// "#);
+    /// "#)?;
     /// assert_eq!(object["B"][0], Value::String("b".into()));
     ///
     /// assert_eq!(object[Value::String("D".into())], Value::Null);
@@ -162,6 +162,8 @@ impl Value {
     /// assert_eq!(object[0]["x"]["y"]["z"], Value::Null);
     ///
     /// assert_eq!(object[42], Value::Bool(true));
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn get<I: Index>(&self, index: I) -> Option<&Value> {
         index.index_into(self)

@@ -201,15 +201,18 @@ where
     /// # Examples
     ///
     /// ```
-    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
+    /// # use serde_yaml::Value;
     /// #
-    /// let data = yaml(r#"{ x: { y: [z, zz] } }"#);
+    /// # fn main() -> serde_yaml::Result<()> {
+    /// let data: serde_yaml::Value = serde_yaml::from_str(r#"{ x: { y: [z, zz] } }"#)?;
     ///
-    /// assert_eq!(data["x"]["y"], yaml(r#"["z", "zz"]"#));
-    /// assert_eq!(data["x"]["y"][0], yaml(r#""z""#));
+    /// assert_eq!(data["x"]["y"], serde_yaml::from_str::<Value>(r#"["z", "zz"]"#).unwrap());
+    /// assert_eq!(data["x"]["y"][0], serde_yaml::from_str::<Value>(r#""z""#).unwrap());
     ///
-    /// assert_eq!(data["a"], yaml(r#"null"#)); // returns null for undefined values
-    /// assert_eq!(data["a"]["b"], yaml(r#"null"#)); // does not panic
+    /// assert_eq!(data["a"], serde_yaml::from_str::<Value>(r#"null"#).unwrap()); // returns null for undefined values
+    /// assert_eq!(data["a"]["b"], serde_yaml::from_str::<Value>(r#"null"#).unwrap()); // does not panic
+    /// # Ok(())
+    /// # }
     /// ```
     fn index(&self, index: I) -> &Value {
         static NULL: Value = Value::Null;
@@ -236,23 +239,24 @@ where
     /// # Examples
     ///
     /// ```
-    /// # fn yaml(i: &str) -> serde_yaml::Value { serde_yaml::from_str(i).unwrap() }
-    /// #
-    /// let mut data = yaml(r#"{x: 0}"#);
+    /// # fn main() -> serde_yaml::Result<()> {
+    /// let mut data: serde_yaml::Value = serde_yaml::from_str(r#"{x: 0}"#)?;
     ///
     /// // replace an existing key
-    /// data["x"] = yaml(r#"1"#);
+    /// data["x"] = serde_yaml::from_str(r#"1"#)?;
     ///
     /// // insert a new key
-    /// data["y"] = yaml(r#"[false, false, false]"#);
+    /// data["y"] = serde_yaml::from_str(r#"[false, false, false]"#)?;
     ///
     /// // replace a value in a sequence
-    /// data["y"][0] = yaml(r#"true"#);
+    /// data["y"][0] = serde_yaml::from_str(r#"true"#)?;
     ///
     /// // inserted a deeply nested key
-    /// data["a"]["b"]["c"]["d"] = yaml(r#"true"#);
+    /// data["a"]["b"]["c"]["d"] = serde_yaml::from_str(r#"true"#)?;
     ///
     /// println!("{:?}", data);
+    /// # Ok(())
+    /// # }
     /// ```
     fn index_mut(&mut self, index: I) -> &mut Value {
         index.index_or_insert(self)
