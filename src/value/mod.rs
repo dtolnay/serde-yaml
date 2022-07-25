@@ -9,14 +9,13 @@ mod ser;
 use crate::{Error, Mapping};
 use serde::de::{Deserialize, DeserializeOwned, IntoDeserializer};
 use serde::Serialize;
-use std::hash::{Hash, Hasher};
 
 pub use self::index::Index;
 pub use self::ser::Serializer;
 pub use crate::number::Number;
 
 /// Represents any valid YAML value.
-#[derive(Clone, PartialEq, PartialOrd, Debug)]
+#[derive(Clone, PartialEq, PartialOrd, Hash, Debug)]
 pub enum Value {
     /// Represents a YAML null value.
     Null,
@@ -591,19 +590,6 @@ impl Value {
 }
 
 impl Eq for Value {}
-
-impl Hash for Value {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        match self {
-            Value::Null => 0.hash(state),
-            Value::Bool(b) => (1, b).hash(state),
-            Value::Number(i) => (2, i).hash(state),
-            Value::String(s) => (3, s).hash(state),
-            Value::Sequence(seq) => (4, seq).hash(state),
-            Value::Mapping(map) => (5, map).hash(state),
-        }
-    }
-}
 
 impl<'de> IntoDeserializer<'de, Error> for Value {
     type Deserializer = Self;
