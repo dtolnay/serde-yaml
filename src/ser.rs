@@ -247,7 +247,11 @@ where
     fn serialize_str(self, value: &str) -> Result<()> {
         self.emit_scalar(Scalar {
             value,
-            style: ScalarStyle::Any,
+            style: if value.contains('\n') {
+                ScalarStyle::Literal
+            } else {
+                ScalarStyle::Any
+            },
         })
     }
 
