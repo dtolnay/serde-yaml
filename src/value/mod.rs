@@ -16,7 +16,7 @@ pub use self::ser::Serializer;
 pub use crate::number::Number;
 
 /// Represents any valid YAML value.
-#[derive(Clone, PartialOrd, Debug)]
+#[derive(Clone, PartialEq, PartialOrd, Debug)]
 pub enum Value {
     /// Represents a YAML null value.
     Null,

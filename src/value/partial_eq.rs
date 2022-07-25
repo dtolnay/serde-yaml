@@ -1,19 +1,5 @@
 use crate::Value;
 
-impl PartialEq for Value {
-    fn eq(&self, other: &Value) -> bool {
-        match (self, other) {
-            (Value::Null, Value::Null) => true,
-            (Value::Bool(a), Value::Bool(b)) => a == b,
-            (Value::Number(a), Value::Number(b)) => a == b,
-            (Value::String(a), Value::String(b)) => a == b,
-            (Value::Sequence(a), Value::Sequence(b)) => a == b,
-            (Value::Mapping(a), Value::Mapping(b)) => a == b,
-            _ => false,
-        }
-    }
-}
-
 impl PartialEq<str> for Value {
     /// Compare `str` with YAML value
     ///
