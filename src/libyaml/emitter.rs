@@ -97,7 +97,13 @@ impl<'a> Emitter<'a> {
                     let plain_implicit = true;
                     let quoted_implicit = true;
                     let style = match scalar.style {
-                        ScalarStyle::Any => sys::YAML_ANY_SCALAR_STYLE,
+                        ScalarStyle::Any => {
+                            if scalar.value.contains('\n') {
+                                sys::YAML_LITERAL_SCALAR_STYLE
+                            } else {
+                                sys::YAML_ANY_SCALAR_STYLE
+                            }
+                        }
                         ScalarStyle::Plain => sys::YAML_PLAIN_SCALAR_STYLE,
                     };
                     sys::yaml_scalar_event_initialize(

@@ -196,6 +196,28 @@ fn test_basic_struct() {
 }
 
 #[test]
+fn test_multiline_string() {
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    struct Struct {
+        trailing_newline: String,
+        no_trailing_newline: String,
+    }
+    let thing = Struct {
+        trailing_newline: "aaa\nbbb\n".to_owned(),
+        no_trailing_newline: "aaa\nbbb".to_owned(),
+    };
+    let yaml = indoc! {r#"
+        trailing_newline: |
+          aaa
+          bbb
+        no_trailing_newline: |-
+          aaa
+          bbb
+    "#};
+    test_serde(&thing, yaml);
+}
+
+#[test]
 fn test_nested_vec() {
     let thing = vec![vec![1, 2, 3], vec![4, 5, 6]];
     let yaml = indoc! {"
