@@ -869,18 +869,22 @@ where
             };
         }
     } else if scalar.style == ScalarStyle::Plain {
-        return visit_untagged_scalar(visitor, scalar, v);
+        return visit_untagged_scalar(visitor, v, scalar.repr, scalar.style);
     }
-    if let Some(borrowed) = parse_borrowed_str(scalar, v) {
+    if let Some(borrowed) = parse_borrowed_str(v, scalar.repr, scalar.style) {
         visitor.visit_borrowed_str(borrowed)
     } else {
         visitor.visit_str(v)
     }
 }
 
-fn parse_borrowed_str<'de>(scalar: &Scalar<'de>, utf8_value: &str) -> Option<&'de str> {
-    let borrowed_repr = scalar.repr?;
-    let expected_offset = match scalar.style {
+fn parse_borrowed_str<'de>(
+    utf8_value: &str,
+    repr: Option<&'de [u8]>,
+    style: ScalarStyle,
+) -> Option<&'de str> {
+    let borrowed_repr = repr?;
+    let expected_offset = match style {
         ScalarStyle::Plain => 0,
         ScalarStyle::SingleQuoted | ScalarStyle::DoubleQuoted => 1,
         ScalarStyle::Literal | ScalarStyle::Folded => return None,
@@ -1090,7 +1094,12 @@ where
     Err(visitor)
 }
 
-fn visit_untagged_scalar<'de, V>(visitor: V, scalar: &Scalar<'de>, v: &str) -> Result<V::Value>
+pub(crate) fn visit_untagged_scalar<'de, V>(
+    visitor: V,
+    v: &str,
+    repr: Option<&'de [u8]>,
+    style: ScalarStyle,
+) -> Result<V::Value>
 where
     V: Visitor<'de>,
 {
@@ -1109,7 +1118,7 @@ where
             return visitor.visit_f64(float);
         }
     }
-    if let Some(borrowed) = parse_borrowed_str(scalar, v) {
+    if let Some(borrowed) = parse_borrowed_str(v, repr, style) {
         visitor.visit_borrowed_str(borrowed)
     } else {
         visitor.visit_str(v)
@@ -1379,7 +1388,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
         match next {
             Event::Scalar(scalar) => {
                 if let Ok(v) = str::from_utf8(&scalar.value) {
-                    if let Some(borrowed) = parse_borrowed_str(scalar, v) {
+                    if let Some(borrowed) = parse_borrowed_str(v, scalar.repr, scalar.style) {
                         visitor.visit_borrowed_str(borrowed)
                     } else {
                         visitor.visit_str(v)

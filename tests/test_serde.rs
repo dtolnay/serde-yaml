@@ -218,6 +218,27 @@ fn test_multiline_string() {
 }
 
 #[test]
+fn test_strings_needing_quote() {
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    struct Struct {
+        boolean: String,
+        integer: String,
+        void: String,
+    }
+    let thing = Struct {
+        boolean: "true".to_owned(),
+        integer: "1".to_owned(),
+        void: "null".to_owned(),
+    };
+    let yaml = indoc! {r#"
+        boolean: 'true'
+        integer: '1'
+        void: 'null'
+    "#};
+    test_serde(&thing, yaml);
+}
+
+#[test]
 fn test_nested_vec() {
     let thing = vec![vec![1, 2, 3], vec![4, 5, 6]];
     let yaml = indoc! {"

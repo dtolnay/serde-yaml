@@ -2,14 +2,19 @@
 //!
 //! This module provides YAML serialization with the type `Serializer`.
 
+use crate::libyaml;
 use crate::libyaml::emitter::{Emitter, Event, Scalar, ScalarStyle};
-use crate::{error, Error, Result};
+use crate::{error, Error};
+use serde::de::Visitor;
 use serde::ser::{self, Serializer as _};
+use std::fmt;
 use std::io;
 use std::marker::PhantomData;
 use std::mem;
 use std::num;
 use std::str;
+
+type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// A structure for serializing Rust values into YAML.
 ///
@@ -245,14 +250,61 @@ where
     }
 
     fn serialize_str(self, value: &str) -> Result<()> {
-        self.emit_scalar(Scalar {
-            value,
-            style: if value.contains('\n') {
-                ScalarStyle::Literal
-            } else {
-                ScalarStyle::Any
-            },
-        })
+        struct InferScalarStyle;
+
+        impl<'de> Visitor<'de> for InferScalarStyle {
+            type Value = ScalarStyle;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("I wonder")
+            }
+
+            fn visit_bool<E>(self, _v: bool) -> Result<Self::Value, E> {
+                Ok(ScalarStyle::SingleQuoted)
+            }
+
+            fn visit_i64<E>(self, _v: i64) -> Result<Self::Value, E> {
+                Ok(ScalarStyle::SingleQuoted)
+            }
+
+            fn visit_i128<E>(self, _v: i128) -> Result<Self::Value, E> {
+                Ok(ScalarStyle::SingleQuoted)
+            }
+
+            fn visit_u64<E>(self, _v: u64) -> Result<Self::Value, E> {
+                Ok(ScalarStyle::SingleQuoted)
+            }
+
+            fn visit_u128<E>(self, _v: u128) -> Result<Self::Value, E> {
+                Ok(ScalarStyle::SingleQuoted)
+            }
+
+            fn visit_f64<E>(self, _v: f64) -> Result<Self::Value, E> {
+                Ok(ScalarStyle::SingleQuoted)
+            }
+
+            fn visit_str<E>(self, _v: &str) -> Result<Self::Value, E> {
+                Ok(ScalarStyle::Any)
+            }
+
+            fn visit_unit<E>(self) -> Result<Self::Value, E> {
+                Ok(ScalarStyle::SingleQuoted)
+            }
+        }
+
+        let style = if value.contains('\n') {
+            ScalarStyle::Literal
+        } else {
+            let result = crate::de::visit_untagged_scalar(
+                InferScalarStyle,
+                value,
+                None,
+                libyaml::parser::ScalarStyle::Plain,
+            );
+            result.unwrap_or(ScalarStyle::Any)
+        };
+
+        self.emit_scalar(Scalar { value, style })
     }
 
     fn serialize_bytes(self, value: &[u8]) -> Result<()> {
