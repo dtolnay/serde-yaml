@@ -43,6 +43,7 @@ pub(crate) struct Scalar<'a> {
 pub(crate) enum ScalarStyle {
     Any,
     Plain,
+    SingleQuoted,
     Literal,
 }
 
@@ -100,6 +101,7 @@ impl<'a> Emitter<'a> {
                     let style = match scalar.style {
                         ScalarStyle::Any => sys::YAML_ANY_SCALAR_STYLE,
                         ScalarStyle::Plain => sys::YAML_PLAIN_SCALAR_STYLE,
+                        ScalarStyle::SingleQuoted => sys::YAML_SINGLE_QUOTED_SCALAR_STYLE,
                         ScalarStyle::Literal => sys::YAML_LITERAL_SCALAR_STYLE,
                     };
                     sys::yaml_scalar_event_initialize(
