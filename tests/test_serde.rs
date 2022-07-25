@@ -165,8 +165,8 @@ fn test_vec() {
 #[test]
 fn test_map() {
     let mut thing = BTreeMap::new();
-    thing.insert(String::from("x"), 1);
-    thing.insert(String::from("y"), 2);
+    thing.insert("x".to_owned(), 1);
+    thing.insert("y".to_owned(), 2);
     let yaml = indoc! {"
         x: 1
         y: 2
@@ -184,7 +184,7 @@ fn test_basic_struct() {
     }
     let thing = Basic {
         x: -4,
-        y: String::from("hi\tquoted"),
+        y: "hi\tquoted".to_owned(),
         z: true,
     };
     let yaml = indoc! {r#"

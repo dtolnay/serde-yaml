@@ -55,9 +55,9 @@ fn test_alias() {
         third: 3
     "};
     let mut expected = BTreeMap::new();
-    expected.insert(String::from("first"), 1);
-    expected.insert(String::from("second"), 1);
-    expected.insert(String::from("third"), 3);
+    expected.insert("first".to_owned(), 1);
+    expected.insert("second".to_owned(), 1);
+    expected.insert("third".to_owned(), 3);
     test_de(yaml, &expected);
 }
 
