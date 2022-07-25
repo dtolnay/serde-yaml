@@ -293,10 +293,7 @@ where
         T: ?Sized + ser::Serialize,
     {
         self.emit_mapping_start()?;
-        self.emit_scalar(Scalar {
-            value: variant,
-            style: ScalarStyle::Any,
-        })?;
+        self.serialize_str(variant)?;
         value.serialize(&mut *self)?;
         self.emit_mapping_end()
     }
@@ -339,10 +336,7 @@ where
         _len: usize,
     ) -> Result<Self::SerializeTupleVariant> {
         self.emit_mapping_start()?;
-        self.emit_scalar(Scalar {
-            value: variant,
-            style: ScalarStyle::Any,
-        })?;
+        self.serialize_str(variant)?;
         self.emit_sequence_start()?;
         Ok(self)
     }
@@ -365,10 +359,7 @@ where
         _len: usize,
     ) -> Result<Self::SerializeStructVariant> {
         self.emit_mapping_start()?;
-        self.emit_scalar(Scalar {
-            value: variant,
-            style: ScalarStyle::Any,
-        })?;
+        self.serialize_str(variant)?;
         self.emit_mapping_start()?;
         Ok(self)
     }
