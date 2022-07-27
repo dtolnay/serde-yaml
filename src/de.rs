@@ -1459,8 +1459,26 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
     {
         let (next, mark) = self.next_event_mark()?;
         match next {
+            Event::Scalar(scalar) => {
+                let is_null = if scalar.style != ScalarStyle::Plain {
+                    false
+                } else if let Some(tag) = &scalar.tag {
+                    tag == Tag::NULL && parse_null(&scalar.value).is_some()
+                } else {
+                    scalar.value.is_empty() || parse_null(&scalar.value).is_some()
+                };
+                if is_null {
+                    visitor.visit_unit()
+                } else if let Ok(v) = str::from_utf8(&scalar.value) {
+                    Err(de::Error::invalid_value(Unexpected::Str(v), &"null"))
+                } else {
+                    Err(de::Error::invalid_value(
+                        Unexpected::Bytes(&scalar.value),
+                        &"null",
+                    ))
+                }
+            }
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_unit(visitor),
-            Event::Scalar(scalar) => visit_scalar(visitor, scalar),
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
