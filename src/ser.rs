@@ -245,7 +245,7 @@ where
     fn serialize_char(self, value: char) -> Result<()> {
         self.emit_scalar(Scalar {
             value: value.encode_utf8(&mut [0u8; 4]),
-            style: ScalarStyle::Any,
+            style: ScalarStyle::SingleQuoted,
         })
     }
 

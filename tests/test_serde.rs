@@ -155,7 +155,7 @@ fn test_float32() {
 fn test_char() {
     let ch = '.';
     let yaml = indoc! {"
-        .
+        '.'
     "};
     assert_eq!(yaml, serde_yaml::to_string(&ch).unwrap());
 
