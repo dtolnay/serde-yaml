@@ -178,16 +178,19 @@ fn test_map() {
 fn test_basic_struct() {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct Basic {
+        w: char,
         x: isize,
         y: String,
         z: bool,
     }
     let thing = Basic {
+        w: '.',
         x: -4,
         y: "hi\tquoted".to_owned(),
         z: true,
     };
     let yaml = indoc! {r#"
+        w: .
         x: -4
         y: "hi\tquoted"
         z: true
