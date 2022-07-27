@@ -152,6 +152,27 @@ fn test_float32() {
 }
 
 #[test]
+fn test_char() {
+    let ch = '.';
+    let yaml = indoc! {"
+        .
+    "};
+    assert_eq!(yaml, serde_yaml::to_string(&ch).unwrap());
+
+    let ch = '#';
+    let yaml = indoc! {"
+        '#'
+    "};
+    assert_eq!(yaml, serde_yaml::to_string(&ch).unwrap());
+
+    let ch = '-';
+    let yaml = indoc! {"
+        '-'
+    "};
+    assert_eq!(yaml, serde_yaml::to_string(&ch).unwrap());
+}
+
+#[test]
 fn test_vec() {
     let thing = vec![1, 2, 3];
     let yaml = indoc! {"
@@ -178,19 +199,16 @@ fn test_map() {
 fn test_basic_struct() {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct Basic {
-        w: char,
         x: isize,
         y: String,
         z: bool,
     }
     let thing = Basic {
-        w: '.',
         x: -4,
         y: "hi\tquoted".to_owned(),
         z: true,
     };
     let yaml = indoc! {r#"
-        w: .
         x: -4
         y: "hi\tquoted"
         z: true
