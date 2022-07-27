@@ -1156,21 +1156,6 @@ fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
     }
 }
 
-impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
-    fn deserialize_scalar<V>(&mut self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        let (next, mark) = self.next_event_mark()?;
-        match next {
-            Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_scalar(visitor),
-            Event::Scalar(scalar) => visit_scalar(visitor, scalar),
-            other => Err(invalid_type(other, &visitor)),
-        }
-        .map_err(|err| error::fix_mark(err, mark, self.path))
-    }
-}
-
 impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 'document> {
     type Error = Error;
 
@@ -1472,7 +1457,13 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
     where
         V: Visitor<'de>,
     {
-        self.deserialize_scalar(visitor)
+        let (next, mark) = self.next_event_mark()?;
+        match next {
+            Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_unit(visitor),
+            Event::Scalar(scalar) => visit_scalar(visitor, scalar),
+            other => Err(invalid_type(other, &visitor)),
+        }
+        .map_err(|err| error::fix_mark(err, mark, self.path))
     }
 
     fn deserialize_unit_struct<V>(self, _name: &'static str, visitor: V) -> Result<V::Value>
