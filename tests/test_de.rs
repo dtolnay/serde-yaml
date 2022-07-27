@@ -149,7 +149,7 @@ fn test_enum_alias() {
           A
         bref:
           &bref
-          B:
+          !B
             - 1
             - 2
 

@@ -362,7 +362,7 @@ fn test_newtype_variant() {
     }
     let thing = Variant::Size(127);
     let yaml = indoc! {"
-        Size: 127
+        !Size 127
     "};
     test_serde(&thing, yaml);
 }
@@ -375,7 +375,7 @@ fn test_tuple_variant() {
     }
     let thing = Variant::Rgb(32, 64, 96);
     let yaml = indoc! {"
-        Rgb:
+        !Rgb
         - 32
         - 64
         - 96
@@ -395,10 +395,10 @@ fn test_struct_variant() {
         b: 96,
     };
     let yaml = indoc! {"
-        Color:
-          r: 32
-          g: 64
-          b: 96
+        !Color
+        r: 32
+        g: 64
+        b: 96
     "};
     test_serde(&thing, yaml);
 }

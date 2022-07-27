@@ -5,6 +5,7 @@ mod from;
 mod index;
 mod partial_eq;
 mod ser;
+mod tagged;
 
 use crate::{Error, Mapping};
 use serde::de::{Deserialize, DeserializeOwned, IntoDeserializer};
@@ -12,6 +13,7 @@ use serde::Serialize;
 
 pub use self::index::Index;
 pub use self::ser::Serializer;
+pub use self::tagged::{Tag, TaggedValue};
 pub use crate::number::Number;
 
 /// Represents any valid YAML value.
@@ -31,6 +33,8 @@ pub enum Value {
     /// Represents a YAML mapping in which the keys and values are both
     /// `serde_yaml::Value`.
     Mapping(Mapping),
+    ///
+    Tagged(Box<TaggedValue>),
 }
 
 /// The default value is `Value::Null`.

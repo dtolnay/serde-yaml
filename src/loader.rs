@@ -80,22 +80,22 @@ impl<'input> Loader<'input> {
                     }
                     Event::Scalar(scalar)
                 }
-                YamlEvent::SequenceStart(sequence_start) => {
-                    if let Some(anchor) = sequence_start.anchor {
+                YamlEvent::SequenceStart(mut sequence_start) => {
+                    if let Some(anchor) = sequence_start.anchor.take() {
                         let id = anchors.len();
                         anchors.insert(anchor, id);
                         document.aliases.insert(id, document.events.len());
                     }
-                    Event::SequenceStart
+                    Event::SequenceStart(sequence_start)
                 }
                 YamlEvent::SequenceEnd => Event::SequenceEnd,
-                YamlEvent::MappingStart(mapping_start) => {
-                    if let Some(anchor) = mapping_start.anchor {
+                YamlEvent::MappingStart(mut mapping_start) => {
+                    if let Some(anchor) = mapping_start.anchor.take() {
                         let id = anchors.len();
                         anchors.insert(anchor, id);
                         document.aliases.insert(id, document.events.len());
                     }
-                    Event::MappingStart
+                    Event::MappingStart(mapping_start)
                 }
                 YamlEvent::MappingEnd => Event::MappingEnd,
             };

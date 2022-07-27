@@ -12,6 +12,12 @@ impl Tag {
     pub const FLOAT: &'static str = "tag:yaml.org,2002:float";
 }
 
+impl Tag {
+    pub fn starts_with(&self, prefix: &str) -> bool {
+        self.0.starts_with(prefix.as_bytes())
+    }
+}
+
 impl PartialEq<str> for Tag {
     fn eq(&self, other: &str) -> bool {
         *self.0 == *other.as_bytes()

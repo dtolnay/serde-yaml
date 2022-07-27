@@ -1,12 +1,13 @@
 use crate::error::{self, Error, ErrorImpl};
 use crate::libyaml::error::Mark;
-use crate::libyaml::parser::{Scalar, ScalarStyle};
+use crate::libyaml::parser::{MappingStart, Scalar, ScalarStyle, SequenceStart};
 use crate::libyaml::tag::Tag;
 use crate::loader::{Document, Loader};
 use crate::path::Path;
+use serde::de::value::StrDeserializer;
 use serde::de::{
     self, Deserialize, DeserializeOwned, DeserializeSeed, Expected, IgnoredAny as Ignore,
-    IntoDeserializer, Unexpected, Visitor,
+    Unexpected, Visitor,
 };
 use std::fmt;
 use std::io;
@@ -108,6 +109,7 @@ impl<'de> Deserializer<'de> {
                     pos: &mut pos,
                     path: Path::Root,
                     remaining_depth: 128,
+                    tagged_already: false,
                 })?;
                 return Ok(t);
             }
@@ -122,6 +124,7 @@ impl<'de> Deserializer<'de> {
             pos: &mut pos,
             path: Path::Root,
             remaining_depth: 128,
+            tagged_already: false,
         })?;
         if loader.next_document().is_none() {
             Ok(t)
@@ -409,9 +412,9 @@ impl<'de> de::Deserializer<'de> for Deserializer<'de> {
 pub(crate) enum Event<'de> {
     Alias(usize),
     Scalar(Scalar<'de>),
-    SequenceStart,
+    SequenceStart(SequenceStart),
     SequenceEnd,
-    MappingStart,
+    MappingStart(MappingStart),
     MappingEnd,
 }
 
@@ -420,6 +423,7 @@ struct DeserializerFromEvents<'de, 'document> {
     pos: &'document mut usize,
     path: Path<'document>,
     remaining_depth: u8,
+    tagged_already: bool,
 }
 
 impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
@@ -444,6 +448,7 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
     fn next_event_mark(&mut self) -> Result<(&'document Event<'de>, Mark)> {
         self.peek_event_mark().map(|(event, mark)| {
             *self.pos += 1;
+            self.tagged_already = false;
             (event, mark)
         })
     }
@@ -460,6 +465,7 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
                     pos,
                     path: Path::Alias { parent: &self.path },
                     remaining_depth: self.remaining_depth,
+                    tagged_already: false,
                 })
             }
             None => panic!("unresolved alias: {}", *pos),
@@ -477,10 +483,10 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
         loop {
             match self.next_event()? {
                 Event::Alias(_) | Event::Scalar(_) => {}
-                Event::SequenceStart => {
+                Event::SequenceStart(_) => {
                     stack.push(Nest::Sequence);
                 }
-                Event::MappingStart => {
+                Event::MappingStart(_) => {
                     stack.push(Nest::Mapping);
                 }
                 Event::SequenceEnd => match stack.pop() {
@@ -629,6 +635,7 @@ impl<'de, 'document, 'seq> de::SeqAccess<'de> for SeqAccess<'de, 'document, 'seq
                         index: self.len,
                     },
                     remaining_depth: self.de.remaining_depth,
+                    tagged_already: false,
                 };
                 self.len += 1;
                 seed.deserialize(&mut element_de).map(Some)
@@ -683,6 +690,7 @@ impl<'de, 'document, 'map> de::MapAccess<'de> for MapAccess<'de, 'document, 'map
                 }
             },
             remaining_depth: self.de.remaining_depth,
+            tagged_already: false,
         };
         seed.deserialize(&mut value_de)
     }
@@ -690,8 +698,7 @@ impl<'de, 'document, 'map> de::MapAccess<'de> for MapAccess<'de, 'document, 'map
 
 struct EnumAccess<'de, 'document, 'variant> {
     de: &'variant mut DeserializerFromEvents<'de, 'document>,
-    name: &'static str,
-    tag: Option<&'static str>,
+    tag: &'document str,
 }
 
 impl<'de, 'document, 'variant> de::EnumAccess<'de> for EnumAccess<'de, 'document, 'variant> {
@@ -702,49 +709,16 @@ impl<'de, 'document, 'variant> de::EnumAccess<'de> for EnumAccess<'de, 'document
     where
         V: DeserializeSeed<'de>,
     {
-        #[derive(Debug)]
-        enum Nope {}
-
-        struct BadKey {
-            name: &'static str,
-        }
-
-        impl<'de> Visitor<'de> for BadKey {
-            type Value = Nope;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                write!(formatter, "variant of enum `{}`", self.name)
-            }
-        }
-
-        let variant = if let Some(tag) = self.tag {
-            tag
-        } else {
-            match match self.de.next_event()? {
-                Event::Scalar(scalar) => str::from_utf8(&scalar.value).ok(),
-                _ => None,
-            } {
-                Some(variant) => variant,
-                None => {
-                    *self.de.pos -= 1;
-                    let bad = BadKey { name: self.name };
-                    return Err(de::Deserializer::deserialize_any(&mut *self.de, bad).unwrap_err());
-                }
-            }
-        };
-
-        let str_de = IntoDeserializer::<Error>::into_deserializer(variant);
-        let ret = seed.deserialize(str_de)?;
-        let variant_visitor = DeserializerFromEvents {
+        let str_de = StrDeserializer::<Error>::new(self.tag);
+        let variant = seed.deserialize(str_de)?;
+        let visitor = DeserializerFromEvents {
             document: self.de.document,
             pos: self.de.pos,
-            path: Path::Map {
-                parent: &self.de.path,
-                key: variant,
-            },
+            path: self.de.path,
             remaining_depth: self.de.remaining_depth,
+            tagged_already: true,
         };
-        Ok((ret, variant_visitor))
+        Ok((variant, visitor))
     }
 }
 
@@ -867,6 +841,8 @@ where
                 Some(()) => visitor.visit_unit(),
                 None => Err(de::Error::invalid_value(Unexpected::Str(v), &"null")),
             };
+        } else if tag.starts_with("!") && scalar.style == ScalarStyle::Plain {
+            return visit_untagged_scalar(visitor, v, scalar.repr, scalar.style);
         }
     } else if scalar.style == ScalarStyle::Plain {
         return visit_untagged_scalar(visitor, v, scalar.repr, scalar.style);
@@ -1149,8 +1125,8 @@ fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
                 Err(invalid_type) => invalid_type,
             }
         }
-        Event::SequenceStart => de::Error::invalid_type(Unexpected::Seq, exp),
-        Event::MappingStart => de::Error::invalid_type(Unexpected::Map, exp),
+        Event::SequenceStart(_) => de::Error::invalid_type(Unexpected::Seq, exp),
+        Event::MappingStart(_) => de::Error::invalid_type(Unexpected::Map, exp),
         Event::SequenceEnd => panic!("unexpected end of sequence"),
         Event::MappingEnd => panic!("unexpected end of mapping"),
     }
@@ -1163,14 +1139,45 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
     where
         V: Visitor<'de>,
     {
+        let tagged_already = self.tagged_already;
         let (next, mark) = self.next_event_mark()?;
-        match next {
-            Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_any(visitor),
-            Event::Scalar(scalar) => visit_scalar(visitor, scalar),
-            Event::SequenceStart => self.visit_sequence(visitor, mark),
-            Event::MappingStart => self.visit_mapping(visitor, mark),
-            Event::SequenceEnd => panic!("unexpected end of sequence"),
-            Event::MappingEnd => panic!("unexpected end of mapping"),
+        fn enum_tag(tag: &Option<Tag>, tagged_already: bool) -> Option<&str> {
+            if tagged_already {
+                return None;
+            }
+            if let (b'!', tag) = tag.as_ref()?.split_first()? {
+                str::from_utf8(tag).ok()
+            } else {
+                None
+            }
+        }
+        loop {
+            match next {
+                Event::Alias(mut pos) => break self.jump(&mut pos)?.deserialize_any(visitor),
+                Event::Scalar(scalar) => {
+                    if let Some(tag) = enum_tag(&scalar.tag, tagged_already) {
+                        *self.pos -= 1;
+                        break visitor.visit_enum(EnumAccess { de: self, tag });
+                    }
+                    break visit_scalar(visitor, scalar);
+                }
+                Event::SequenceStart(sequence) => {
+                    if let Some(tag) = enum_tag(&sequence.tag, tagged_already) {
+                        *self.pos -= 1;
+                        break visitor.visit_enum(EnumAccess { de: self, tag });
+                    }
+                    break self.visit_sequence(visitor, mark);
+                }
+                Event::MappingStart(mapping) => {
+                    if let Some(tag) = enum_tag(&mapping.tag, tagged_already) {
+                        *self.pos -= 1;
+                        break visitor.visit_enum(EnumAccess { de: self, tag });
+                    }
+                    break self.visit_mapping(visitor, mark);
+                }
+                Event::SequenceEnd => panic!("unexpected end of sequence"),
+                Event::MappingEnd => panic!("unexpected end of mapping"),
+            }
         }
         // The de::Error impl creates errors with unknown line and column. Fill
         // in the position here by looking at the current index in the input.
@@ -1441,7 +1448,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                     !scalar.value.is_empty() && parse_null(&scalar.value).is_none()
                 }
             }
-            Event::SequenceStart | Event::MappingStart => true,
+            Event::SequenceStart(_) | Event::MappingStart(_) => true,
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
         };
@@ -1449,6 +1456,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
             visitor.visit_some(self)
         } else {
             *self.pos += 1;
+            self.tagged_already = false;
             visitor.visit_none()
         }
     }
@@ -1506,7 +1514,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
         let (next, mark) = self.next_event_mark()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_seq(visitor),
-            Event::SequenceStart => self.visit_sequence(visitor, mark),
+            Event::SequenceStart(_) => self.visit_sequence(visitor, mark),
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
@@ -1538,7 +1546,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
         let (next, mark) = self.next_event_mark()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_map(visitor),
-            Event::MappingStart => self.visit_mapping(visitor, mark),
+            Event::MappingStart(_) => self.visit_mapping(visitor, mark),
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
@@ -1558,8 +1566,8 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
             Event::Alias(mut pos) => self
                 .jump(&mut pos)?
                 .deserialize_struct(name, fields, visitor),
-            Event::SequenceStart => self.visit_sequence(visitor, mark),
-            Event::MappingStart => self.visit_mapping(visitor, mark),
+            Event::SequenceStart(_) => self.visit_sequence(visitor, mark),
+            Event::MappingStart(_) => self.visit_mapping(visitor, mark),
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
@@ -1586,28 +1594,30 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
             }
             Event::Scalar(scalar) => {
                 if let Some((b'!', tag)) = scalar.tag.as_ref().and_then(|tag| tag.split_first()) {
-                    if let Some(tag) = variants.iter().find(|v| v.as_bytes() == tag) {
-                        return visitor.visit_enum(EnumAccess {
-                            de: self,
-                            name,
-                            tag: Some(tag),
-                        });
+                    // FIXME
+                    //if let Some(tag) = variants.iter().find(|v| v.as_bytes() == tag) {
+                    if let Ok(tag) = str::from_utf8(tag) {
+                        return visitor.visit_enum(EnumAccess { de: self, tag });
                     }
                 }
                 visitor.visit_enum(UnitVariantAccess { de: self })
             }
-            Event::MappingStart => {
-                *self.pos += 1;
-                let value = visitor.visit_enum(EnumAccess {
-                    de: self,
-                    name,
-                    tag: None,
-                })?;
-                self.end_mapping(1)?;
-                Ok(value)
+            Event::MappingStart(mapping) => {
+                if let Some((b'!', tag)) = mapping.tag.as_ref().and_then(|tag| tag.split_first()) {
+                    if let Ok(tag) = str::from_utf8(tag) {
+                        return visitor.visit_enum(EnumAccess { de: self, tag });
+                    }
+                }
+                let err = de::Error::invalid_type(Unexpected::Map, &"a YAML tag starting with '!'");
+                Err(error::fix_mark(err, mark, self.path))
             }
-            Event::SequenceStart => {
-                let err = de::Error::invalid_type(Unexpected::Seq, &"string or singleton map");
+            Event::SequenceStart(sequence) => {
+                if let Some((b'!', tag)) = sequence.tag.as_ref().and_then(|tag| tag.split_first()) {
+                    if let Ok(tag) = str::from_utf8(tag) {
+                        return visitor.visit_enum(EnumAccess { de: self, tag });
+                    }
+                }
+                let err = de::Error::invalid_type(Unexpected::Seq, &"a YAML tag starting with '!'");
                 Err(error::fix_mark(err, mark, self.path))
             }
             Event::SequenceEnd => panic!("unexpected end of sequence"),

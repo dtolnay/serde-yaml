@@ -185,6 +185,13 @@ impl PartialOrd for Mapping {
                         total_cmp(ak, bk).then_with(|| total_cmp(av, bv))
                     })
                 }
+                (Value::Mapping(_), _) => Ordering::Less,
+                (_, Value::Mapping(_)) => Ordering::Greater,
+
+                (Value::Tagged(a), Value::Tagged(b)) => a
+                    .tag
+                    .cmp(&b.tag)
+                    .then_with(|| total_cmp(&a.value, &b.value)),
             }
         }
 

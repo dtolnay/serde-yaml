@@ -39,27 +39,32 @@ impl Index for usize {
             _ => None,
         }
     }
-    fn index_or_insert<'v>(&self, v: &'v mut Value) -> &'v mut Value {
-        match v {
-            Value::Sequence(vec) => {
-                let len = vec.len();
-                vec.get_mut(*self).unwrap_or_else(|| {
-                    panic!(
-                        "cannot access index {} of YAML sequence of length {}",
-                        self, len
-                    )
-                })
-            }
-            Value::Mapping(map) => {
-                let n = Value::Number((*self).into());
-                // TODO: use entry() once LinkedHashMap supports entry()
-                // https://github.com/contain-rs/linked-hash-map/issues/5
-                if !map.contains_key(&n) {
-                    map.insert(n.clone(), Value::Null);
+    fn index_or_insert<'v>(&self, mut v: &'v mut Value) -> &'v mut Value {
+        loop {
+            match v {
+                Value::Sequence(vec) => {
+                    let len = vec.len();
+                    return vec.get_mut(*self).unwrap_or_else(|| {
+                        panic!(
+                            "cannot access index {} of YAML sequence of length {}",
+                            self, len
+                        )
+                    });
                 }
-                map.get_mut(&n).unwrap()
+                Value::Mapping(map) => {
+                    let n = Value::Number((*self).into());
+                    // TODO: use entry() once LinkedHashMap supports entry()
+                    // https://github.com/contain-rs/linked-hash-map/issues/5
+                    if !map.contains_key(&n) {
+                        map.insert(n.clone(), Value::Null);
+                    }
+                    return map.get_mut(&n).unwrap();
+                }
+                Value::Tagged(tagged) => {
+                    v = &mut tagged.value;
+                }
+                _ => panic!("cannot access index {} of YAML {}", self, Type(v)),
             }
-            _ => panic!("cannot access index {} of YAML {}", self, Type(v)),
         }
     }
 }
@@ -158,6 +163,7 @@ impl<'a> fmt::Display for Type<'a> {
             Value::String(_) => formatter.write_str("string"),
             Value::Sequence(_) => formatter.write_str("sequence"),
             Value::Mapping(_) => formatter.write_str("mapping"),
+            Value::Tagged(_) => unreachable!(),
         }
     }
 }
