@@ -1517,7 +1517,8 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
     where
         V: Visitor<'de>,
     {
-        visitor.visit_newtype_struct(self)
+        let (_event, mark) = self.peek_event_mark()?;
+        self.recursion_check(mark, |de| visitor.visit_newtype_struct(de))
     }
 
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value>
