@@ -26,14 +26,14 @@ pub trait Index: private::Sealed {
 
 impl Index for usize {
     fn index_into<'v>(&self, v: &'v Value) -> Option<&'v Value> {
-        match v {
+        match v.untag_ref() {
             Value::Sequence(vec) => vec.get(*self),
             Value::Mapping(vec) => vec.get(&Value::Number((*self).into())),
             _ => None,
         }
     }
     fn index_into_mut<'v>(&self, v: &'v mut Value) -> Option<&'v mut Value> {
-        match v {
+        match v.untag_mut() {
             Value::Sequence(vec) => vec.get_mut(*self),
             Value::Mapping(vec) => vec.get_mut(&Value::Number((*self).into())),
             _ => None,
@@ -55,9 +55,7 @@ impl Index for usize {
                     let n = Value::Number((*self).into());
                     return map.entry(n).or_insert(Value::Null);
                 }
-                Value::Tagged(tagged) => {
-                    v = &mut tagged.value;
-                }
+                Value::Tagged(tagged) => v = &mut tagged.value,
                 _ => panic!("cannot access index {} of YAML {}", self, Type(v)),
             }
         }
@@ -66,26 +64,29 @@ impl Index for usize {
 
 impl Index for Value {
     fn index_into<'v>(&self, v: &'v Value) -> Option<&'v Value> {
-        match v {
+        match v.untag_ref() {
             Value::Mapping(map) => map.get(self),
             _ => None,
         }
     }
     fn index_into_mut<'v>(&self, v: &'v mut Value) -> Option<&'v mut Value> {
-        match v {
+        match v.untag_mut() {
             Value::Mapping(map) => map.get_mut(self),
             _ => None,
         }
     }
-    fn index_or_insert<'v>(&self, v: &'v mut Value) -> &'v mut Value {
+    fn index_or_insert<'v>(&self, mut v: &'v mut Value) -> &'v mut Value {
         if let Value::Null = *v {
             let mut map = Mapping::new();
             map.insert(self.clone(), Value::Null);
             *v = Value::Mapping(map);
         }
-        match v {
-            Value::Mapping(map) => map.entry(self.clone()).or_insert(Value::Null),
-            _ => panic!("cannot access key {:?} in YAML {}", self, Type(v)),
+        loop {
+            match v {
+                Value::Mapping(map) => return map.entry(self.clone()).or_insert(Value::Null),
+                Value::Tagged(tagged) => v = &mut tagged.value,
+                _ => panic!("cannot access key {:?} in YAML {}", self, Type(v)),
+            }
         }
     }
 }

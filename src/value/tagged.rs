@@ -50,6 +50,14 @@ impl Value {
         }
         cur
     }
+
+    pub(crate) fn untag_mut(&mut self) -> &mut Self {
+        let mut cur = self;
+        while let Value::Tagged(tagged) = cur {
+            cur = &mut tagged.value;
+        }
+        cur
+    }
 }
 
 pub(crate) fn nobang(maybe_banged: &str) -> &str {

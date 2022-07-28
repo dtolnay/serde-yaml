@@ -203,7 +203,7 @@ impl Value {
     /// assert!(!v.is_null());
     /// ```
     pub fn is_null(&self) -> bool {
-        if let Value::Null = *self {
+        if let Value::Null = self.untag_ref() {
             true
         } else {
             false
@@ -224,7 +224,7 @@ impl Value {
     /// assert_eq!(v.as_null(), None);
     /// ```
     pub fn as_null(&self) -> Option<()> {
-        match self {
+        match self.untag_ref() {
             Value::Null => Some(()),
             _ => None,
         }
@@ -265,7 +265,7 @@ impl Value {
     /// assert_eq!(v.as_bool(), None);
     /// ```
     pub fn as_bool(&self) -> Option<bool> {
-        match self {
+        match self.untag_ref() {
             Value::Bool(b) => Some(*b),
             _ => None,
         }
@@ -285,7 +285,7 @@ impl Value {
     /// assert!(!v.is_number());
     /// ```
     pub fn is_number(&self) -> bool {
-        match self {
+        match self.untag_ref() {
             Value::Number(_) => true,
             _ => false,
         }
@@ -327,7 +327,7 @@ impl Value {
     /// assert_eq!(v.as_i64(), None);
     /// ```
     pub fn as_i64(&self) -> Option<i64> {
-        match self {
+        match self.untag_ref() {
             Value::Number(n) => n.as_i64(),
             _ => None,
         }
@@ -369,7 +369,7 @@ impl Value {
     /// assert_eq!(v.as_u64(), None);
     /// ```
     pub fn as_u64(&self) -> Option<u64> {
-        match self {
+        match self.untag_ref() {
             Value::Number(n) => n.as_u64(),
             _ => None,
         }
@@ -395,7 +395,7 @@ impl Value {
     /// assert!(!v.is_f64());
     /// ```
     pub fn is_f64(&self) -> bool {
-        match self {
+        match self.untag_ref() {
             Value::Number(n) => n.is_f64(),
             _ => false,
         }
@@ -416,7 +416,7 @@ impl Value {
     /// assert_eq!(v.as_f64(), None);
     /// ```
     pub fn as_f64(&self) -> Option<f64> {
-        match self {
+        match self.untag_ref() {
             Value::Number(i) => i.as_f64(),
             _ => None,
         }
@@ -457,7 +457,7 @@ impl Value {
     /// assert_eq!(v.as_str(), None);
     /// ```
     pub fn as_str(&self) -> Option<&str> {
-        match self {
+        match self.untag_ref() {
             Value::String(s) => Some(s),
             _ => None,
         }
@@ -495,7 +495,7 @@ impl Value {
     /// assert_eq!(v.as_sequence(), None);
     /// ```
     pub fn as_sequence(&self) -> Option<&Sequence> {
-        match self {
+        match self.untag_ref() {
             Value::Sequence(seq) => Some(seq),
             _ => None,
         }
@@ -518,7 +518,7 @@ impl Value {
     /// assert_eq!(v.as_sequence_mut(), None);
     /// ```
     pub fn as_sequence_mut(&mut self) -> Option<&mut Sequence> {
-        match self {
+        match self.untag_mut() {
             Value::Sequence(seq) => Some(seq),
             _ => None,
         }
@@ -560,7 +560,7 @@ impl Value {
     /// assert_eq!(v.as_mapping(), None);
     /// ```
     pub fn as_mapping(&self) -> Option<&Mapping> {
-        match self {
+        match self.untag_ref() {
             Value::Mapping(map) => Some(map),
             _ => None,
         }
@@ -588,7 +588,7 @@ impl Value {
     /// assert_eq!(v.as_mapping_mut(), None);
     /// ```
     pub fn as_mapping_mut(&mut self) -> Option<&mut Mapping> {
-        match self {
+        match self.untag_mut() {
             Value::Mapping(map) => Some(map),
             _ => None,
         }
