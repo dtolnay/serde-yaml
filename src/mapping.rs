@@ -92,6 +92,12 @@ impl Mapping {
         index.remove_from(self)
     }
 
+    /// Remove and return the key-value pair.
+    #[inline]
+    pub fn remove_entry<I: Index>(&mut self, index: I) -> Option<(Value, Value)> {
+        index.remove_entry_from(self)
+    }
+
     /// Returns the maximum number of key-value pairs the map can hold without
     /// reallocating.
     #[inline]
@@ -153,6 +159,9 @@ pub trait Index: private::Sealed {
 
     #[doc(hidden)]
     fn remove_from(&self, v: &mut Mapping) -> Option<Value>;
+
+    #[doc(hidden)]
+    fn remove_entry_from(&self, v: &mut Mapping) -> Option<(Value, Value)>;
 }
 
 struct HashLikeValue<'a>(&'a str);
@@ -188,6 +197,9 @@ impl Index for Value {
     fn remove_from(&self, v: &mut Mapping) -> Option<Value> {
         v.map.remove(self)
     }
+    fn remove_entry_from(&self, v: &mut Mapping) -> Option<(Value, Value)> {
+        v.map.remove_entry(self)
+    }
 }
 
 impl Index for str {
@@ -203,6 +215,9 @@ impl Index for str {
     fn remove_from(&self, v: &mut Mapping) -> Option<Value> {
         v.map.remove(&HashLikeValue(self))
     }
+    fn remove_entry_from(&self, v: &mut Mapping) -> Option<(Value, Value)> {
+        v.map.remove_entry(&HashLikeValue(self))
+    }
 }
 
 impl Index for String {
@@ -217,6 +232,9 @@ impl Index for String {
     }
     fn remove_from(&self, v: &mut Mapping) -> Option<Value> {
         self.as_str().remove_from(v)
+    }
+    fn remove_entry_from(&self, v: &mut Mapping) -> Option<(Value, Value)> {
+        self.as_str().remove_entry_from(v)
     }
 }
 
@@ -235,6 +253,9 @@ where
     }
     fn remove_from(&self, v: &mut Mapping) -> Option<Value> {
         (**self).remove_from(v)
+    }
+    fn remove_entry_from(&self, v: &mut Mapping) -> Option<(Value, Value)> {
+        (**self).remove_entry_from(v)
     }
 }
 
