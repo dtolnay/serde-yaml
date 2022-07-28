@@ -1689,8 +1689,6 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
 /// is wrong with the data, for example required struct fields are missing from
 /// the YAML map or some number is too big to fit in the expected primitive
 /// type.
-///
-/// YAML currently does not support zero-copy deserialization.
 pub fn from_str<'de, T>(s: &'de str) -> Result<T>
 where
     T: Deserialize<'de>,
@@ -1707,8 +1705,6 @@ where
 /// is wrong with the data, for example required struct fields are missing from
 /// the YAML map or some number is too big to fit in the expected primitive
 /// type.
-///
-/// YAML currently does not support zero-copy deserialization.
 pub fn from_str_seed<'de, T, S>(s: &'de str, seed: S) -> Result<T>
 where
     S: DeserializeSeed<'de, Value = T>,
@@ -1759,8 +1755,6 @@ where
 /// is wrong with the data, for example required struct fields are missing from
 /// the YAML map or some number is too big to fit in the expected primitive
 /// type.
-///
-/// YAML currently does not support zero-copy deserialization.
 pub fn from_slice<'de, T>(v: &'de [u8]) -> Result<T>
 where
     T: Deserialize<'de>,
@@ -1777,8 +1771,6 @@ where
 /// is wrong with the data, for example required struct fields are missing from
 /// the YAML map or some number is too big to fit in the expected primitive
 /// type.
-///
-/// YAML currently does not support zero-copy deserialization.
 pub fn from_slice_seed<'de, T, S>(v: &'de [u8], seed: S) -> Result<T>
 where
     S: DeserializeSeed<'de, Value = T>,
