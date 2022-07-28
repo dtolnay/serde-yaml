@@ -53,12 +53,7 @@ impl Index for usize {
                 }
                 Value::Mapping(map) => {
                     let n = Value::Number((*self).into());
-                    // TODO: use entry() once LinkedHashMap supports entry()
-                    // https://github.com/contain-rs/linked-hash-map/issues/5
-                    if !map.contains_key(&n) {
-                        map.insert(n.clone(), Value::Null);
-                    }
-                    return map.get_mut(&n).unwrap();
+                    return map.entry(n).or_insert(Value::Null);
                 }
                 Value::Tagged(tagged) => {
                     v = &mut tagged.value;
@@ -89,14 +84,7 @@ impl Index for Value {
             *v = Value::Mapping(map);
         }
         match v {
-            Value::Mapping(map) => {
-                // TODO: use entry() once LinkedHashMap supports entry()
-                // https://github.com/contain-rs/linked-hash-map/issues/5
-                if !map.contains_key(self) {
-                    map.insert(self.clone(), Value::Null);
-                }
-                map.get_mut(self).unwrap()
-            }
+            Value::Mapping(map) => map.entry(self.clone()).or_insert(Value::Null),
             _ => panic!("cannot access key {:?} in YAML {}", self, Type(v)),
         }
     }
