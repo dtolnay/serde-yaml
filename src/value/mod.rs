@@ -1,6 +1,7 @@
 //! The Value enum, a loosely typed way of representing any valid YAML value.
 
 mod de;
+mod debug;
 mod from;
 mod index;
 mod partial_eq;
@@ -20,7 +21,7 @@ pub use self::tagged::{Tag, TaggedValue};
 pub use crate::number::Number;
 
 /// Represents any valid YAML value.
-#[derive(Clone, PartialEq, PartialOrd, Debug)]
+#[derive(Clone, PartialEq, PartialOrd)]
 pub enum Value {
     /// Represents a YAML null value.
     Null,

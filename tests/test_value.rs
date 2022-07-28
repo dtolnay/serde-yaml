@@ -93,3 +93,41 @@ fn test_merge() {
         assert_eq!(value[4], value[i]);
     }
 }
+
+#[test]
+fn test_debug() {
+    let yaml = indoc! {"
+        Null: ~
+        Bool: true
+        Number: 1
+        String: ...
+        Sequence:
+          - true
+        EmptySequence: []
+        EmptyMapping: {}
+        Tagged: !tag true
+    "};
+
+    let value: Value = serde_yaml::from_str(yaml).unwrap();
+    let debug = format!("{:#?}", value);
+
+    let expected = indoc! {r#"
+        Mapping {
+            "Null": Null,
+            "Bool": Bool(true),
+            "Number": Number(1),
+            "String": String("..."),
+            "Sequence": Sequence [
+                Bool(true),
+            ],
+            "EmptySequence": Sequence [],
+            "EmptyMapping": Mapping {},
+            "Tagged": TaggedValue {
+                tag: !tag,
+                value: Bool(true),
+            },
+        }"#
+    };
+
+    assert_eq!(debug, expected);
+}
