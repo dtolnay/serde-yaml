@@ -1594,8 +1594,6 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
             }
             Event::Scalar(scalar) => {
                 if let Some((b'!', tag)) = scalar.tag.as_ref().and_then(|tag| tag.split_first()) {
-                    // FIXME
-                    //if let Some(tag) = variants.iter().find(|v| v.as_bytes() == tag) {
                     if let Ok(tag) = str::from_utf8(tag) {
                         return visitor.visit_enum(EnumAccess { de: self, tag });
                     }
