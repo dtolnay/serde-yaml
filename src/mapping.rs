@@ -677,6 +677,12 @@ impl<'a> VacantEntry<'a> {
         self.vacant.key()
     }
 
+    /// Takes ownership of the key, leaving the entry vacant.
+    #[inline]
+    pub fn into_key(self) -> Value {
+        self.vacant.into_key()
+    }
+
     /// Sets the value of the entry with the VacantEntry's key, and returns a
     /// mutable reference to it.
     #[inline]
