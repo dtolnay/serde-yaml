@@ -1579,7 +1579,6 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
             Event::Alias(mut pos) => self
                 .jump(&mut pos)?
                 .deserialize_struct(name, fields, visitor),
-            Event::SequenceStart(_) => self.visit_sequence(visitor, mark),
             Event::MappingStart(_) => self.visit_mapping(visitor, mark),
             other => Err(invalid_type(other, &visitor)),
         }
