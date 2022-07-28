@@ -521,3 +521,23 @@ fn test_ignore_tag() {
 
     test_de(yaml, &expected);
 }
+
+#[test]
+fn test_no_required_fields() {
+    #[derive(Deserialize, PartialEq, Debug)]
+    pub struct NoRequiredFields {
+        optional: Option<usize>,
+    }
+
+    let expected = NoRequiredFields { optional: None };
+    let deserialized: NoRequiredFields = serde_yaml::from_str("").unwrap();
+    assert_eq!(expected, deserialized);
+
+    let expected = Vec::<String>::new();
+    let deserialized: Vec<String> = serde_yaml::from_str("").unwrap();
+    assert_eq!(expected, deserialized);
+
+    let expected = BTreeMap::new();
+    let deserialized: BTreeMap<char, usize> = serde_yaml::from_str("").unwrap();
+    assert_eq!(expected, deserialized);
+}
