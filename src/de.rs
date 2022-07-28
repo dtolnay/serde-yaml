@@ -6,8 +6,7 @@ use crate::loader::{Document, Loader};
 use crate::path::Path;
 use serde::de::value::StrDeserializer;
 use serde::de::{
-    self, Deserialize, DeserializeOwned, DeserializeSeed, Expected, IgnoredAny as Ignore,
-    Unexpected, Visitor,
+    self, Deserialize, DeserializeOwned, DeserializeSeed, Expected, IgnoredAny, Unexpected, Visitor,
 };
 use std::fmt;
 use std::io;
@@ -551,7 +550,7 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
     fn end_sequence(&mut self, len: usize) -> Result<()> {
         let total = {
             let mut seq = SeqAccess { de: self, len };
-            while de::SeqAccess::next_element::<Ignore>(&mut seq)?.is_some() {}
+            while de::SeqAccess::next_element::<IgnoredAny>(&mut seq)?.is_some() {}
             seq.len
         };
         match self.next_event()? {
@@ -582,7 +581,7 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
                 len,
                 key: None,
             };
-            while de::MapAccess::next_entry::<Ignore, Ignore>(&mut map)?.is_some() {}
+            while de::MapAccess::next_entry::<IgnoredAny, IgnoredAny>(&mut map)?.is_some() {}
             map.len
         };
         match self.next_event()? {
