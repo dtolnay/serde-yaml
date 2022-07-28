@@ -6,7 +6,7 @@
 
 use indoc::indoc;
 use serde_derive::Deserialize;
-use serde_yaml::Value;
+use serde_yaml::{Deserializer, Value};
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
@@ -43,7 +43,7 @@ where
     T: PartialEq + Debug,
     S: serde::de::DeserializeSeed<'de, Value = T>,
 {
-    let deserialized: T = serde_yaml::seed::from_str_seed(yaml, seed).unwrap();
+    let deserialized: T = seed.deserialize(Deserializer::from_str(yaml)).unwrap();
     assert_eq!(*expected, deserialized);
 
     serde_yaml::from_str::<serde_yaml::Value>(yaml).unwrap();

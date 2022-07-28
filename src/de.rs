@@ -10,7 +10,6 @@ use serde::de::{
 };
 use std::fmt;
 use std::io;
-use std::marker::PhantomData;
 use std::mem;
 use std::num::ParseIntError;
 use std::str;
@@ -1760,23 +1759,7 @@ pub fn from_str<'de, T>(s: &'de str) -> Result<T>
 where
     T: Deserialize<'de>,
 {
-    from_str_seed(s, PhantomData)
-}
-
-/// Deserialize an instance of type `T` from a string of YAML text with a seed.
-///
-/// This conversion can fail if the structure of the Value does not match the
-/// structure expected by `T`, for example if `T` is a struct type but the Value
-/// contains something other than a YAML map. It can also fail if the structure
-/// is correct but `T`'s implementation of `Deserialize` decides that something
-/// is wrong with the data, for example required struct fields are missing from
-/// the YAML map or some number is too big to fit in the expected primitive
-/// type.
-pub fn from_str_seed<'de, T, S>(s: &'de str, seed: S) -> Result<T>
-where
-    S: DeserializeSeed<'de, Value = T>,
-{
-    seed.deserialize(Deserializer::from_str(s))
+    T::deserialize(Deserializer::from_str(s))
 }
 
 /// Deserialize an instance of type `T` from an IO stream of YAML.
@@ -1793,24 +1776,7 @@ where
     R: io::Read,
     T: DeserializeOwned,
 {
-    from_reader_seed(rdr, PhantomData)
-}
-
-/// Deserialize an instance of type `T` from an IO stream of YAML with a seed.
-///
-/// This conversion can fail if the structure of the Value does not match the
-/// structure expected by `T`, for example if `T` is a struct type but the Value
-/// contains something other than a YAML map. It can also fail if the structure
-/// is correct but `T`'s implementation of `Deserialize` decides that something
-/// is wrong with the data, for example required struct fields are missing from
-/// the YAML map or some number is too big to fit in the expected primitive
-/// type.
-pub fn from_reader_seed<R, T, S>(rdr: R, seed: S) -> Result<T>
-where
-    R: io::Read,
-    S: for<'de> DeserializeSeed<'de, Value = T>,
-{
-    seed.deserialize(Deserializer::from_reader(rdr))
+    T::deserialize(Deserializer::from_reader(rdr))
 }
 
 /// Deserialize an instance of type `T` from bytes of YAML text.
@@ -1826,21 +1792,5 @@ pub fn from_slice<'de, T>(v: &'de [u8]) -> Result<T>
 where
     T: Deserialize<'de>,
 {
-    from_slice_seed(v, PhantomData)
-}
-
-/// Deserialize an instance of type `T` from bytes of YAML text with a seed.
-///
-/// This conversion can fail if the structure of the Value does not match the
-/// structure expected by `T`, for example if `T` is a struct type but the Value
-/// contains something other than a YAML map. It can also fail if the structure
-/// is correct but `T`'s implementation of `Deserialize` decides that something
-/// is wrong with the data, for example required struct fields are missing from
-/// the YAML map or some number is too big to fit in the expected primitive
-/// type.
-pub fn from_slice_seed<'de, T, S>(v: &'de [u8], seed: S) -> Result<T>
-where
-    S: DeserializeSeed<'de, Value = T>,
-{
-    seed.deserialize(Deserializer::from_slice(v))
+    T::deserialize(Deserializer::from_slice(v))
 }
