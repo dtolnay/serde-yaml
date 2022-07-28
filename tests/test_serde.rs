@@ -7,7 +7,7 @@
 
 use indoc::indoc;
 use serde_derive::{Deserialize, Serialize};
-use serde_yaml::Value;
+use serde_yaml::{Mapping, Number, Value};
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
@@ -408,8 +408,6 @@ fn test_struct_variant() {
 
 #[test]
 fn test_value() {
-    use serde_yaml::{Mapping, Number};
-
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct GenericInstructions {
         #[serde(rename = "type")]
@@ -442,7 +440,6 @@ fn test_value() {
 
 #[test]
 fn test_mapping() {
-    use serde_yaml::Mapping;
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct Data {
         pub substructure: Mapping,
