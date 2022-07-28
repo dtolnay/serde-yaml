@@ -17,7 +17,7 @@ data in [YAML] file format.
 ```toml
 [dependencies]
 serde = "1.0"
-serde_yaml = "0.8"
+serde_yaml = "0.9"
 ```
 
 Release notes are available under [GitHub releases].
@@ -57,7 +57,7 @@ defined in your program.
 ```toml
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.8"
+serde_yaml = "0.9"
 ```
 
 Structs serialize in the obvious way:
