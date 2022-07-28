@@ -189,16 +189,25 @@ fn test_deserialize_nested_enum() {
         Variant(usize),
     }
 
-    let yaml = "!Inner 0\n";
-    let expected = "unknown variant `Inner`, expected `Variant`";
+    let yaml = indoc! {"
+        ---
+        !Inner 0
+    "};
+    let expected = "deserializing nested enum in Outer::Inner from YAML is not supported yet at line 2 column 1";
     test_error::<Outer>(yaml, expected);
 
-    let yaml = "!Variant 0\n";
+    let yaml = indoc! {"
+        ---
+        !Variant 0
+    "};
     let expected = "unknown variant `Variant`, expected `Inner`";
     test_error::<Outer>(yaml, expected);
 
-    let yaml = "!Inner !Variant 0\n";
-    let expected = "unknown variant `Inner`, expected `Variant`";
+    let yaml = indoc! {"
+        ---
+        !Inner !Variant 0
+    "};
+    let expected = "deserializing nested enum in Outer::Inner from YAML is not supported yet at line 2 column 1";
     test_error::<Outer>(yaml, expected);
 }
 
