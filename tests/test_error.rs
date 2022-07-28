@@ -2,7 +2,7 @@
 
 use indoc::indoc;
 use serde::de::{Deserialize, SeqAccess, Visitor};
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 use serde_yaml::Deserializer;
 use std::collections::BTreeMap;
 use std::fmt::{self, Debug};
@@ -148,6 +148,34 @@ fn test_missing_enum_tag() {
     "#};
     let expected = "invalid type: map, expected a YAML tag starting with '!' at position 0";
     test_error::<E>(yaml, expected);
+}
+
+#[test]
+fn test_serialize_nested_enum() {
+    #[derive(Serialize, Debug)]
+    enum Outer {
+        Inner(Inner),
+    }
+    #[derive(Serialize, Debug)]
+    enum Inner {
+        Newtype(usize),
+        Tuple(usize, usize),
+        Struct { x: usize },
+    }
+
+    let expected = "serializing nested enums in YAML is not supported yet";
+
+    let e = Outer::Inner(Inner::Newtype(0));
+    let error = serde_yaml::to_string(&e).unwrap_err();
+    assert_eq!(error.to_string(), expected);
+
+    let e = Outer::Inner(Inner::Tuple(0, 0));
+    let error = serde_yaml::to_string(&e).unwrap_err();
+    assert_eq!(error.to_string(), expected);
+
+    let e = Outer::Inner(Inner::Struct { x: 0 });
+    let error = serde_yaml::to_string(&e).unwrap_err();
+    assert_eq!(error.to_string(), expected);
 }
 
 #[test]

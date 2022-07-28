@@ -28,6 +28,7 @@ pub(crate) enum ErrorImpl {
     RepetitionLimitExceeded,
     BytesUnsupported,
     UnknownAnchor(libyaml::Mark),
+    SerializeNestedEnum,
     ScalarInMerge,
     TaggedInMerge,
     ScalarInMergeElement,
@@ -220,6 +221,9 @@ impl ErrorImpl {
                 f.write_str("serialization and deserialization of bytes in YAML is not implemented")
             }
             ErrorImpl::UnknownAnchor(mark) => write!(f, "unknown anchor at {}", mark),
+            ErrorImpl::SerializeNestedEnum => {
+                write!(f, "serializing nested enums in YAML is not supported yet")
+            }
             ErrorImpl::ScalarInMerge => {
                 f.write_str("expected a mapping or list of mappings for merging, but found scalar")
             }
@@ -248,6 +252,7 @@ impl ErrorImpl {
             ErrorImpl::RepetitionLimitExceeded => f.write_str("RepetitionLimitExceeded"),
             ErrorImpl::BytesUnsupported => f.write_str("BytesUnsupported"),
             ErrorImpl::UnknownAnchor(mark) => f.debug_tuple("UnknownAnchor").field(mark).finish(),
+            ErrorImpl::SerializeNestedEnum => f.write_str("SerializeNestedEnum"),
             ErrorImpl::ScalarInMerge => f.write_str("ScalarInMerge"),
             ErrorImpl::TaggedInMerge => f.write_str("TaggedInMerge"),
             ErrorImpl::ScalarInMergeElement => f.write_str("ScalarInMergeElement"),

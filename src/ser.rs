@@ -406,6 +406,9 @@ where
     where
         T: ?Sized + ser::Serialize,
     {
+        if let State::FoundTag(_) = self.state {
+            return Err(error::new(ErrorImpl::SerializeNestedEnum));
+        }
         self.state = State::FoundTag(variant.to_owned());
         value.serialize(&mut *self)
     }
@@ -447,6 +450,9 @@ where
         variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleVariant> {
+        if let State::FoundTag(_) = self.state {
+            return Err(error::new(ErrorImpl::SerializeNestedEnum));
+        }
         self.state = State::FoundTag(variant.to_owned());
         self.emit_sequence_start()?;
         Ok(self)
@@ -473,6 +479,9 @@ where
         variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStructVariant> {
+        if let State::FoundTag(_) = self.state {
+            return Err(error::new(ErrorImpl::SerializeNestedEnum));
+        }
         self.state = State::FoundTag(variant.to_owned());
         self.emit_mapping_start()?;
         Ok(self)
