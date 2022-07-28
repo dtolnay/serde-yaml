@@ -93,3 +93,98 @@ fn test_merge() {
         assert_eq!(value[4], value[i]);
     }
 }
+
+#[test]
+fn test_debug() {
+    let yaml = indoc! {"
+        Null: ~
+        Bool: true
+        Number: 1
+        String: ...
+        Sequence:
+          - true
+        EmptySequence: []
+        Mapping:
+          k: v
+        EmptyMapping: {}
+        Tagged: !tag true
+    "};
+
+    let value: Value = serde_yaml::from_str(yaml).unwrap();
+    let debug = format!("{:#?}", value);
+
+    let expected = indoc! {"
+        Mapping(
+            Mapping {
+                map: {
+                    String(
+                        \"Null\",
+                    ): Null,
+                    String(
+                        \"Bool\",
+                    ): Bool(
+                        true,
+                    ),
+                    String(
+                        \"Number\",
+                    ): Number(
+                        PosInt(
+                            1,
+                        ),
+                    ),
+                    String(
+                        \"String\",
+                    ): String(
+                        \"...\",
+                    ),
+                    String(
+                        \"Sequence\",
+                    ): Sequence(
+                        [
+                            Bool(
+                                true,
+                            ),
+                        ],
+                    ),
+                    String(
+                        \"EmptySequence\",
+                    ): Sequence(
+                        [],
+                    ),
+                    String(
+                        \"Mapping\",
+                    ): Mapping(
+                        Mapping {
+                            map: {
+                                String(
+                                    \"k\",
+                                ): String(
+                                    \"v\",
+                                ),
+                            },
+                        },
+                    ),
+                    String(
+                        \"EmptyMapping\",
+                    ): Mapping(
+                        Mapping {
+                            map: {},
+                        },
+                    ),
+                    String(
+                        \"Tagged\",
+                    ): Tagged(
+                        TaggedValue {
+                            tag: !tag,
+                            value: Bool(
+                                true,
+                            ),
+                        },
+                    ),
+                },
+            },
+        )\
+    "};
+
+    assert_eq!(debug, expected);
+}
