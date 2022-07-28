@@ -164,25 +164,50 @@ fn test_enum_alias() {
 }
 
 #[test]
-fn test_enum_tag() {
+fn test_enum_representations() {
     #[derive(Deserialize, PartialEq, Debug)]
-    enum E {
-        A(String),
-        B(String),
-    }
-    #[derive(Deserialize, PartialEq, Debug)]
-    struct Data {
-        a: E,
-        b: E,
+    enum Enum {
+        Unit,
+        Tuple(i32, i32),
+        Struct { x: i32, y: i32 },
+        String(String),
+        Number(f64),
     }
     let yaml = indoc! {"
-        a: !A foo
-        b: !B bar
+        - Unit
+        - 'Unit'
+        - !Unit
+        - !Unit ~
+        - !Unit null
+        - !Tuple [0, 0]
+        - !Tuple
+          - 0
+          - 0
+        - !Struct {x: 0, y: 0}
+        - !Struct
+          x: 0
+          y: 0
+        - !String '...'
+        - !String ...
+        - !String
+        - !Number 0
+
     "};
-    let expected = Data {
-        a: E::A("foo".into()),
-        b: E::B("bar".into()),
-    };
+    let expected = vec![
+        Enum::Unit,
+        Enum::Unit,
+        Enum::Unit,
+        Enum::Unit,
+        Enum::Unit,
+        Enum::Tuple(0, 0),
+        Enum::Tuple(0, 0),
+        Enum::Struct { x: 0, y: 0 },
+        Enum::Struct { x: 0, y: 0 },
+        Enum::String("...".to_owned()),
+        Enum::String("...".to_owned()),
+        Enum::String(String::new()),
+        Enum::Number(0.0),
+    ];
     test_de(yaml, &expected);
 }
 
