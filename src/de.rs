@@ -807,7 +807,7 @@ impl<'de, 'document, 'variant> de::VariantAccess<'de>
     }
 }
 
-fn visit_scalar<'de, V>(visitor: V, scalar: &Scalar<'de>) -> Result<V::Value>
+fn visit_scalar<'de, V>(visitor: V, scalar: &Scalar<'de>, tagged_already: bool) -> Result<V::Value>
 where
     V: Visitor<'de>,
 {
@@ -820,7 +820,7 @@ where
             ))
         }
     };
-    if let Some(tag) = &scalar.tag {
+    if let (Some(tag), false) = (&scalar.tag, tagged_already) {
         if tag == Tag::BOOL {
             return match parse_bool(v) {
                 Some(v) => visitor.visit_bool(v),
@@ -1120,7 +1120,7 @@ fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
         Event::Alias(_) => unreachable!(),
         Event::Scalar(scalar) => {
             let get_type = InvalidType { exp };
-            match visit_scalar(get_type, scalar) {
+            match visit_scalar(get_type, scalar, false) {
                 Ok(void) => match void {},
                 Err(invalid_type) => invalid_type,
             }
@@ -1159,7 +1159,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                         *self.pos -= 1;
                         break visitor.visit_enum(EnumAccess { de: self, tag });
                     }
-                    break visit_scalar(visitor, scalar);
+                    break visit_scalar(visitor, scalar, tagged_already);
                 }
                 Event::SequenceStart(sequence) => {
                     if let Some(tag) = enum_tag(&sequence.tag, tagged_already) {
@@ -1429,7 +1429,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
             Event::Scalar(scalar) => {
                 if scalar.style != ScalarStyle::Plain {
                     true
-                } else if let Some(tag) = &scalar.tag {
+                } else if let (Some(tag), false) = (&scalar.tag, self.tagged_already) {
                     if tag == Tag::NULL {
                         if let Some(()) = parse_null(&scalar.value) {
                             false
@@ -1465,12 +1465,13 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
     where
         V: Visitor<'de>,
     {
+        let tagged_already = self.tagged_already;
         let (next, mark) = self.next_event_mark()?;
         match next {
             Event::Scalar(scalar) => {
                 let is_null = if scalar.style != ScalarStyle::Plain {
                     false
-                } else if let Some(tag) = &scalar.tag {
+                } else if let (Some(tag), false) = (&scalar.tag, tagged_already) {
                     tag == Tag::NULL && parse_null(&scalar.value).is_some()
                 } else {
                     scalar.value.is_empty() || parse_null(&scalar.value).is_some()
