@@ -98,6 +98,16 @@ impl Mapping {
         index.remove_entry_from(self)
     }
 
+    /// Scan through each key-value pair in the map and keep those where the
+    /// closure `keep` returns true.
+    #[inline]
+    pub fn retain<F>(&mut self, keep: F)
+    where
+        F: FnMut(&Value, &mut Value) -> bool,
+    {
+        self.map.retain(keep);
+    }
+
     /// Returns the maximum number of key-value pairs the map can hold without
     /// reallocating.
     #[inline]
