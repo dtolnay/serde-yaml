@@ -2,7 +2,7 @@ use crate::Error;
 use serde::de::{Unexpected, Visitor};
 use serde::{forward_to_deserialize_any, Deserialize, Deserializer, Serialize, Serializer};
 use std::cmp::Ordering;
-use std::fmt::{self, Debug, Display};
+use std::fmt::{self, Display};
 use std::hash::{Hash, Hasher};
 
 /// Represents a YAML number, whether integer or floating point.
@@ -14,7 +14,7 @@ pub struct Number {
 // "N" is a prefix of "NegInt"... this is a false positive.
 // https://github.com/Manishearth/rust-clippy/issues/1241
 #[allow(clippy::enum_variant_names)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 enum N {
     PosInt(u64),
     /// Always less than zero.
@@ -290,7 +290,7 @@ impl Number {
     }
 }
 
-impl fmt::Display for Number {
+impl Display for Number {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self.n {
             N::PosInt(i) => Display::fmt(&i, formatter),
@@ -305,12 +305,6 @@ impl fmt::Display for Number {
             }
             N::Float(f) => Display::fmt(&f, formatter),
         }
-    }
-}
-
-impl Debug for Number {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        Debug::fmt(&self.n, formatter)
     }
 }
 
