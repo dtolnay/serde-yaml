@@ -10,7 +10,21 @@ use serde_yaml::Value;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
-fn test_de<'de, T>(yaml: &'de str, expected: &T)
+fn test_de<T>(yaml: &str, expected: &T)
+where
+    T: serde::de::DeserializeOwned + PartialEq + Debug,
+{
+    let deserialized: T = serde_yaml::from_str(yaml).unwrap();
+    assert_eq!(*expected, deserialized);
+
+    let value: Value = serde_yaml::from_str(yaml).unwrap();
+    let deserialized: T = serde_yaml::from_value(value).unwrap();
+    assert_eq!(*expected, deserialized);
+
+    serde_yaml::from_str::<serde::de::IgnoredAny>(yaml).unwrap();
+}
+
+fn test_de_no_value<'de, T>(yaml: &'de str, expected: &T)
 where
     T: serde::de::Deserialize<'de> + PartialEq + Debug,
 {
@@ -41,7 +55,7 @@ fn test_borrowed() {
         - \"double quoted\"
     "};
     let expected = vec!["plain nonàscii", "single quoted", "double quoted"];
-    test_de(yaml, &expected);
+    test_de_no_value(yaml, &expected);
 }
 
 #[test]
@@ -173,6 +187,7 @@ fn test_enum_representations() {
         String(String),
         Number(f64),
     }
+
     let yaml = indoc! {"
         - Unit
         - 'Unit'
@@ -193,6 +208,7 @@ fn test_enum_representations() {
         - !Number 0
 
     "};
+
     let expected = vec![
         Enum::Unit,
         Enum::Unit,
@@ -208,7 +224,9 @@ fn test_enum_representations() {
         Enum::String(String::new()),
         Enum::Number(0.0),
     ];
-    test_de(yaml, &expected);
+
+    // FIXME
+    test_de_no_value(yaml, &expected);
 }
 
 #[test]
@@ -224,7 +242,7 @@ fn test_number_as_string() {
     let expected = Num {
         value: "340282366920938463463374607431768211457".to_owned(),
     };
-    test_de(yaml, &expected);
+    test_de_no_value(yaml, &expected);
 }
 
 #[test]
@@ -270,7 +288,7 @@ fn test_number_alias_as_string() {
         version: "1.10".to_owned(),
         value: "1.10".to_owned(),
     };
-    test_de(yaml, &expected);
+    test_de_no_value(yaml, &expected);
 }
 
 #[test]
@@ -478,5 +496,6 @@ fn test_ignore_tag() {
         vec: vec![0],
     };
 
-    test_de(yaml, &expected);
+    // FIXME
+    test_de_no_value(yaml, &expected);
 }
