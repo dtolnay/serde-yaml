@@ -1,3 +1,5 @@
+#![allow(clippy::zero_sized_map_values)]
+
 use indoc::indoc;
 use serde::de::{Deserialize, SeqAccess, Visitor};
 use serde_derive::Deserialize;
