@@ -529,15 +529,17 @@ fn test_no_required_fields() {
         optional: Option<usize>,
     }
 
-    let expected = NoRequiredFields { optional: None };
-    let deserialized: NoRequiredFields = serde_yaml::from_str("").unwrap();
-    assert_eq!(expected, deserialized);
+    for document in ["", "# comment\n"] {
+        let expected = NoRequiredFields { optional: None };
+        let deserialized: NoRequiredFields = serde_yaml::from_str(document).unwrap();
+        assert_eq!(expected, deserialized);
 
-    let expected = Vec::<String>::new();
-    let deserialized: Vec<String> = serde_yaml::from_str("").unwrap();
-    assert_eq!(expected, deserialized);
+        let expected = Vec::<String>::new();
+        let deserialized: Vec<String> = serde_yaml::from_str(document).unwrap();
+        assert_eq!(expected, deserialized);
 
-    let expected = BTreeMap::new();
-    let deserialized: BTreeMap<char, usize> = serde_yaml::from_str("").unwrap();
-    assert_eq!(expected, deserialized);
+        let expected = BTreeMap::new();
+        let deserialized: BTreeMap<char, usize> = serde_yaml::from_str(document).unwrap();
+        assert_eq!(expected, deserialized);
+    }
 }
