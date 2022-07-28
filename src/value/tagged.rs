@@ -10,23 +10,71 @@ use std::cmp::Ordering;
 use std::fmt::{self, Debug};
 use std::hash::{Hash, Hasher};
 
-/// FIXME
+/// A representation of YAML's `!Tag` syntax, used for enums.
+///
+/// Refer to the example code on [`TaggedValue`] for an example of deserializing
+/// tagged values.
 #[derive(Clone)]
 pub struct Tag {
     pub(crate) string: String,
 }
 
-/// FIXME
+/// A `Tag` + `Value` representing a tagged YAML scalar, sequence, or mapping.
+///
+/// ```
+/// use serde_yaml::value::TaggedValue;
+/// use std::collections::BTreeMap;
+///
+/// let yaml = "
+///     scalar: !Thing x
+///     sequence_flow: !Thing [first]
+///     sequence_block: !Thing
+///       - first
+///     mapping_flow: !Thing {k: v}
+///     mapping_block: !Thing
+///       k: v
+/// ";
+///
+/// let data: BTreeMap<String, TaggedValue> = serde_yaml::from_str(yaml).unwrap();
+/// assert!(data["scalar"].tag == "Thing");
+/// assert!(data["sequence_flow"].tag == "Thing");
+/// assert!(data["sequence_block"].tag == "Thing");
+/// assert!(data["mapping_flow"].tag == "Thing");
+/// assert!(data["mapping_block"].tag == "Thing");
+///
+/// // The leading '!' in tags are not significant. The following is also true.
+/// assert!(data["scalar"].tag == "!Thing");
+/// ```
 #[derive(Clone, PartialEq, PartialOrd, Hash, Debug)]
 pub struct TaggedValue {
-    /// FIXME
+    #[allow(missing_docs)]
     pub tag: Tag,
-    /// FIXME
+    #[allow(missing_docs)]
     pub value: Value,
 }
 
 impl Tag {
-    /// FIXME
+    /// Create tag.
+    ///
+    /// The leading '!' is not significant. It may be provided, but does not
+    /// have to be. The following are equivalent:
+    ///
+    /// ```
+    /// use serde_yaml::value::Tag;
+    ///
+    /// assert_eq!(Tag::new("!Thing"), Tag::new("Thing"));
+    ///
+    /// let tag = Tag::new("Thing");
+    /// assert!(tag == "Thing");
+    /// assert!(tag == "!Thing");
+    ///
+    /// let tag = Tag::new("!Thing");
+    /// assert!(tag == "Thing");
+    /// assert!(tag == "!Thing");
+    /// ```
+    ///
+    /// Such a tag would serialize to `!Thing` in YAML regardless of whether a
+    /// '!' was included in the call to `Tag::new`.
     pub fn new(string: impl Into<String>) -> Self {
         Tag {
             string: string.into(),
