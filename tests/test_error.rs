@@ -1,7 +1,11 @@
+#![allow(clippy::zero_sized_map_values)]
+
 use indoc::indoc;
+use serde::de::{Deserialize, SeqAccess, Visitor};
 use serde_derive::Deserialize;
 use serde_yaml::Deserializer;
-use std::fmt::Debug;
+use std::collections::BTreeMap;
+use std::fmt::{self, Debug};
 
 fn test_error<T>(yaml: &str, expected: &str)
 where
@@ -282,4 +286,54 @@ fn test_finite_recursion_arrays() {
     let yaml = "[".repeat(1_000) + &"]".repeat(1_000);
     let expected = "recursion limit exceeded at line 1 column 129";
     test_error::<S>(&yaml, expected);
+}
+
+#[cfg(not(miri))]
+#[test]
+fn test_billion_laughs() {
+    #[derive(Debug)]
+    struct X;
+
+    impl<'de> Deserialize<'de> for X {
+        fn deserialize<D>(deserializer: D) -> Result<X, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            impl<'de> Visitor<'de> for X {
+                type Value = X;
+
+                fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                    formatter.write_str("exponential blowup")
+                }
+
+                fn visit_unit<E>(self) -> Result<X, E> {
+                    Ok(X)
+                }
+
+                fn visit_seq<S>(self, mut seq: S) -> Result<X, S::Error>
+                where
+                    S: SeqAccess<'de>,
+                {
+                    while let Some(X) = seq.next_element()? {}
+                    Ok(X)
+                }
+            }
+
+            deserializer.deserialize_any(X)
+        }
+    }
+
+    let yaml = indoc! {"
+        a: &a ~
+        b: &b [*a,*a,*a,*a,*a,*a,*a,*a,*a]
+        c: &c [*b,*b,*b,*b,*b,*b,*b,*b,*b]
+        d: &d [*c,*c,*c,*c,*c,*c,*c,*c,*c]
+        e: &e [*d,*d,*d,*d,*d,*d,*d,*d,*d]
+        f: &f [*e,*e,*e,*e,*e,*e,*e,*e,*e]
+        g: &g [*f,*f,*f,*f,*f,*f,*f,*f,*f]
+        h: &h [*g,*g,*g,*g,*g,*g,*g,*g,*g]
+        i: &i [*h,*h,*h,*h,*h,*h,*h,*h,*h]
+    "};
+    let expected = "repetition limit exceeded";
+    test_error::<BTreeMap<String, X>>(yaml, expected);
 }

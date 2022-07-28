@@ -100,13 +100,16 @@ impl<'de> Deserializer<'de> {
         self,
         f: impl for<'document> FnOnce(&mut DeserializerFromEvents<'de, 'document>) -> Result<T>,
     ) -> Result<T> {
+        let mut pos = 0;
+        let mut jumpcount = 0;
+
         match &self.progress {
             Progress::Iterable(_) => return Err(error::more_than_one_document()),
             Progress::Document(document) => {
-                let mut pos = 0;
                 let t = f(&mut DeserializerFromEvents {
                     document,
                     pos: &mut pos,
+                    jumpcount: &mut jumpcount,
                     path: Path::Root,
                     remaining_depth: 128,
                     tagged_already: false,
@@ -118,10 +121,10 @@ impl<'de> Deserializer<'de> {
 
         let mut loader = Loader::new(self.progress)?;
         let document = loader.next_document().ok_or_else(error::end_of_stream)?;
-        let mut pos = 0;
         let t = f(&mut DeserializerFromEvents {
             document: &document,
             pos: &mut pos,
+            jumpcount: &mut jumpcount,
             path: Path::Root,
             remaining_depth: 128,
             tagged_already: false,
@@ -421,6 +424,7 @@ pub(crate) enum Event<'de> {
 struct DeserializerFromEvents<'de, 'document> {
     document: &'document Document<'de>,
     pos: &'document mut usize,
+    jumpcount: &'document mut usize,
     path: Path<'document>,
     remaining_depth: u8,
     tagged_already: bool,
@@ -454,15 +458,20 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
     }
 
     fn jump<'anchor>(
-        &'anchor self,
+        &'anchor mut self,
         pos: &'anchor mut usize,
     ) -> Result<DeserializerFromEvents<'de, 'anchor>> {
+        *self.jumpcount += 1;
+        if *self.jumpcount > self.document.events.len() * 100 {
+            return Err(error::repetition_limit_exceeded());
+        }
         match self.document.aliases.get(pos) {
             Some(found) => {
                 *pos = *found;
                 Ok(DeserializerFromEvents {
                     document: self.document,
                     pos,
+                    jumpcount: self.jumpcount,
                     path: Path::Alias { parent: &self.path },
                     remaining_depth: self.remaining_depth,
                     tagged_already: false,
@@ -630,6 +639,7 @@ impl<'de, 'document, 'seq> de::SeqAccess<'de> for SeqAccess<'de, 'document, 'seq
                 let mut element_de = DeserializerFromEvents {
                     document: self.de.document,
                     pos: self.de.pos,
+                    jumpcount: self.de.jumpcount,
                     path: Path::Seq {
                         parent: &self.de.path,
                         index: self.len,
@@ -679,6 +689,7 @@ impl<'de, 'document, 'map> de::MapAccess<'de> for MapAccess<'de, 'document, 'map
         let mut value_de = DeserializerFromEvents {
             document: self.de.document,
             pos: self.de.pos,
+            jumpcount: self.de.jumpcount,
             path: if let Some(key) = self.key.and_then(|key| str::from_utf8(key).ok()) {
                 Path::Map {
                     parent: &self.de.path,
@@ -714,6 +725,7 @@ impl<'de, 'document, 'variant> de::EnumAccess<'de> for EnumAccess<'de, 'document
         let visitor = DeserializerFromEvents {
             document: self.de.document,
             pos: self.de.pos,
+            jumpcount: self.de.jumpcount,
             path: self.de.path,
             remaining_depth: self.de.remaining_depth,
             tagged_already: true,
