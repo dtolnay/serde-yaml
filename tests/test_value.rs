@@ -113,32 +113,32 @@ fn test_debug() {
     let value: Value = serde_yaml::from_str(yaml).unwrap();
     let debug = format!("{:#?}", value);
 
-    let expected = indoc! {"
+    let expected = indoc! {r#"
         Mapping(
             Mapping {
                 map: {
                     String(
-                        \"Null\",
+                        "Null",
                     ): Null,
                     String(
-                        \"Bool\",
+                        "Bool",
                     ): Bool(
                         true,
                     ),
                     String(
-                        \"Number\",
+                        "Number",
                     ): Number(
                         PosInt(
                             1,
                         ),
                     ),
                     String(
-                        \"String\",
+                        "String",
                     ): String(
-                        \"...\",
+                        "...",
                     ),
                     String(
-                        \"Sequence\",
+                        "Sequence",
                     ): Sequence(
                         [
                             Bool(
@@ -147,32 +147,32 @@ fn test_debug() {
                         ],
                     ),
                     String(
-                        \"EmptySequence\",
+                        "EmptySequence",
                     ): Sequence(
                         [],
                     ),
                     String(
-                        \"Mapping\",
+                        "Mapping",
                     ): Mapping(
                         Mapping {
                             map: {
                                 String(
-                                    \"k\",
+                                    "k",
                                 ): String(
-                                    \"v\",
+                                    "v",
                                 ),
                             },
                         },
                     ),
                     String(
-                        \"EmptyMapping\",
+                        "EmptyMapping",
                     ): Mapping(
                         Mapping {
                             map: {},
                         },
                     ),
                     String(
-                        \"Tagged\",
+                        "Tagged",
                     ): Tagged(
                         TaggedValue {
                             tag: !tag,
@@ -183,8 +183,8 @@ fn test_debug() {
                     ),
                 },
             },
-        )\
-    "};
+        )"#
+    };
 
     assert_eq!(debug, expected);
 }
