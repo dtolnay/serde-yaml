@@ -24,11 +24,11 @@
 //!     map.insert("y".to_string(), 2.0);
 //!
 //!     // Serialize it to a YAML string.
-//!     let s = serde_yaml::to_string(&map)?;
-//!     assert_eq!(s, "x: 1.0\ny: 2.0\n");
+//!     let yaml = serde_yaml::to_string(&map)?;
+//!     assert_eq!(yaml, "x: 1.0\ny: 2.0\n");
 //!
 //!     // Deserialize it back to a Rust type.
-//!     let deserialized_map: BTreeMap<String, f64> = serde_yaml::from_str(&s)?;
+//!     let deserialized_map: BTreeMap<String, f64> = serde_yaml::from_str(&yaml)?;
 //!     assert_eq!(map, deserialized_map);
 //!     Ok(())
 //! }
@@ -36,14 +36,16 @@
 //!
 //! ## Using Serde derive
 //!
-//! It can also be used with Serde's serialization code generator `serde_derive` to
-//! handle structs and enums defined in your own program.
+//! It can also be used with Serde's serialization code generator `serde_derive`
+//! to handle structs and enums defined in your program.
+//!
+//! Structs serialize in the obvious way:
 //!
 //! ```
 //! # use serde_derive::{Serialize, Deserialize};
 //! use serde::{Serialize, Deserialize};
 //!
-//! #[derive(Debug, PartialEq, Serialize, Deserialize)]
+//! #[derive(Serialize, Deserialize, PartialEq, Debug)]
 //! struct Point {
 //!     x: f64,
 //!     y: f64,
@@ -52,11 +54,63 @@
 //! fn main() -> Result<(), serde_yaml::Error> {
 //!     let point = Point { x: 1.0, y: 2.0 };
 //!
-//!     let s = serde_yaml::to_string(&point)?;
-//!     assert_eq!(s, "x: 1.0\ny: 2.0\n");
+//!     let yaml = serde_yaml::to_string(&point)?;
+//!     assert_eq!(yaml, "x: 1.0\ny: 2.0\n");
 //!
-//!     let deserialized_point: Point = serde_yaml::from_str(&s)?;
+//!     let deserialized_point: Point = serde_yaml::from_str(&yaml)?;
 //!     assert_eq!(point, deserialized_point);
+//!     Ok(())
+//! }
+//! ```
+//!
+//! Enums serialize using YAML's `!tag` syntax to identify the variant name.
+//!
+//! ```
+//! # use serde_derive::{Serialize, Deserialize};
+//! use serde::{Serialize, Deserialize};
+//!
+//! #[derive(Serialize, Deserialize, PartialEq, Debug)]
+//! enum Enum {
+//!     Unit,
+//!     Newtype(usize),
+//!     Tuple(usize, usize, usize),
+//!     Struct { x: f64, y: f64 },
+//! }
+//!
+//! fn main() -> Result<(), serde_yaml::Error> {
+//!     let yaml = "
+//!         - !Newtype 1
+//!         - !Tuple [0, 0, 0]
+//!         - !Struct {x: 1.0, y: 2.0}
+//!     ";
+//!     let values: Vec<Enum> = serde_yaml::from_str(yaml).unwrap();
+//!     assert_eq!(values[0], Enum::Newtype(1));
+//!     assert_eq!(values[1], Enum::Tuple(0, 0, 0));
+//!     assert_eq!(values[2], Enum::Struct { x: 1.0, y: 2.0 });
+//!
+//!     // The last two in YAML's block style instead:
+//!     let yaml = "
+//!         - !Tuple
+//!           - 0
+//!           - 0
+//!           - 0
+//!         - !Struct
+//!           x: 1.0
+//!           y: 2.0
+//!     ";
+//!     let values: Vec<Enum> = serde_yaml::from_str(yaml).unwrap();
+//!     assert_eq!(values[0], Enum::Tuple(0, 0, 0));
+//!     assert_eq!(values[1], Enum::Struct { x: 1.0, y: 2.0 });
+//!
+//!     // Variants with no data can be written using !Tag or just the string name.
+//!     let yaml = "
+//!         - Unit  # serialization produces this one
+//!         - !Unit
+//!     ";
+//!     let values: Vec<Enum> = serde_yaml::from_str(yaml).unwrap();
+//!     assert_eq!(values[0], Enum::Unit);
+//!     assert_eq!(values[1], Enum::Unit);
+//!
 //!     Ok(())
 //! }
 //! ```
