@@ -157,6 +157,13 @@ impl Mapping {
             iter: self.map.keys(),
         }
     }
+
+    /// Return an owning iterator over the keys of the map.
+    pub fn into_keys(self) -> IntoKeys {
+        IntoKeys {
+            iter: self.map.into_keys(),
+        }
+    }
 }
 
 /// A type that can be used to index into a `serde_yaml::Mapping`. See the
@@ -500,6 +507,13 @@ pub struct Keys<'a> {
 }
 
 delegate_iterator!((Keys<'a>) => &'a Value);
+
+/// Iterator of the keys of a `serde_yaml::Mapping`.
+pub struct IntoKeys {
+    iter: indexmap::map::IntoKeys<Value, Value>,
+}
+
+delegate_iterator!((IntoKeys) => Value);
 
 /// Entry for an existing key-value pair or a vacant location to insert one.
 pub enum Entry<'a> {
