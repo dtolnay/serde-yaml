@@ -179,6 +179,30 @@ fn test_serialize_nested_enum() {
 }
 
 #[test]
+fn test_deserialize_nested_enum() {
+    #[derive(Deserialize, Debug)]
+    enum Outer {
+        Inner(Inner),
+    }
+    #[derive(Deserialize, Debug)]
+    enum Inner {
+        Variant(usize),
+    }
+
+    let yaml = "!Inner 0\n";
+    let expected = "unknown variant `Inner`, expected `Variant`";
+    test_error::<Outer>(yaml, expected);
+
+    let yaml = "!Variant 0\n";
+    let expected = "unknown variant `Variant`, expected `Inner`";
+    test_error::<Outer>(yaml, expected);
+
+    let yaml = "!Inner !Variant 0\n";
+    let expected = "unknown variant `Inner`, expected `Variant`";
+    test_error::<Outer>(yaml, expected);
+}
+
+#[test]
 fn test_variant_not_a_seq() {
     #[derive(Deserialize, Debug)]
     enum E {
