@@ -661,6 +661,12 @@ impl<'a> OccupiedEntry<'a> {
     pub fn remove(self) -> Value {
         self.occupied.swap_remove()
     }
+
+    /// Remove and return the key, value pair stored in the map for this entry.
+    #[inline]
+    pub fn remove_entry(self) -> (Value, Value) {
+        self.occupied.swap_remove_entry()
+    }
 }
 
 impl<'a> VacantEntry<'a> {
