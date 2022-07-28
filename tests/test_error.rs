@@ -160,6 +160,21 @@ fn test_variant_not_a_seq() {
 }
 
 #[test]
+fn test_struct_from_sequence() {
+    #[allow(dead_code)]
+    #[derive(Deserialize, Debug)]
+    struct Struct {
+        x: usize,
+        y: usize,
+    }
+    let yaml = indoc! {"
+        [0, 0]
+    "};
+    let expected = "invalid type: sequence, expected struct Struct at position 0";
+    test_error::<Struct>(yaml, expected);
+}
+
+#[test]
 fn test_bad_bool() {
     let yaml = indoc! {"
         ---
