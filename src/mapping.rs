@@ -92,6 +92,22 @@ impl Mapping {
         index.remove_from(self)
     }
 
+    /// Remove and return the key-value pair.
+    #[inline]
+    pub fn remove_entry<I: Index>(&mut self, index: I) -> Option<(Value, Value)> {
+        index.remove_entry_from(self)
+    }
+
+    /// Scan through each key-value pair in the map and keep those where the
+    /// closure `keep` returns true.
+    #[inline]
+    pub fn retain<F>(&mut self, keep: F)
+    where
+        F: FnMut(&Value, &mut Value) -> bool,
+    {
+        self.map.retain(keep);
+    }
+
     /// Returns the maximum number of key-value pairs the map can hold without
     /// reallocating.
     #[inline]
@@ -134,6 +150,41 @@ impl Mapping {
             iter: self.map.iter_mut(),
         }
     }
+
+    /// Return an iterator over the keys of the map.
+    pub fn keys(&self) -> Keys {
+        Keys {
+            iter: self.map.keys(),
+        }
+    }
+
+    /// Return an owning iterator over the keys of the map.
+    pub fn into_keys(self) -> IntoKeys {
+        IntoKeys {
+            iter: self.map.into_keys(),
+        }
+    }
+
+    /// Return an iterator over the values of the map.
+    pub fn values(&self) -> Values {
+        Values {
+            iter: self.map.values(),
+        }
+    }
+
+    /// Return an iterator over mutable references to the values of the map.
+    pub fn values_mut(&mut self) -> ValuesMut {
+        ValuesMut {
+            iter: self.map.values_mut(),
+        }
+    }
+
+    /// Return an owning iterator over the values of the map.
+    pub fn into_values(self) -> IntoValues {
+        IntoValues {
+            iter: self.map.into_values(),
+        }
+    }
 }
 
 /// A type that can be used to index into a `serde_yaml::Mapping`. See the
@@ -153,6 +204,9 @@ pub trait Index: private::Sealed {
 
     #[doc(hidden)]
     fn remove_from(&self, v: &mut Mapping) -> Option<Value>;
+
+    #[doc(hidden)]
+    fn remove_entry_from(&self, v: &mut Mapping) -> Option<(Value, Value)>;
 }
 
 struct HashLikeValue<'a>(&'a str);
@@ -188,6 +242,9 @@ impl Index for Value {
     fn remove_from(&self, v: &mut Mapping) -> Option<Value> {
         v.map.remove(self)
     }
+    fn remove_entry_from(&self, v: &mut Mapping) -> Option<(Value, Value)> {
+        v.map.remove_entry(self)
+    }
 }
 
 impl Index for str {
@@ -203,6 +260,9 @@ impl Index for str {
     fn remove_from(&self, v: &mut Mapping) -> Option<Value> {
         v.map.remove(&HashLikeValue(self))
     }
+    fn remove_entry_from(&self, v: &mut Mapping) -> Option<(Value, Value)> {
+        v.map.remove_entry(&HashLikeValue(self))
+    }
 }
 
 impl Index for String {
@@ -217,6 +277,9 @@ impl Index for String {
     }
     fn remove_from(&self, v: &mut Mapping) -> Option<Value> {
         self.as_str().remove_from(v)
+    }
+    fn remove_entry_from(&self, v: &mut Mapping) -> Option<(Value, Value)> {
+        self.as_str().remove_entry_from(v)
     }
 }
 
@@ -235,6 +298,9 @@ where
     }
     fn remove_from(&self, v: &mut Mapping) -> Option<Value> {
         (**self).remove_from(v)
+    }
+    fn remove_entry_from(&self, v: &mut Mapping) -> Option<(Value, Value)> {
+        (**self).remove_entry_from(v)
     }
 }
 
@@ -456,6 +522,41 @@ impl IntoIterator for Mapping {
     }
 }
 
+/// Iterator of the keys of a `&serde_yaml::Mapping`.
+pub struct Keys<'a> {
+    iter: indexmap::map::Keys<'a, Value, Value>,
+}
+
+delegate_iterator!((Keys<'a>) => &'a Value);
+
+/// Iterator of the keys of a `serde_yaml::Mapping`.
+pub struct IntoKeys {
+    iter: indexmap::map::IntoKeys<Value, Value>,
+}
+
+delegate_iterator!((IntoKeys) => Value);
+
+/// Iterator of the values of a `&serde_yaml::Mapping`.
+pub struct Values<'a> {
+    iter: indexmap::map::Values<'a, Value, Value>,
+}
+
+delegate_iterator!((Values<'a>) => &'a Value);
+
+/// Iterator of the values of a `&mut serde_yaml::Mapping`.
+pub struct ValuesMut<'a> {
+    iter: indexmap::map::ValuesMut<'a, Value, Value>,
+}
+
+delegate_iterator!((ValuesMut<'a>) => &'a mut Value);
+
+/// Iterator of the values of a `serde_yaml::Mapping`.
+pub struct IntoValues {
+    iter: indexmap::map::IntoValues<Value, Value>,
+}
+
+delegate_iterator!((IntoValues) => Value);
+
 /// Entry for an existing key-value pair or a vacant location to insert one.
 pub enum Entry<'a> {
     /// Existing slot with equivalent key.
@@ -560,6 +661,12 @@ impl<'a> OccupiedEntry<'a> {
     pub fn remove(self) -> Value {
         self.occupied.swap_remove()
     }
+
+    /// Remove and return the key, value pair stored in the map for this entry.
+    #[inline]
+    pub fn remove_entry(self) -> (Value, Value) {
+        self.occupied.swap_remove_entry()
+    }
 }
 
 impl<'a> VacantEntry<'a> {
@@ -568,6 +675,12 @@ impl<'a> VacantEntry<'a> {
     #[inline]
     pub fn key(&self) -> &Value {
         self.vacant.key()
+    }
+
+    /// Takes ownership of the key, leaving the entry vacant.
+    #[inline]
+    pub fn into_key(self) -> Value {
+        self.vacant.into_key()
     }
 
     /// Sets the value of the entry with the VacantEntry's key, and returns a
