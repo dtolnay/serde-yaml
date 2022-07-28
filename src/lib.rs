@@ -36,8 +36,8 @@
 //!
 //! ## Using Serde derive
 //!
-//! It can also be used with Serde's serialization code generator `serde_derive`
-//! to handle structs and enums defined in your program.
+//! It can also be used with Serde's derive macros to handle structs and enums
+//! defined in your program.
 //!
 //! Structs serialize in the obvious way:
 //!
