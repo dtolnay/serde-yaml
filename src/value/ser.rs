@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::value::{to_value, Mapping, Number, Sequence, Value};
+use crate::value::{to_value, Mapping, Number, Sequence, Tag, TaggedValue, Value};
 use serde::ser::{self, Serialize};
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -23,6 +23,7 @@ impl Serialize for Value {
                 }
                 map.end()
             }
+            Value::Tagged(tagged) => tagged.serialize(serializer),
         }
     }
 }
@@ -173,7 +174,10 @@ impl ser::Serializer for Serializer {
     where
         T: ?Sized + ser::Serialize,
     {
-        Ok(singleton_mapping(to_value(variant)?, to_value(value)?))
+        Ok(Value::Tagged(Box::new(TaggedValue {
+            tag: Tag::new(variant),
+            value: to_value(value)?,
+        })))
     }
 
     fn serialize_none(self) -> Result<Value> {
@@ -211,7 +215,7 @@ impl ser::Serializer for Serializer {
         len: usize,
     ) -> Result<SerializeTupleVariant> {
         Ok(SerializeTupleVariant {
-            name: variant,
+            tag: variant,
             sequence: Sequence::with_capacity(len),
         })
     }
@@ -237,7 +241,7 @@ impl ser::Serializer for Serializer {
         _len: usize,
     ) -> Result<SerializeStructVariant> {
         Ok(SerializeStructVariant {
-            name: variant,
+            tag: variant,
             mapping: Mapping::new(),
         })
     }
@@ -248,7 +252,7 @@ pub struct SerializeArray {
 }
 
 pub struct SerializeTupleVariant {
-    name: &'static str,
+    tag: &'static str,
     sequence: Sequence,
 }
 
@@ -262,7 +266,7 @@ pub struct SerializeStruct {
 }
 
 pub struct SerializeStructVariant {
-    name: &'static str,
+    tag: &'static str,
     mapping: Mapping,
 }
 
@@ -328,10 +332,10 @@ impl ser::SerializeTupleVariant for SerializeTupleVariant {
     }
 
     fn end(self) -> Result<Value> {
-        Ok(singleton_mapping(
-            to_value(self.name)?,
-            Value::Sequence(self.sequence),
-        ))
+        Ok(Value::Tagged(Box::new(TaggedValue {
+            tag: Tag::new(self.tag),
+            value: Value::Sequence(self.sequence),
+        })))
     }
 }
 
@@ -402,15 +406,9 @@ impl ser::SerializeStructVariant for SerializeStructVariant {
     }
 
     fn end(self) -> Result<Value> {
-        Ok(singleton_mapping(
-            to_value(self.name)?,
-            Value::Mapping(self.mapping),
-        ))
+        Ok(Value::Tagged(Box::new(TaggedValue {
+            tag: Tag::new(self.tag),
+            value: Value::Mapping(self.mapping),
+        })))
     }
-}
-
-fn singleton_mapping(k: Value, v: Value) -> Value {
-    let mut mapping = Mapping::new();
-    mapping.insert(k, v);
-    Value::Mapping(mapping)
 }

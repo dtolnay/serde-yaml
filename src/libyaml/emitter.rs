@@ -29,13 +29,14 @@ pub(crate) enum Event<'a> {
     DocumentStart,
     DocumentEnd,
     Scalar(Scalar<'a>),
-    SequenceStart,
+    SequenceStart(Sequence),
     SequenceEnd,
-    MappingStart,
+    MappingStart(Mapping),
     MappingEnd,
 }
 
 pub(crate) struct Scalar<'a> {
+    pub tag: Option<String>,
     pub value: &'a str,
     pub style: ScalarStyle,
 }
@@ -45,6 +46,14 @@ pub(crate) enum ScalarStyle {
     Plain,
     SingleQuoted,
     Literal,
+}
+
+pub(crate) struct Sequence {
+    pub tag: Option<String>,
+}
+
+pub(crate) struct Mapping {
+    pub tag: Option<String>,
 }
 
 impl<'a> Emitter<'a> {
@@ -91,13 +100,16 @@ impl<'a> Emitter<'a> {
                     let implicit = true;
                     sys::yaml_document_end_event_initialize(sys_event, implicit)
                 }
-                Event::Scalar(scalar) => {
+                Event::Scalar(mut scalar) => {
                     let anchor = ptr::null();
-                    let tag = ptr::null();
+                    let tag = scalar.tag.as_mut().map_or_else(ptr::null, |tag| {
+                        tag.push('\0');
+                        tag.as_ptr()
+                    });
                     let value = scalar.value.as_ptr();
                     let length = scalar.value.len() as i32;
-                    let plain_implicit = true;
-                    let quoted_implicit = true;
+                    let plain_implicit = tag.is_null();
+                    let quoted_implicit = tag.is_null();
                     let style = match scalar.style {
                         ScalarStyle::Any => sys::YAML_ANY_SCALAR_STYLE,
                         ScalarStyle::Plain => sys::YAML_PLAIN_SCALAR_STYLE,
@@ -115,20 +127,26 @@ impl<'a> Emitter<'a> {
                         style,
                     )
                 }
-                Event::SequenceStart => {
+                Event::SequenceStart(mut sequence) => {
                     let anchor = ptr::null();
-                    let tag = ptr::null();
-                    let implicit = true;
+                    let tag = sequence.tag.as_mut().map_or_else(ptr::null, |tag| {
+                        tag.push('\0');
+                        tag.as_ptr()
+                    });
+                    let implicit = tag.is_null();
                     let style = sys::YAML_ANY_SEQUENCE_STYLE;
                     sys::yaml_sequence_start_event_initialize(
                         sys_event, anchor, tag, implicit, style,
                     )
                 }
                 Event::SequenceEnd => sys::yaml_sequence_end_event_initialize(sys_event),
-                Event::MappingStart => {
+                Event::MappingStart(mut mapping) => {
                     let anchor = ptr::null();
-                    let tag = ptr::null();
-                    let implicit = true;
+                    let tag = mapping.tag.as_mut().map_or_else(ptr::null, |tag| {
+                        tag.push('\0');
+                        tag.as_ptr()
+                    });
+                    let implicit = tag.is_null();
                     let style = sys::YAML_ANY_MAPPING_STYLE;
                     sys::yaml_mapping_start_event_initialize(
                         sys_event, anchor, tag, implicit, style,

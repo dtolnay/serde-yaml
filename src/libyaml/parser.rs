@@ -43,11 +43,13 @@ pub(crate) struct Scalar<'input> {
 #[derive(Debug)]
 pub(crate) struct SequenceStart {
     pub anchor: Option<Anchor>,
+    pub tag: Option<Tag>,
 }
 
 #[derive(Debug)]
 pub(crate) struct MappingStart {
     pub anchor: Option<Anchor>,
+    pub tag: Option<Tag>,
 }
 
 #[derive(Ord, PartialOrd, Eq, PartialEq)]
@@ -129,10 +131,12 @@ unsafe fn convert_event<'input>(
         }),
         sys::YAML_SEQUENCE_START_EVENT => Event::SequenceStart(SequenceStart {
             anchor: optional_anchor(sys.data.sequence_start.anchor),
+            tag: optional_tag(sys.data.sequence_start.tag),
         }),
         sys::YAML_SEQUENCE_END_EVENT => Event::SequenceEnd,
         sys::YAML_MAPPING_START_EVENT => Event::MappingStart(MappingStart {
             anchor: optional_anchor(sys.data.mapping_start.anchor),
+            tag: optional_tag(sys.data.mapping_start.tag),
         }),
         sys::YAML_MAPPING_END_EVENT => Event::MappingEnd,
         sys::YAML_NO_EVENT => unreachable!(),

@@ -1,4 +1,6 @@
+use crate::value::{tagged, Tag, TaggedValue};
 use crate::{number, Error, Mapping, Sequence, Value};
+use serde::de::value::StrDeserializer;
 use serde::de::{
     self, Deserialize, DeserializeSeed, Deserializer, EnumAccess, Error as SError, Expected,
     MapAccess, SeqAccess, Unexpected, VariantAccess, Visitor,
@@ -109,6 +111,16 @@ impl<'de> Deserialize<'de> for Value {
 
                 Ok(Value::Mapping(values))
             }
+
+            fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
+            where
+                A: EnumAccess<'de>,
+            {
+                let (tag, contents) = data.variant::<String>()?;
+                let tag = Tag::new(tag);
+                let value = contents.newtype_variant()?;
+                Ok(Value::Tagged(Box::new(TaggedValue { tag, value })))
+            }
         }
 
         deserializer.deserialize_any(ValueVisitor)
@@ -171,6 +183,7 @@ impl<'de> Deserializer<'de> for Value {
             Value::String(v) => visitor.visit_string(v),
             Value::Sequence(v) => visit_sequence(v, visitor),
             Value::Mapping(v) => visit_mapping(v, visitor),
+            Value::Tagged(tagged) => visitor.visit_enum(*tagged),
         }
     }
 
@@ -412,34 +425,29 @@ impl<'de> Deserializer<'de> for Value {
     where
         V: Visitor<'de>,
     {
-        let (variant, value) = match self {
-            Value::Mapping(value) => {
-                let mut iter = value.into_iter();
-                let (variant, value) = match iter.next() {
-                    Some(v) => v,
-                    None => {
-                        return Err(Error::invalid_value(
-                            Unexpected::Map,
-                            &"map with a single key",
-                        ));
-                    }
-                };
-                // enums are encoded in json as maps with a single key:value pair
-                if iter.next().is_some() {
-                    return Err(Error::invalid_value(
-                        Unexpected::Map,
-                        &"map with a single key",
-                    ));
-                }
-                (variant, Some(value))
-            }
-            Value::String(variant) => (Value::String(variant), None),
+        let tag;
+        visitor.visit_enum(match self {
+            Value::Tagged(tagged) => EnumDeserializer {
+                tag: {
+                    tag = tagged.tag.string;
+                    tagged::nobang(&tag)
+                },
+                value: Some(tagged.value),
+            },
+            Value::String(variant) => EnumDeserializer {
+                tag: {
+                    tag = variant;
+                    &tag
+                },
+                value: None,
+            },
             other => {
-                return Err(Error::invalid_type(other.unexpected(), &"string or map"));
+                return Err(Error::invalid_type(
+                    other.unexpected(),
+                    &"a Value::Tagged enum",
+                ));
             }
-        };
-
-        visitor.visit_enum(EnumDeserializer { variant, value })
+        })
     }
 
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Error>
@@ -458,12 +466,12 @@ impl<'de> Deserializer<'de> for Value {
     }
 }
 
-struct EnumDeserializer {
-    variant: Value,
+struct EnumDeserializer<'a> {
+    tag: &'a str,
     value: Option<Value>,
 }
 
-impl<'de> EnumAccess<'de> for EnumDeserializer {
+impl<'a, 'de> EnumAccess<'de> for EnumDeserializer<'a> {
     type Error = Error;
     type Variant = VariantDeserializer;
 
@@ -471,8 +479,10 @@ impl<'de> EnumAccess<'de> for EnumDeserializer {
     where
         V: DeserializeSeed<'de>,
     {
+        let str_de = StrDeserializer::<Error>::new(self.tag);
+        let variant = seed.deserialize(str_de)?;
         let visitor = VariantDeserializer { value: self.value };
-        seed.deserialize(self.variant).map(|v| (v, visitor))
+        Ok((variant, visitor))
     }
 }
 
@@ -485,7 +495,7 @@ impl<'de> VariantAccess<'de> for VariantDeserializer {
 
     fn unit_variant(self) -> Result<(), Error> {
         match self.value {
-            Some(value) => Deserialize::deserialize(value),
+            Some(value) => value.unit_variant(),
             None => Ok(()),
         }
     }
@@ -495,7 +505,7 @@ impl<'de> VariantAccess<'de> for VariantDeserializer {
         T: DeserializeSeed<'de>,
     {
         match self.value {
-            Some(value) => seed.deserialize(value),
+            Some(value) => value.newtype_variant_seed(seed),
             None => Err(Error::invalid_type(
                 Unexpected::UnitVariant,
                 &"newtype variant",
@@ -503,15 +513,12 @@ impl<'de> VariantAccess<'de> for VariantDeserializer {
         }
     }
 
-    fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value, Error>
+    fn tuple_variant<V>(self, len: usize, visitor: V) -> Result<V::Value, Error>
     where
         V: Visitor<'de>,
     {
         match self.value {
-            Some(Value::Sequence(v)) => {
-                Deserializer::deserialize_any(SeqDeserializer::new(v), visitor)
-            }
-            Some(other) => Err(Error::invalid_type(other.unexpected(), &"tuple variant")),
+            Some(value) => value.tuple_variant(len, visitor),
             None => Err(Error::invalid_type(
                 Unexpected::UnitVariant,
                 &"tuple variant",
@@ -521,17 +528,14 @@ impl<'de> VariantAccess<'de> for VariantDeserializer {
 
     fn struct_variant<V>(
         self,
-        _fields: &'static [&'static str],
+        fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Error>
     where
         V: Visitor<'de>,
     {
         match self.value {
-            Some(Value::Mapping(v)) => {
-                Deserializer::deserialize_any(MapDeserializer::new(v), visitor)
-            }
-            Some(other) => Err(Error::invalid_type(other.unexpected(), &"struct variant")),
+            Some(value) => value.struct_variant(fields, visitor),
             None => Err(Error::invalid_type(
                 Unexpected::UnitVariant,
                 &"struct variant",
@@ -540,12 +544,12 @@ impl<'de> VariantAccess<'de> for VariantDeserializer {
     }
 }
 
-struct SeqDeserializer {
+pub(crate) struct SeqDeserializer {
     iter: vec::IntoIter<Value>,
 }
 
 impl SeqDeserializer {
-    fn new(vec: Vec<Value>) -> Self {
+    pub(crate) fn new(vec: Vec<Value>) -> Self {
         SeqDeserializer {
             iter: vec.into_iter(),
         }
@@ -610,13 +614,13 @@ impl<'de> SeqAccess<'de> for SeqDeserializer {
     }
 }
 
-struct MapDeserializer {
+pub(crate) struct MapDeserializer {
     iter: <Mapping as IntoIterator>::IntoIter,
     value: Option<Value>,
 }
 
 impl MapDeserializer {
-    fn new(map: Mapping) -> Self {
+    pub(crate) fn new(map: Mapping) -> Self {
         MapDeserializer {
             iter: map.into_iter(),
             value: None,
@@ -694,7 +698,7 @@ impl Value {
     }
 
     #[cold]
-    fn unexpected(&self) -> Unexpected {
+    pub(crate) fn unexpected(&self) -> Unexpected {
         match self {
             Value::Null => Unexpected::Unit,
             Value::Bool(b) => Unexpected::Bool(*b),
@@ -702,6 +706,7 @@ impl Value {
             Value::String(s) => Unexpected::Str(s),
             Value::Sequence(_) => Unexpected::Seq,
             Value::Mapping(_) => Unexpected::Map,
+            Value::Tagged(_) => Unexpected::Enum,
         }
     }
 }

@@ -3,11 +3,11 @@
 //! This module provides YAML serialization with the type `Serializer`.
 
 use crate::libyaml;
-use crate::libyaml::emitter::{Emitter, Event, Scalar, ScalarStyle};
+use crate::libyaml::emitter::{Emitter, Event, Mapping, Scalar, ScalarStyle, Sequence};
 use crate::{error, Error};
 use serde::de::Visitor;
 use serde::ser::{self, Serializer as _};
-use std::fmt;
+use std::fmt::{self, Display};
 use std::io;
 use std::marker::PhantomData;
 use std::mem;
@@ -42,8 +42,16 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 /// ```
 pub struct Serializer<W> {
     depth: usize,
+    state: State,
     emitter: Emitter<'static>,
     writer: PhantomData<W>,
+}
+
+enum State {
+    NothingInParticular,
+    CheckForTag,
+    FoundTag(String),
+    AlreadyTagged,
 }
 
 impl<W> Serializer<W>
@@ -59,6 +67,7 @@ where
         emitter.emit(Event::StreamStart).unwrap();
         Serializer {
             depth: 0,
+            state: State::NothingInParticular,
             emitter,
             writer: PhantomData,
         }
@@ -79,15 +88,27 @@ where
         Ok(*unsafe { Box::from_raw(Box::into_raw(writer).cast::<W>()) })
     }
 
-    fn emit_scalar(&mut self, scalar: Scalar) -> Result<()> {
+    fn emit_scalar(&mut self, mut scalar: Scalar) -> Result<()> {
+        if let State::CheckForTag = self.state {
+            self.state = State::NothingInParticular;
+            self.emit_mapping_start()?;
+        }
+        if let Some(tag) = self.take_tag() {
+            scalar.tag = Some(tag);
+        }
         self.value_start()?;
         self.emitter.emit(Event::Scalar(scalar))?;
         self.value_end()
     }
 
     fn emit_sequence_start(&mut self) -> Result<()> {
+        if let State::CheckForTag = self.state {
+            self.state = State::NothingInParticular;
+            self.emit_mapping_start()?;
+        }
         self.value_start()?;
-        self.emitter.emit(Event::SequenceStart)?;
+        let tag = self.take_tag();
+        self.emitter.emit(Event::SequenceStart(Sequence { tag }))?;
         Ok(())
     }
 
@@ -97,8 +118,13 @@ where
     }
 
     fn emit_mapping_start(&mut self) -> Result<()> {
+        if let State::CheckForTag = self.state {
+            self.state = State::NothingInParticular;
+            self.emit_mapping_start()?;
+        }
         self.value_start()?;
-        self.emitter.emit(Event::MappingStart)?;
+        let tag = self.take_tag();
+        self.emitter.emit(Event::MappingStart(Mapping { tag }))?;
         Ok(())
     }
 
@@ -122,6 +148,19 @@ where
         }
         Ok(())
     }
+
+    fn take_tag(&mut self) -> Option<String> {
+        let state = mem::replace(&mut self.state, State::NothingInParticular);
+        if let State::FoundTag(mut tag) = state {
+            if !tag.starts_with('!') {
+                tag.insert(0, '!');
+            }
+            Some(tag)
+        } else {
+            self.state = state;
+            None
+        }
+    }
 }
 
 impl<'a, W> ser::Serializer for &'a mut Serializer<W>
@@ -141,6 +180,7 @@ where
 
     fn serialize_bool(self, v: bool) -> Result<()> {
         self.emit_scalar(Scalar {
+            tag: None,
             value: if v { "true" } else { "false" },
             style: ScalarStyle::Plain,
         })
@@ -148,6 +188,7 @@ where
 
     fn serialize_i8(self, v: i8) -> Result<()> {
         self.emit_scalar(Scalar {
+            tag: None,
             value: itoa::Buffer::new().format(v),
             style: ScalarStyle::Plain,
         })
@@ -155,6 +196,7 @@ where
 
     fn serialize_i16(self, v: i16) -> Result<()> {
         self.emit_scalar(Scalar {
+            tag: None,
             value: itoa::Buffer::new().format(v),
             style: ScalarStyle::Plain,
         })
@@ -162,6 +204,7 @@ where
 
     fn serialize_i32(self, v: i32) -> Result<()> {
         self.emit_scalar(Scalar {
+            tag: None,
             value: itoa::Buffer::new().format(v),
             style: ScalarStyle::Plain,
         })
@@ -169,6 +212,7 @@ where
 
     fn serialize_i64(self, v: i64) -> Result<()> {
         self.emit_scalar(Scalar {
+            tag: None,
             value: itoa::Buffer::new().format(v),
             style: ScalarStyle::Plain,
         })
@@ -176,6 +220,7 @@ where
 
     fn serialize_i128(self, v: i128) -> Result<()> {
         self.emit_scalar(Scalar {
+            tag: None,
             value: itoa::Buffer::new().format(v),
             style: ScalarStyle::Plain,
         })
@@ -183,6 +228,7 @@ where
 
     fn serialize_u8(self, v: u8) -> Result<()> {
         self.emit_scalar(Scalar {
+            tag: None,
             value: itoa::Buffer::new().format(v),
             style: ScalarStyle::Plain,
         })
@@ -190,6 +236,7 @@ where
 
     fn serialize_u16(self, v: u16) -> Result<()> {
         self.emit_scalar(Scalar {
+            tag: None,
             value: itoa::Buffer::new().format(v),
             style: ScalarStyle::Plain,
         })
@@ -197,6 +244,7 @@ where
 
     fn serialize_u32(self, v: u32) -> Result<()> {
         self.emit_scalar(Scalar {
+            tag: None,
             value: itoa::Buffer::new().format(v),
             style: ScalarStyle::Plain,
         })
@@ -204,6 +252,7 @@ where
 
     fn serialize_u64(self, v: u64) -> Result<()> {
         self.emit_scalar(Scalar {
+            tag: None,
             value: itoa::Buffer::new().format(v),
             style: ScalarStyle::Plain,
         })
@@ -211,6 +260,7 @@ where
 
     fn serialize_u128(self, v: u128) -> Result<()> {
         self.emit_scalar(Scalar {
+            tag: None,
             value: itoa::Buffer::new().format(v),
             style: ScalarStyle::Plain,
         })
@@ -219,6 +269,7 @@ where
     fn serialize_f32(self, v: f32) -> Result<()> {
         let mut buffer = ryu::Buffer::new();
         self.emit_scalar(Scalar {
+            tag: None,
             value: match v.classify() {
                 num::FpCategory::Infinite if v.is_sign_positive() => ".inf",
                 num::FpCategory::Infinite => "-.inf",
@@ -232,6 +283,7 @@ where
     fn serialize_f64(self, v: f64) -> Result<()> {
         let mut buffer = ryu::Buffer::new();
         self.emit_scalar(Scalar {
+            tag: None,
             value: match v.classify() {
                 num::FpCategory::Infinite if v.is_sign_positive() => ".inf",
                 num::FpCategory::Infinite => "-.inf",
@@ -244,6 +296,7 @@ where
 
     fn serialize_char(self, value: char) -> Result<()> {
         self.emit_scalar(Scalar {
+            tag: None,
             value: value.encode_utf8(&mut [0u8; 4]),
             style: ScalarStyle::SingleQuoted,
         })
@@ -304,7 +357,11 @@ where
             result.unwrap_or(ScalarStyle::Any)
         };
 
-        self.emit_scalar(Scalar { value, style })
+        self.emit_scalar(Scalar {
+            tag: None,
+            value,
+            style,
+        })
     }
 
     fn serialize_bytes(self, value: &[u8]) -> Result<()> {
@@ -313,6 +370,7 @@ where
 
     fn serialize_unit(self) -> Result<()> {
         self.emit_scalar(Scalar {
+            tag: None,
             value: "null",
             style: ScalarStyle::Plain,
         })
@@ -348,10 +406,8 @@ where
     where
         T: ?Sized + ser::Serialize,
     {
-        self.emit_mapping_start()?;
-        self.serialize_str(variant)?;
-        value.serialize(&mut *self)?;
-        self.emit_mapping_end()
+        self.state = State::FoundTag(variant.to_owned());
+        value.serialize(&mut *self)
     }
 
     fn serialize_none(self) -> Result<()> {
@@ -391,14 +447,17 @@ where
         variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleVariant> {
-        self.emit_mapping_start()?;
-        self.serialize_str(variant)?;
+        self.state = State::FoundTag(variant.to_owned());
         self.emit_sequence_start()?;
         Ok(self)
     }
 
-    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap> {
-        self.emit_mapping_start()?;
+    fn serialize_map(mut self, len: Option<usize>) -> Result<Self::SerializeMap> {
+        if len == Some(1) {
+            self.state = State::CheckForTag;
+        } else {
+            self.emit_mapping_start()?;
+        }
         Ok(self)
     }
 
@@ -414,10 +473,24 @@ where
         variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStructVariant> {
-        self.emit_mapping_start()?;
-        self.serialize_str(variant)?;
+        self.state = State::FoundTag(variant.to_owned());
         self.emit_mapping_start()?;
         Ok(self)
+    }
+
+    fn collect_str<T>(self, value: &T) -> Result<Self::Ok>
+    where
+        T: ?Sized + Display,
+    {
+        let string = value.to_string();
+        if let State::CheckForTag = self.state {
+            if string.starts_with('!') {
+                // FIXME
+                self.state = State::FoundTag(string);
+                return Ok(());
+            }
+        }
+        self.serialize_str(&string)
     }
 }
 
@@ -493,9 +566,7 @@ where
     }
 
     fn end(self) -> Result<()> {
-        self.emit_sequence_end()?;
-        self.emit_mapping_end()?;
-        Ok(())
+        self.emit_sequence_end()
     }
 }
 
@@ -510,6 +581,10 @@ where
     where
         T: ?Sized + ser::Serialize,
     {
+        if let State::CheckForTag = self.state {
+            self.emit_mapping_start()?;
+            self.state = State::NothingInParticular;
+        }
         key.serialize(&mut **self)
     }
 
@@ -520,8 +595,29 @@ where
         value.serialize(&mut **self)
     }
 
+    fn serialize_entry<K, V>(&mut self, key: &K, value: &V) -> Result<(), Self::Error>
+    where
+        K: ?Sized + ser::Serialize,
+        V: ?Sized + ser::Serialize,
+    {
+        key.serialize(&mut **self)?;
+        let tagged = matches!(self.state, State::FoundTag(_));
+        value.serialize(&mut **self)?;
+        if tagged {
+            self.state = State::AlreadyTagged;
+        }
+        Ok(())
+    }
+
     fn end(self) -> Result<()> {
-        self.emit_mapping_end()
+        if let State::CheckForTag = self.state {
+            self.emit_mapping_start()?;
+        }
+        if !matches!(self.state, State::AlreadyTagged) {
+            self.emit_mapping_end()?;
+        }
+        self.state = State::NothingInParticular;
+        Ok(())
     }
 }
 
@@ -561,7 +657,6 @@ where
     }
 
     fn end(self) -> Result<()> {
-        self.emit_mapping_end()?;
         self.emit_mapping_end()
     }
 }
