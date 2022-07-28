@@ -25,7 +25,9 @@ impl<'input> Loader<'input> {
             Progress::Slice(bytes) => Cow::Borrowed(bytes),
             Progress::Read(mut rdr) => {
                 let mut buffer = Vec::new();
-                rdr.read_to_end(&mut buffer).map_err(error::io)?;
+                if let Err(io_error) = rdr.read_to_end(&mut buffer) {
+                    return Err(error::new(ErrorImpl::Io(io_error)));
+                }
                 Cow::Owned(buffer)
             }
             Progress::Iterable(_) | Progress::Document(_) => unreachable!(),
@@ -80,7 +82,7 @@ impl<'input> Loader<'input> {
                 YamlEvent::Alias(alias) => match anchors.get(&alias) {
                     Some(id) => Event::Alias(*id),
                     None => {
-                        document.error = Some(error::unknown_anchor(mark).shared());
+                        document.error = Some(error::new(ErrorImpl::UnknownAnchor(mark)).shared());
                         return Some(document);
                     }
                 },

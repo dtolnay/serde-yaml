@@ -97,36 +97,8 @@ impl Error {
     }
 }
 
-pub(crate) fn end_of_stream() -> Error {
-    Error(Box::new(ErrorImpl::EndOfStream))
-}
-
-pub(crate) fn more_than_one_document() -> Error {
-    Error(Box::new(ErrorImpl::MoreThanOneDocument))
-}
-
-pub(crate) fn io(err: io::Error) -> Error {
-    Error(Box::new(ErrorImpl::Io(err)))
-}
-
-pub(crate) fn string_utf8(err: string::FromUtf8Error) -> Error {
-    Error(Box::new(ErrorImpl::FromUtf8(err)))
-}
-
-pub(crate) fn recursion_limit_exceeded(mark: libyaml::Mark) -> Error {
-    Error(Box::new(ErrorImpl::RecursionLimitExceeded(mark)))
-}
-
-pub(crate) fn repetition_limit_exceeded() -> Error {
-    Error(Box::new(ErrorImpl::RepetitionLimitExceeded))
-}
-
-pub(crate) fn bytes_unsupported() -> Error {
-    Error(Box::new(ErrorImpl::BytesUnsupported))
-}
-
-pub(crate) fn unknown_anchor(mark: libyaml::Mark) -> Error {
-    Error(Box::new(ErrorImpl::UnknownAnchor(mark)))
+pub(crate) fn new(inner: ErrorImpl) -> Error {
+    Error(Box::new(inner))
 }
 
 pub(crate) fn shared(shared: Arc<ErrorImpl>) -> Error {
@@ -163,7 +135,7 @@ impl From<emitter::Error> for Error {
     fn from(err: emitter::Error) -> Self {
         match err {
             emitter::Error::Libyaml(err) => Self::from(err),
-            emitter::Error::Io(err) => io(err),
+            emitter::Error::Io(err) => new(ErrorImpl::Io(err)),
         }
     }
 }

@@ -103,7 +103,7 @@ impl<'de> Deserializer<'de> {
         let mut jumpcount = 0;
 
         match &self.progress {
-            Progress::Iterable(_) => return Err(error::more_than_one_document()),
+            Progress::Iterable(_) => return Err(error::new(ErrorImpl::MoreThanOneDocument)),
             Progress::Document(document) => {
                 let t = f(&mut DeserializerFromEvents {
                     document,
@@ -119,7 +119,10 @@ impl<'de> Deserializer<'de> {
         }
 
         let mut loader = Loader::new(self.progress)?;
-        let document = loader.next_document().ok_or_else(error::end_of_stream)?;
+        let document = match loader.next_document() {
+            Some(document) => document,
+            None => return Err(error::new(ErrorImpl::EndOfStream)),
+        };
         let t = f(&mut DeserializerFromEvents {
             document: &document,
             pos: &mut pos,
@@ -131,7 +134,7 @@ impl<'de> Deserializer<'de> {
         if loader.next_document().is_none() {
             Ok(t)
         } else {
-            Err(error::more_than_one_document())
+            Err(error::new(ErrorImpl::MoreThanOneDocument))
         }
     }
 }
@@ -440,7 +443,7 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
             Some((event, mark)) => Ok((event, *mark)),
             None => Err(match &self.document.error {
                 Some(parse_error) => error::shared(Arc::clone(parse_error)),
-                None => error::end_of_stream(),
+                None => error::new(ErrorImpl::EndOfStream),
             }),
         }
     }
@@ -463,7 +466,7 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
     ) -> Result<DeserializerFromEvents<'de, 'anchor>> {
         *self.jumpcount += 1;
         if *self.jumpcount > self.document.events.len() * 100 {
-            return Err(error::repetition_limit_exceeded());
+            return Err(error::new(ErrorImpl::RepetitionLimitExceeded));
         }
         match self.document.aliases.get(pos) {
             Some(found) => {
@@ -613,7 +616,7 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
         let previous_depth = self.remaining_depth;
         self.remaining_depth = match previous_depth.checked_sub(1) {
             Some(depth) => depth,
-            None => return Err(error::recursion_limit_exceeded(mark)),
+            None => return Err(error::new(ErrorImpl::RecursionLimitExceeded(mark))),
         };
         let result = f(self);
         self.remaining_depth = previous_depth;
@@ -1141,7 +1144,7 @@ fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
         Event::MappingStart(_) => de::Error::invalid_type(Unexpected::Map, exp),
         Event::SequenceEnd => panic!("unexpected end of sequence"),
         Event::MappingEnd => panic!("unexpected end of mapping"),
-        Event::Void => error::end_of_stream(),
+        Event::Void => error::new(ErrorImpl::EndOfStream),
     }
 }
 
@@ -1190,7 +1193,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                 }
                 Event::SequenceEnd => panic!("unexpected end of sequence"),
                 Event::MappingEnd => panic!("unexpected end of mapping"),
-                Event::Void => break Err(error::end_of_stream()),
+                Event::Void => break Err(error::new(ErrorImpl::EndOfStream)),
             }
         }
         // The de::Error impl creates errors with unknown line and column. Fill
@@ -1420,14 +1423,14 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
     where
         V: Visitor<'de>,
     {
-        Err(error::bytes_unsupported())
+        Err(error::new(ErrorImpl::BytesUnsupported))
     }
 
     fn deserialize_byte_buf<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        Err(error::bytes_unsupported())
+        Err(error::new(ErrorImpl::BytesUnsupported))
     }
 
     /// Parses `null` as None and any other values as `Some(...)`.
@@ -1660,7 +1663,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
             }
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
-            Event::Void => Err(error::end_of_stream()),
+            Event::Void => Err(error::new(ErrorImpl::EndOfStream)),
         }
     }
 

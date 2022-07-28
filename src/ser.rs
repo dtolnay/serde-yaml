@@ -2,9 +2,9 @@
 //!
 //! This module provides YAML serialization with the type `Serializer`.
 
+use crate::error::{self, Error, ErrorImpl};
 use crate::libyaml;
 use crate::libyaml::emitter::{Emitter, Event, Mapping, Scalar, ScalarStyle, Sequence};
-use crate::{error, Error};
 use serde::de::Visitor;
 use serde::ser::{self, Serializer as _};
 use std::fmt::{self, Display};
@@ -365,7 +365,7 @@ where
     }
 
     fn serialize_bytes(self, _value: &[u8]) -> Result<()> {
-        Err(error::bytes_unsupported())
+        Err(error::new(ErrorImpl::BytesUnsupported))
     }
 
     fn serialize_unit(self) -> Result<()> {
@@ -739,5 +739,6 @@ pub fn to_string<T>(value: &T) -> Result<String>
 where
     T: ?Sized + ser::Serialize,
 {
-    String::from_utf8(to_vec(value)?).map_err(error::string_utf8)
+    let vec = to_vec(value)?;
+    String::from_utf8(vec).map_err(|error| error::new(ErrorImpl::FromUtf8(error)))
 }
