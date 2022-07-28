@@ -727,19 +727,6 @@ where
     value.serialize(&mut serializer)
 }
 
-/// Serialize the given data structure as a YAML byte vector.
-///
-/// Serialization can fail if `T`'s implementation of `Serialize` decides to
-/// return an error.
-pub fn to_vec<T>(value: &T) -> Result<Vec<u8>>
-where
-    T: ?Sized + ser::Serialize,
-{
-    let mut vec = Vec::with_capacity(128);
-    to_writer(&mut vec, value)?;
-    Ok(vec)
-}
-
 /// Serialize the given data structure as a String of YAML.
 ///
 /// Serialization can fail if `T`'s implementation of `Serialize` decides to
@@ -748,6 +735,7 @@ pub fn to_string<T>(value: &T) -> Result<String>
 where
     T: ?Sized + ser::Serialize,
 {
-    let vec = to_vec(value)?;
+    let mut vec = Vec::with_capacity(128);
+    to_writer(&mut vec, value)?;
     String::from_utf8(vec).map_err(|error| error::new(ErrorImpl::FromUtf8(error)))
 }
