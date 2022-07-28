@@ -259,6 +259,17 @@ fn test_infinite_recursion_arrays() {
 
 #[cfg(not(miri))]
 #[test]
+fn test_infinite_recursion_newtype() {
+    #[derive(Deserialize, Debug)]
+    struct S(Option<Box<S>>);
+
+    let yaml = "&a [*a]";
+    let expected = "recursion limit exceeded at position 0";
+    test_error::<S>(yaml, expected);
+}
+
+#[cfg(not(miri))]
+#[test]
 fn test_finite_recursion_objects() {
     #[derive(Deserialize, Debug)]
     struct S {
