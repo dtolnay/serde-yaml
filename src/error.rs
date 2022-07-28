@@ -25,6 +25,7 @@ pub(crate) enum ErrorImpl {
     EndOfStream,
     MoreThanOneDocument,
     RecursionLimitExceeded(libyaml::Mark),
+    RepetitionLimitExceeded,
     UnknownAnchor(libyaml::Mark),
 
     Shared(Arc<ErrorImpl>),
@@ -113,6 +114,10 @@ pub(crate) fn string_utf8(err: string::FromUtf8Error) -> Error {
 
 pub(crate) fn recursion_limit_exceeded(mark: libyaml::Mark) -> Error {
     Error(Box::new(ErrorImpl::RecursionLimitExceeded(mark)))
+}
+
+pub(crate) fn repetition_limit_exceeded() -> Error {
+    Error(Box::new(ErrorImpl::RepetitionLimitExceeded))
 }
 
 pub(crate) fn unknown_anchor(mark: libyaml::Mark) -> Error {
@@ -229,6 +234,7 @@ impl ErrorImpl {
             ErrorImpl::RecursionLimitExceeded(mark) => {
                 write!(f, "recursion limit exceeded at {}", mark)
             }
+            ErrorImpl::RepetitionLimitExceeded => f.write_str("repetition limit exceeded"),
             ErrorImpl::UnknownAnchor(mark) => write!(f, "unknown anchor at {}", mark),
             ErrorImpl::Shared(err) => err.display(f),
         }
@@ -245,6 +251,7 @@ impl ErrorImpl {
             ErrorImpl::RecursionLimitExceeded(mark) => {
                 f.debug_tuple("RecursionLimitExceeded").field(mark).finish()
             }
+            ErrorImpl::RepetitionLimitExceeded => f.debug_tuple("RepetitionLimitExceeded").finish(),
             ErrorImpl::UnknownAnchor(mark) => f.debug_tuple("UnknownAnchor").field(mark).finish(),
             ErrorImpl::Shared(err) => err.debug(f),
         }
