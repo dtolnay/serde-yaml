@@ -1,5 +1,6 @@
 #![allow(clippy::derive_partial_eq_without_eq, clippy::eq_op)]
 
+use indoc::indoc;
 use serde::de::IntoDeserializer;
 use serde::Deserialize;
 use serde_derive::Deserialize;
@@ -51,4 +52,44 @@ fn test_into_deserializer() {
             second: 99
         }
     );
+}
+
+#[test]
+fn test_merge() {
+    // From https://yaml.org/type/merge.html.
+    let yaml = indoc! {"
+        ---
+        - &CENTER { x: 1, y: 2 }
+        - &LEFT { x: 0, y: 2 }
+        - &BIG { r: 10 }
+        - &SMALL { r: 1 }
+
+        # All the following maps are equal:
+
+        - # Explicit keys
+          x: 1
+          y: 2
+          r: 10
+          label: center/big
+
+        - # Merge one map
+          << : *CENTER
+          r: 10
+          label: center/big
+
+        - # Merge multiple maps
+          << : [ *CENTER, *BIG ]
+          label: center/big
+
+        - # Override
+          << : [ *BIG, *LEFT, *SMALL ]
+          x: 1
+          label: center/big
+    "};
+
+    let mut value: Value = serde_yaml::from_str(yaml).unwrap();
+    value.apply_merge().unwrap();
+    for i in 5..=7 {
+        assert_eq!(value[4], value[i]);
+    }
 }

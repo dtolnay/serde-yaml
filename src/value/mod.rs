@@ -7,6 +7,7 @@ mod partial_eq;
 mod ser;
 mod tagged;
 
+use crate::error::{self, ErrorImpl};
 use crate::{Error, Mapping};
 use serde::de::{Deserialize, DeserializeOwned, IntoDeserializer};
 use serde::Serialize;
@@ -592,6 +593,78 @@ impl Value {
             Value::Mapping(map) => Some(map),
             _ => None,
         }
+    }
+
+    /// Performs merging of `<<` keys into the surrounding mapping.
+    ///
+    /// The intended use of this in YAML is described in
+    /// <https://yaml.org/type/merge.html>.
+    ///
+    /// ```
+    /// use serde_yaml::Value;
+    ///
+    /// let config = "\
+    /// tasks:
+    ///   build: &webpack_shared
+    ///     command: webpack
+    ///     args: build
+    ///     inputs:
+    ///       - 'src/**/*'
+    ///   start:
+    ///     <<: *webpack_shared
+    ///     args: start
+    /// ";
+    ///
+    /// let mut value: Value = serde_yaml::from_str(config).unwrap();
+    /// value.apply_merge().unwrap();
+    ///
+    /// assert_eq!(value["tasks"]["start"]["command"], "webpack");
+    /// assert_eq!(value["tasks"]["start"]["args"], "start");
+    /// ```
+    pub fn apply_merge(&mut self) -> Result<(), Error> {
+        let mut stack = Vec::new();
+        stack.push(self);
+        while let Some(node) = stack.pop() {
+            match node {
+                Value::Mapping(mapping) => {
+                    match mapping.remove("<<") {
+                        Some(Value::Mapping(merge)) => {
+                            for (k, v) in merge {
+                                mapping.entry(k).or_insert(v);
+                            }
+                        }
+                        Some(Value::Sequence(sequence)) => {
+                            for value in sequence {
+                                match value {
+                                    Value::Mapping(merge) => {
+                                        for (k, v) in merge {
+                                            mapping.entry(k).or_insert(v);
+                                        }
+                                    }
+                                    Value::Sequence(_) => {
+                                        return Err(error::new(ErrorImpl::SequenceInMergeElement));
+                                    }
+                                    Value::Tagged(_) => {
+                                        return Err(error::new(ErrorImpl::TaggedInMerge));
+                                    }
+                                    _unexpected => {
+                                        return Err(error::new(ErrorImpl::ScalarInMergeElement));
+                                    }
+                                }
+                            }
+                        }
+                        None => {}
+                        Some(Value::Tagged(_)) => return Err(error::new(ErrorImpl::TaggedInMerge)),
+                        Some(_unexpected) => return Err(error::new(ErrorImpl::ScalarInMerge)),
+                    }
+                    stack.extend(mapping.values_mut());
+                }
+                Value::Sequence(sequence) => stack.extend(sequence),
+                Value::Tagged(tagged) => stack.push(&mut tagged.value),
+                _ => {}
+            }
+        }
+        Ok(())
     }
 }
 

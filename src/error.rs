@@ -28,6 +28,10 @@ pub(crate) enum ErrorImpl {
     RepetitionLimitExceeded,
     BytesUnsupported,
     UnknownAnchor(libyaml::Mark),
+    ScalarInMerge,
+    TaggedInMerge,
+    ScalarInMergeElement,
+    SequenceInMergeElement,
 
     Shared(Arc<ErrorImpl>),
 }
@@ -216,6 +220,16 @@ impl ErrorImpl {
                 f.write_str("serialization and deserialization of bytes in YAML is not implemented")
             }
             ErrorImpl::UnknownAnchor(mark) => write!(f, "unknown anchor at {}", mark),
+            ErrorImpl::ScalarInMerge => {
+                f.write_str("expected a mapping or list of mappings for merging, but found scalar")
+            }
+            ErrorImpl::TaggedInMerge => f.write_str("unexpected tagged value in merge"),
+            ErrorImpl::ScalarInMergeElement => {
+                f.write_str("expected a mapping for merging, but found scalar")
+            }
+            ErrorImpl::SequenceInMergeElement => {
+                f.write_str("expected a mapping for merging, but found sequence")
+            }
             ErrorImpl::Shared(err) => err.display(f),
         }
     }
@@ -234,6 +248,10 @@ impl ErrorImpl {
             ErrorImpl::RepetitionLimitExceeded => f.write_str("RepetitionLimitExceeded"),
             ErrorImpl::BytesUnsupported => f.write_str("BytesUnsupported"),
             ErrorImpl::UnknownAnchor(mark) => f.debug_tuple("UnknownAnchor").field(mark).finish(),
+            ErrorImpl::ScalarInMerge => f.write_str("ScalarInMerge"),
+            ErrorImpl::TaggedInMerge => f.write_str("TaggedInMerge"),
+            ErrorImpl::ScalarInMergeElement => f.write_str("ScalarInMergeElement"),
+            ErrorImpl::SequenceInMergeElement => f.write_str("SequenceInMergeElement"),
             ErrorImpl::Shared(err) => err.debug(f),
         }
     }
