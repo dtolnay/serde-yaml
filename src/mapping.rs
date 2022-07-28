@@ -1,6 +1,6 @@
 //! A YAML mapping and its iterator types.
 
-use crate::Value;
+use crate::{private, Value};
 use indexmap::IndexMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::cmp::Ordering;
@@ -8,7 +8,6 @@ use std::collections::hash_map::DefaultHasher;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
-use std::ops::{Index, IndexMut};
 
 /// A YAML mapping in which the keys and values are both `serde_yaml::Value`.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -60,20 +59,20 @@ impl Mapping {
 
     /// Checks if the map contains the given key.
     #[inline]
-    pub fn contains_key(&self, k: &Value) -> bool {
-        self.map.contains_key(k)
+    pub fn contains_key<I: Index>(&self, index: I) -> bool {
+        index.is_key_into(self)
     }
 
     /// Returns the value corresponding to the key in the map.
     #[inline]
-    pub fn get(&self, k: &Value) -> Option<&Value> {
-        self.map.get(k)
+    pub fn get<I: Index>(&self, index: I) -> Option<&Value> {
+        index.index_into(self)
     }
 
     /// Returns the mutable reference corresponding to the key in the map.
     #[inline]
-    pub fn get_mut(&mut self, k: &Value) -> Option<&mut Value> {
-        self.map.get_mut(k)
+    pub fn get_mut<I: Index>(&mut self, index: I) -> Option<&mut Value> {
+        index.index_into_mut(self)
     }
 
     /// Gets the given key’s corresponding entry in the map for insertion and/or
@@ -88,8 +87,8 @@ impl Mapping {
 
     /// Removes and returns the value corresponding to the key from the map.
     #[inline]
-    pub fn remove(&mut self, k: &Value) -> Option<Value> {
-        self.map.remove(k)
+    pub fn remove<I: Index>(&mut self, index: I) -> Option<Value> {
+        index.remove_from(self)
     }
 
     /// Returns the maximum number of key-value pairs the map can hold without
@@ -133,6 +132,88 @@ impl Mapping {
         IterMut {
             iter: self.map.iter_mut(),
         }
+    }
+}
+
+/// A type that can be used to index into a `serde_yaml::Mapping`. See the
+/// methods `get`, `get_mut`, `contains_key`, and `remove` of `Value`.
+///
+/// This trait is sealed and cannot be implemented for types outside of
+/// `serde_yaml`.
+pub trait Index: private::Sealed {
+    #[doc(hidden)]
+    fn is_key_into(&self, v: &Mapping) -> bool;
+
+    #[doc(hidden)]
+    fn index_into<'a>(&self, v: &'a Mapping) -> Option<&'a Value>;
+
+    #[doc(hidden)]
+    fn index_into_mut<'a>(&self, v: &'a mut Mapping) -> Option<&'a mut Value>;
+
+    #[doc(hidden)]
+    fn remove_from(&self, v: &mut Mapping) -> Option<Value>;
+}
+
+impl Index for Value {
+    fn is_key_into(&self, v: &Mapping) -> bool {
+        v.map.contains_key(self)
+    }
+    fn index_into<'a>(&self, v: &'a Mapping) -> Option<&'a Value> {
+        v.map.get(self)
+    }
+    fn index_into_mut<'a>(&self, v: &'a mut Mapping) -> Option<&'a mut Value> {
+        v.map.get_mut(self)
+    }
+    fn remove_from(&self, v: &mut Mapping) -> Option<Value> {
+        v.map.remove(self)
+    }
+}
+
+impl Index for str {
+    fn is_key_into(&self, v: &Mapping) -> bool {
+        Value::String(self.into()).is_key_into(v)
+    }
+    fn index_into<'a>(&self, v: &'a Mapping) -> Option<&'a Value> {
+        Value::String(self.into()).index_into(v)
+    }
+    fn index_into_mut<'a>(&self, v: &'a mut Mapping) -> Option<&'a mut Value> {
+        Value::String(self.into()).index_into_mut(v)
+    }
+    fn remove_from(&self, v: &mut Mapping) -> Option<Value> {
+        Value::String(self.into()).remove_from(v)
+    }
+}
+
+impl Index for String {
+    fn is_key_into(&self, v: &Mapping) -> bool {
+        Value::String(self.clone()).is_key_into(v)
+    }
+    fn index_into<'a>(&self, v: &'a Mapping) -> Option<&'a Value> {
+        Value::String(self.clone()).index_into(v)
+    }
+    fn index_into_mut<'a>(&self, v: &'a mut Mapping) -> Option<&'a mut Value> {
+        Value::String(self.clone()).index_into_mut(v)
+    }
+    fn remove_from(&self, v: &mut Mapping) -> Option<Value> {
+        Value::String(self.clone()).remove_from(v)
+    }
+}
+
+impl<T> Index for &T
+where
+    T: ?Sized + Index,
+{
+    fn is_key_into(&self, v: &Mapping) -> bool {
+        (**self).is_key_into(v)
+    }
+    fn index_into<'a>(&self, v: &'a Mapping) -> Option<&'a Value> {
+        (**self).index_into(v)
+    }
+    fn index_into_mut<'a>(&self, v: &'a mut Mapping) -> Option<&'a mut Value> {
+        (**self).index_into_mut(v)
+    }
+    fn remove_from(&self, v: &mut Mapping) -> Option<Value> {
+        (**self).remove_from(v)
     }
 }
 
@@ -237,18 +318,27 @@ impl PartialOrd for Mapping {
     }
 }
 
-impl<'a> Index<&'a Value> for Mapping {
+impl<I> std::ops::Index<I> for Mapping
+where
+    I: Index,
+{
     type Output = Value;
+
     #[inline]
-    fn index(&self, index: &'a Value) -> &Value {
-        self.map.index(index)
+    #[track_caller]
+    fn index(&self, index: I) -> &Value {
+        index.index_into(self).unwrap()
     }
 }
 
-impl<'a> IndexMut<&'a Value> for Mapping {
+impl<I> std::ops::IndexMut<I> for Mapping
+where
+    I: Index,
+{
     #[inline]
-    fn index_mut(&mut self, index: &'a Value) -> &mut Value {
-        self.map.index_mut(index)
+    #[track_caller]
+    fn index_mut(&mut self, index: I) -> &mut Value {
+        index.index_into_mut(self).unwrap()
     }
 }
 
