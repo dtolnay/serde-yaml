@@ -104,8 +104,6 @@ fn test_debug() {
         Sequence:
           - true
         EmptySequence: []
-        Mapping:
-          k: v
         EmptyMapping: {}
         Tagged: !tag true
     "};
@@ -114,76 +112,21 @@ fn test_debug() {
     let debug = format!("{:#?}", value);
 
     let expected = indoc! {r#"
-        Mapping(
-            Mapping {
-                map: {
-                    String(
-                        "Null",
-                    ): Null,
-                    String(
-                        "Bool",
-                    ): Bool(
-                        true,
-                    ),
-                    String(
-                        "Number",
-                    ): Number(
-                        PosInt(
-                            1,
-                        ),
-                    ),
-                    String(
-                        "String",
-                    ): String(
-                        "...",
-                    ),
-                    String(
-                        "Sequence",
-                    ): Sequence(
-                        [
-                            Bool(
-                                true,
-                            ),
-                        ],
-                    ),
-                    String(
-                        "EmptySequence",
-                    ): Sequence(
-                        [],
-                    ),
-                    String(
-                        "Mapping",
-                    ): Mapping(
-                        Mapping {
-                            map: {
-                                String(
-                                    "k",
-                                ): String(
-                                    "v",
-                                ),
-                            },
-                        },
-                    ),
-                    String(
-                        "EmptyMapping",
-                    ): Mapping(
-                        Mapping {
-                            map: {},
-                        },
-                    ),
-                    String(
-                        "Tagged",
-                    ): Tagged(
-                        TaggedValue {
-                            tag: !tag,
-                            value: Bool(
-                                true,
-                            ),
-                        },
-                    ),
-                },
+        Mapping {
+            "Null": Null,
+            "Bool": Bool(true),
+            "Number": Number(1),
+            "String": String("..."),
+            "Sequence": Sequence [
+                Bool(true),
+            ],
+            "EmptySequence": Sequence [],
+            "EmptyMapping": Mapping {},
+            "Tagged": TaggedValue {
+                tag: !tag,
+                value: Bool(true),
             },
-        )"#
+        }"#
     };
 
     assert_eq!(debug, expected);
