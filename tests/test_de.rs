@@ -342,6 +342,13 @@ fn test_de_mapping() {
 }
 
 #[test]
+fn test_byte_order_mark() {
+    let yaml = "\u{feff}- 0\n";
+    let expected = vec![0];
+    test_de(yaml, &expected);
+}
+
+#[test]
 fn test_bomb() {
     #[derive(Debug, Deserialize, PartialEq)]
     struct Data {
