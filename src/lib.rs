@@ -89,6 +89,7 @@
     clippy::cast_possible_wrap,
     clippy::cast_precision_loss,
     clippy::cast_sign_loss,
+    clippy::derive_hash_xor_eq,
     clippy::derive_partial_eq_without_eq,
     clippy::doc_markdown,
     clippy::items_after_statements,
