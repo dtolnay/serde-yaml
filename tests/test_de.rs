@@ -204,9 +204,7 @@ fn test_enum_representations() {
           y: 0
         - !String '...'
         - !String ...
-        - !String
         - !Number 0
-
     "};
 
     let expected = vec![
@@ -221,11 +219,15 @@ fn test_enum_representations() {
         Enum::Struct { x: 0, y: 0 },
         Enum::String("...".to_owned()),
         Enum::String("...".to_owned()),
-        Enum::String(String::new()),
         Enum::Number(0.0),
     ];
 
-    // FIXME
+    test_de(yaml, &expected);
+
+    let yaml = indoc! {"
+        - !String
+    "};
+    let expected = vec![Enum::String(String::new())];
     test_de_no_value(yaml, &expected);
 }
 
