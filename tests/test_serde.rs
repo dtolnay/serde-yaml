@@ -26,6 +26,9 @@ where
     assert_eq!(*thing, deserialized);
 
     let value: Value = serde_yaml::from_str(yaml).unwrap();
+    let deserialized = T::deserialize(&value).unwrap();
+    assert_eq!(*thing, deserialized);
+
     let deserialized: T = serde_yaml::from_value(value).unwrap();
     assert_eq!(*thing, deserialized);
 
