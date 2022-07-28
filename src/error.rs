@@ -226,13 +226,13 @@ impl ErrorImpl {
             ErrorImpl::Libyaml(err) => f.debug_tuple("Libyaml").field(err).finish(),
             ErrorImpl::Io(io) => f.debug_tuple("Io").field(io).finish(),
             ErrorImpl::FromUtf8(from_utf8) => f.debug_tuple("FromUtf8").field(from_utf8).finish(),
-            ErrorImpl::EndOfStream => f.debug_tuple("EndOfStream").finish(),
-            ErrorImpl::MoreThanOneDocument => f.debug_tuple("MoreThanOneDocument").finish(),
+            ErrorImpl::EndOfStream => f.write_str("EndOfStream"),
+            ErrorImpl::MoreThanOneDocument => f.write_str("MoreThanOneDocument"),
             ErrorImpl::RecursionLimitExceeded(mark) => {
                 f.debug_tuple("RecursionLimitExceeded").field(mark).finish()
             }
-            ErrorImpl::RepetitionLimitExceeded => f.debug_tuple("RepetitionLimitExceeded").finish(),
-            ErrorImpl::BytesUnsupported => f.debug_tuple("BytesUnsupported").finish(),
+            ErrorImpl::RepetitionLimitExceeded => f.write_str("RepetitionLimitExceeded"),
+            ErrorImpl::BytesUnsupported => f.write_str("BytesUnsupported"),
             ErrorImpl::UnknownAnchor(mark) => f.debug_tuple("UnknownAnchor").field(mark).finish(),
             ErrorImpl::Shared(err) => err.debug(f),
         }
