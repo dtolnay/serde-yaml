@@ -37,7 +37,7 @@ pub enum Value {
     /// Represents a YAML mapping in which the keys and values are both
     /// `serde_yaml::Value`.
     Mapping(Mapping),
-    ///
+    /// A representation of YAML's `!Tag` syntax, used for enums.
     Tagged(Box<TaggedValue>),
 }
 
