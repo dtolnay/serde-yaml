@@ -171,6 +171,13 @@ impl Mapping {
             iter: self.map.values(),
         }
     }
+
+    /// Return an iterator over mutable references to the values of the map.
+    pub fn values_mut(&mut self) -> ValuesMut {
+        ValuesMut {
+            iter: self.map.values_mut(),
+        }
+    }
 }
 
 /// A type that can be used to index into a `serde_yaml::Mapping`. See the
@@ -528,6 +535,13 @@ pub struct Values<'a> {
 }
 
 delegate_iterator!((Values<'a>) => &'a Value);
+
+/// Iterator of the values of a `&mut serde_yaml::Mapping`.
+pub struct ValuesMut<'a> {
+    iter: indexmap::map::ValuesMut<'a, Value, Value>,
+}
+
+delegate_iterator!((ValuesMut<'a>) => &'a mut Value);
 
 /// Entry for an existing key-value pair or a vacant location to insert one.
 pub enum Entry<'a> {
