@@ -1652,21 +1652,27 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
         V: Visitor<'de>,
     {
         let (next, mark) = self.peek_event_mark()?;
-        if let Some(current_enum) = self.current_enum {
-            let message = if let Some(name) = current_enum.name {
-                format!(
-                    "deserializing nested enum in {}::{} from YAML is not supported yet",
-                    name, current_enum.tag,
-                )
-            } else {
-                format!(
-                    "deserializing nested enum in !{} from YAML is not supported yet",
-                    current_enum.tag,
-                )
-            };
-            Err(error::new(ErrorImpl::Message(message, None)))
-        } else {
-            match next {
+        loop {
+            if let Some(current_enum) = self.current_enum {
+                if let Event::Scalar(scalar) = next {
+                    if !scalar.value.is_empty() {
+                        break visitor.visit_enum(UnitVariantAccess { de: self });
+                    }
+                }
+                let message = if let Some(name) = current_enum.name {
+                    format!(
+                        "deserializing nested enum in {}::{} from YAML is not supported yet",
+                        name, current_enum.tag,
+                    )
+                } else {
+                    format!(
+                        "deserializing nested enum in !{} from YAML is not supported yet",
+                        current_enum.tag,
+                    )
+                };
+                break Err(error::new(ErrorImpl::Message(message, None)));
+            }
+            break match next {
                 Event::Alias(mut pos) => {
                     *self.pos += 1;
                     self.jump(&mut pos)?
@@ -1720,7 +1726,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                 Event::SequenceEnd => panic!("unexpected end of sequence"),
                 Event::MappingEnd => panic!("unexpected end of mapping"),
                 Event::Void => Err(error::new(ErrorImpl::EndOfStream)),
-            }
+            };
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
     }

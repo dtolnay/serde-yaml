@@ -297,6 +297,23 @@ fn test_nested_struct() {
 }
 
 #[test]
+fn test_nested_enum() {
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    enum Outer {
+        Inner(Inner),
+    }
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    enum Inner {
+        Unit,
+    }
+    let thing = Outer::Inner(Inner::Unit);
+    let yaml = indoc! {"
+        !Inner Unit
+    "};
+    test_serde(&thing, yaml);
+}
+
+#[test]
 fn test_option() {
     let thing = vec![Some(1), None, Some(3)];
     let yaml = indoc! {"
