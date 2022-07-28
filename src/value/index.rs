@@ -1,3 +1,4 @@
+use crate::mapping::Entry;
 use crate::{private, Mapping, Value};
 use std::fmt;
 use std::ops;
@@ -77,9 +78,14 @@ impl Index for Value {
     }
     fn index_or_insert<'v>(&self, mut v: &'v mut Value) -> &'v mut Value {
         if let Value::Null = *v {
-            let mut map = Mapping::new();
-            map.insert(self.clone(), Value::Null);
-            *v = Value::Mapping(map);
+            *v = Value::Mapping(Mapping::new());
+            return match v {
+                Value::Mapping(map) => match map.entry(self.clone()) {
+                    Entry::Vacant(entry) => entry.insert(Value::Null),
+                    Entry::Occupied(_) => unreachable!(),
+                },
+                _ => unreachable!(),
+            };
         }
         loop {
             match v {
