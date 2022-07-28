@@ -34,6 +34,24 @@ impl Tag {
     }
 }
 
+impl Value {
+    pub(crate) fn untag(self) -> Self {
+        let mut cur = self;
+        while let Value::Tagged(tagged) = cur {
+            cur = tagged.value;
+        }
+        cur
+    }
+
+    pub(crate) fn untag_ref(&self) -> &Self {
+        let mut cur = self;
+        while let Value::Tagged(tagged) = cur {
+            cur = &tagged.value;
+        }
+        cur
+    }
+}
+
 pub(crate) fn nobang(maybe_banged: &str) -> &str {
     maybe_banged.strip_prefix('!').unwrap_or(maybe_banged)
 }

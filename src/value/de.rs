@@ -138,22 +138,6 @@ impl Value {
             other => Err(other.invalid_type(&visitor)),
         }
     }
-
-    fn untag(self) -> Self {
-        let mut cur = self;
-        while let Value::Tagged(tagged) = cur {
-            cur = tagged.value;
-        }
-        cur
-    }
-
-    fn untag_ref(&self) -> &Self {
-        let mut cur = self;
-        while let Value::Tagged(tagged) = cur {
-            cur = &tagged.value;
-        }
-        cur
-    }
 }
 
 fn visit_sequence<'de, V>(sequence: Sequence, visitor: V) -> Result<V::Value, Error>
