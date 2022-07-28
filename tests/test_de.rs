@@ -251,6 +251,24 @@ fn test_number_as_string() {
 }
 
 #[test]
+fn test_empty_string() {
+    #[derive(Deserialize, PartialEq, Debug)]
+    struct Struct {
+        empty: String,
+        tilde: String,
+    }
+    let yaml = indoc! {"
+        empty:
+        tilde: ~
+    "};
+    let expected = Struct {
+        empty: String::new(),
+        tilde: "~".to_owned(),
+    };
+    test_de_no_value(yaml, &expected);
+}
+
+#[test]
 fn test_i128_big() {
     let expected: i128 = i64::MIN as i128 - 1;
     let yaml = indoc! {"
