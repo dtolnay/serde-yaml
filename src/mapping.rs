@@ -8,6 +8,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
+use std::mem;
 
 /// A YAML mapping in which the keys and values are both `serde_yaml::Value`.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -154,6 +155,26 @@ pub trait Index: private::Sealed {
     fn remove_from(&self, v: &mut Mapping) -> Option<Value>;
 }
 
+struct HashLikeValue<'a>(&'a str);
+
+impl<'a> indexmap::Equivalent<Value> for HashLikeValue<'a> {
+    fn equivalent(&self, key: &Value) -> bool {
+        match key {
+            Value::String(string) => self.0 == string,
+            _ => false,
+        }
+    }
+}
+
+// NOTE: This impl must be consistent with Value's Hash impl.
+impl<'a> Hash for HashLikeValue<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        const STRING: Value = Value::String(String::new());
+        mem::discriminant(&STRING).hash(state);
+        self.0.hash(state);
+    }
+}
+
 impl Index for Value {
     fn is_key_into(&self, v: &Mapping) -> bool {
         v.map.contains_key(self)
@@ -171,31 +192,31 @@ impl Index for Value {
 
 impl Index for str {
     fn is_key_into(&self, v: &Mapping) -> bool {
-        Value::String(self.into()).is_key_into(v)
+        v.map.contains_key(&HashLikeValue(self))
     }
     fn index_into<'a>(&self, v: &'a Mapping) -> Option<&'a Value> {
-        Value::String(self.into()).index_into(v)
+        v.map.get(&HashLikeValue(self))
     }
     fn index_into_mut<'a>(&self, v: &'a mut Mapping) -> Option<&'a mut Value> {
-        Value::String(self.into()).index_into_mut(v)
+        v.map.get_mut(&HashLikeValue(self))
     }
     fn remove_from(&self, v: &mut Mapping) -> Option<Value> {
-        Value::String(self.into()).remove_from(v)
+        v.map.remove(&HashLikeValue(self))
     }
 }
 
 impl Index for String {
     fn is_key_into(&self, v: &Mapping) -> bool {
-        Value::String(self.clone()).is_key_into(v)
+        self.as_str().is_key_into(v)
     }
     fn index_into<'a>(&self, v: &'a Mapping) -> Option<&'a Value> {
-        Value::String(self.clone()).index_into(v)
+        self.as_str().index_into(v)
     }
     fn index_into_mut<'a>(&self, v: &'a mut Mapping) -> Option<&'a mut Value> {
-        Value::String(self.clone()).index_into_mut(v)
+        self.as_str().index_into_mut(v)
     }
     fn remove_from(&self, v: &mut Mapping) -> Option<Value> {
-        Value::String(self.clone()).remove_from(v)
+        self.as_str().remove_from(v)
     }
 }
 
