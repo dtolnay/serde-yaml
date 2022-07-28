@@ -498,6 +498,5 @@ fn test_ignore_tag() {
         vec: vec![0],
     };
 
-    // FIXME
-    test_de_no_value(yaml, &expected);
+    test_de(yaml, &expected);
 }

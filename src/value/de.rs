@@ -132,10 +132,18 @@ impl Value {
     where
         V: Visitor<'de>,
     {
-        match self {
+        match self.untag() {
             Value::Number(n) => n.deserialize_any(visitor),
-            _ => Err(self.invalid_type(&visitor)),
+            other => Err(other.invalid_type(&visitor)),
         }
+    }
+
+    fn untag(self) -> Self {
+        let mut cur = self;
+        while let Value::Tagged(tagged) = cur {
+            cur = tagged.value;
+        }
+        cur
     }
 }
 
@@ -191,9 +199,9 @@ impl<'de> Deserializer<'de> for Value {
     where
         V: Visitor<'de>,
     {
-        match self {
+        match self.untag() {
             Value::Bool(v) => visitor.visit_bool(v),
-            _ => Err(self.invalid_type(&visitor)),
+            other => Err(other.invalid_type(&visitor)),
         }
     }
 
@@ -299,9 +307,9 @@ impl<'de> Deserializer<'de> for Value {
     where
         V: Visitor<'de>,
     {
-        match self {
+        match self.untag() {
             Value::String(v) => visitor.visit_string(v),
-            _ => Err(self.invalid_type(&visitor)),
+            other => Err(other.invalid_type(&visitor)),
         }
     }
 
@@ -316,10 +324,10 @@ impl<'de> Deserializer<'de> for Value {
     where
         V: Visitor<'de>,
     {
-        match self {
+        match self.untag() {
             Value::String(v) => visitor.visit_string(v),
             Value::Sequence(v) => visit_sequence(v, visitor),
-            _ => Err(self.invalid_type(&visitor)),
+            other => Err(other.invalid_type(&visitor)),
         }
     }
 
@@ -365,9 +373,9 @@ impl<'de> Deserializer<'de> for Value {
     where
         V: Visitor<'de>,
     {
-        match self {
+        match self.untag() {
             Value::Sequence(v) => visit_sequence(v, visitor),
-            _ => Err(self.invalid_type(&visitor)),
+            other => Err(other.invalid_type(&visitor)),
         }
     }
 
@@ -394,9 +402,9 @@ impl<'de> Deserializer<'de> for Value {
     where
         V: Visitor<'de>,
     {
-        match self {
+        match self.untag() {
             Value::Mapping(v) => visit_mapping(v, visitor),
-            _ => Err(self.invalid_type(&visitor)),
+            other => Err(other.invalid_type(&visitor)),
         }
     }
 
@@ -409,9 +417,9 @@ impl<'de> Deserializer<'de> for Value {
     where
         V: Visitor<'de>,
     {
-        match self {
+        match self.untag() {
             Value::Mapping(v) => visit_mapping(v, visitor),
-            _ => Err(self.invalid_type(&visitor)),
+            other => Err(other.invalid_type(&visitor)),
         }
     }
 
