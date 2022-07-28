@@ -1,4 +1,4 @@
-use crate::{Mapping, Value};
+use crate::{private, Mapping, Value};
 use std::fmt;
 use std::ops;
 
@@ -139,16 +139,6 @@ where
     fn index_or_insert<'v>(&self, v: &'v mut Value) -> &'v mut Value {
         (**self).index_or_insert(v)
     }
-}
-
-// Prevent users from implementing the Index trait.
-mod private {
-    pub trait Sealed {}
-    impl Sealed for usize {}
-    impl Sealed for str {}
-    impl Sealed for String {}
-    impl Sealed for super::Value {}
-    impl<'a, T> Sealed for &'a T where T: ?Sized + Sealed {}
 }
 
 /// Used in panic messages.

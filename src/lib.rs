@@ -131,3 +131,13 @@ mod number;
 mod path;
 mod ser;
 pub mod value;
+
+// Prevent downstream code from implementing the Index trait.
+mod private {
+    pub trait Sealed {}
+    impl Sealed for usize {}
+    impl Sealed for str {}
+    impl Sealed for String {}
+    impl Sealed for crate::Value {}
+    impl<'a, T> Sealed for &'a T where T: ?Sized + Sealed {}
+}
