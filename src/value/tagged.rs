@@ -116,6 +116,35 @@ impl Serialize for TaggedValue {
     }
 }
 
+impl<'de> Deserialize<'de> for TaggedValue {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct TaggedValueVisitor;
+
+        impl<'de> Visitor<'de> for TaggedValueVisitor {
+            type Value = TaggedValue;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a YAML value with a !Tag")
+            }
+
+            fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
+            where
+                A: EnumAccess<'de>,
+            {
+                let (tag, contents) = data.variant::<String>()?;
+                let tag = Tag::new(tag);
+                let value = contents.newtype_variant()?;
+                Ok(TaggedValue { tag, value })
+            }
+        }
+
+        deserializer.deserialize_any(TaggedValueVisitor)
+    }
+}
+
 impl<'de> EnumAccess<'de> for TaggedValue {
     type Error = Error;
     type Variant = Value;
