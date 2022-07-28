@@ -10,6 +10,8 @@ mod tagged;
 use crate::{Error, Mapping};
 use serde::de::{Deserialize, DeserializeOwned, IntoDeserializer};
 use serde::Serialize;
+use std::hash::{Hash, Hasher};
+use std::mem;
 
 pub use self::index::Index;
 pub use self::ser::Serializer;
@@ -17,7 +19,7 @@ pub use self::tagged::{Tag, TaggedValue};
 pub use crate::number::Number;
 
 /// Represents any valid YAML value.
-#[derive(Clone, PartialEq, PartialOrd, Hash, Debug)]
+#[derive(Clone, PartialEq, PartialOrd, Debug)]
 pub enum Value {
     /// Represents a YAML null value.
     Null,
@@ -594,6 +596,23 @@ impl Value {
 }
 
 impl Eq for Value {}
+
+// NOTE: This impl must be kept consistent with HashLikeValue's Hash impl in
+// mapping.rs in order for value[str] indexing to work.
+impl Hash for Value {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        mem::discriminant(self).hash(state);
+        match self {
+            Value::Null => {}
+            Value::Bool(v) => v.hash(state),
+            Value::Number(v) => v.hash(state),
+            Value::String(v) => v.hash(state),
+            Value::Sequence(v) => v.hash(state),
+            Value::Mapping(v) => v.hash(state),
+            Value::Tagged(v) => v.hash(state),
+        }
+    }
+}
 
 impl<'de> IntoDeserializer<'de, Error> for Value {
     type Deserializer = Self;
