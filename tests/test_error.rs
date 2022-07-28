@@ -250,12 +250,9 @@ fn test_infinite_recursion_objects() {
 #[test]
 fn test_infinite_recursion_arrays() {
     #[derive(Deserialize, Debug)]
-    struct S {
-        #[allow(dead_code)]
-        x: Option<Box<S>>,
-    }
+    struct S(usize, Option<Box<S>>);
 
-    let yaml = "&a [*a]";
+    let yaml = "&a [0, *a]";
     let expected = "recursion limit exceeded at position 0";
     test_error::<S>(yaml, expected);
 }
@@ -278,13 +275,10 @@ fn test_finite_recursion_objects() {
 #[test]
 fn test_finite_recursion_arrays() {
     #[derive(Deserialize, Debug)]
-    struct S {
-        #[allow(dead_code)]
-        x: Option<Box<S>>,
-    }
+    struct S(usize, Option<Box<S>>);
 
-    let yaml = "[".repeat(1_000) + &"]".repeat(1_000);
-    let expected = "recursion limit exceeded at line 1 column 129";
+    let yaml = "[0, ".repeat(1_000) + &"]".repeat(1_000);
+    let expected = "recursion limit exceeded at line 1 column 513";
     test_error::<S>(&yaml, expected);
 }
 
