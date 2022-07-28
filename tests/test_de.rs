@@ -430,3 +430,53 @@ fn test_stateful() {
         test_de_seed(yaml, Seed(seed), &expected);
     }
 }
+
+#[test]
+fn test_ignore_tag() {
+    #[derive(Deserialize, Debug, PartialEq)]
+    struct Data {
+        struc: Struc,
+        tuple: Tuple,
+        newtype: Newtype,
+        map: BTreeMap<char, usize>,
+        vec: Vec<usize>,
+    }
+
+    #[derive(Deserialize, Debug, PartialEq)]
+    struct Struc {
+        x: usize,
+    }
+
+    #[derive(Deserialize, Debug, PartialEq)]
+    struct Tuple(usize, usize);
+
+    #[derive(Deserialize, Debug, PartialEq)]
+    struct Newtype(usize);
+
+    let yaml = indoc! {"
+        struc: !wat
+          x: 0
+        tuple: !wat
+          - 0
+          - 0
+        newtype: !wat 0
+        map: !wat
+          x: 0
+        vec: !wat
+          - 0
+    "};
+
+    let expected = Data {
+        struc: Struc { x: 0 },
+        tuple: Tuple(0, 0),
+        newtype: Newtype(0),
+        map: {
+            let mut map = BTreeMap::new();
+            map.insert('x', 0);
+            map
+        },
+        vec: vec![0],
+    };
+
+    test_de(yaml, &expected);
+}
