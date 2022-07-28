@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 pub(crate) struct Loader<'input> {
     parser: Option<Parser<'input>>,
+    document_count: usize,
 }
 
 pub(crate) struct Document<'input> {
@@ -33,6 +34,7 @@ impl<'input> Loader<'input> {
 
         Ok(Loader {
             parser: Some(Parser::new(input)),
+            document_count: 0,
         })
     }
 
@@ -41,6 +43,9 @@ impl<'input> Loader<'input> {
             Some(parser) => parser,
             None => return None,
         };
+
+        let first = self.document_count == 0;
+        self.document_count += 1;
 
         let mut anchors = BTreeMap::new();
         let mut document = Document {
@@ -61,7 +66,14 @@ impl<'input> Loader<'input> {
                 YamlEvent::StreamStart => continue,
                 YamlEvent::StreamEnd => {
                     self.parser = None;
-                    return None;
+                    return if first {
+                        if document.events.is_empty() {
+                            document.events.push((Event::Void, mark));
+                        }
+                        Some(document)
+                    } else {
+                        None
+                    };
                 }
                 YamlEvent::DocumentStart => continue,
                 YamlEvent::DocumentEnd => return Some(document),

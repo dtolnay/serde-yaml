@@ -419,6 +419,7 @@ pub(crate) enum Event<'de> {
     SequenceEnd,
     MappingStart(MappingStart),
     MappingEnd,
+    Void,
 }
 
 struct DeserializerFromEvents<'de, 'document> {
@@ -491,7 +492,7 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
 
         loop {
             match self.next_event()? {
-                Event::Alias(_) | Event::Scalar(_) => {}
+                Event::Alias(_) | Event::Scalar(_) | Event::Void => {}
                 Event::SequenceStart(_) => {
                     stack.push(Nest::Sequence);
                 }
@@ -554,7 +555,7 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
             seq.len
         };
         match self.next_event()? {
-            Event::SequenceEnd => {}
+            Event::SequenceEnd | Event::Void => {}
             _ => panic!("expected a SequenceEnd event"),
         }
         if total == len {
@@ -585,7 +586,7 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
             map.len
         };
         match self.next_event()? {
-            Event::MappingEnd => {}
+            Event::MappingEnd | Event::Void => {}
             _ => panic!("expected a MappingEnd event"),
         }
         if total == len {
@@ -634,7 +635,7 @@ impl<'de, 'document, 'seq> de::SeqAccess<'de> for SeqAccess<'de, 'document, 'seq
         T: DeserializeSeed<'de>,
     {
         match self.de.peek_event()? {
-            Event::SequenceEnd => Ok(None),
+            Event::SequenceEnd | Event::Void => Ok(None),
             _ => {
                 let mut element_de = DeserializerFromEvents {
                     document: self.de.document,
@@ -668,7 +669,7 @@ impl<'de, 'document, 'map> de::MapAccess<'de> for MapAccess<'de, 'document, 'map
         K: DeserializeSeed<'de>,
     {
         match self.de.peek_event()? {
-            Event::MappingEnd => Ok(None),
+            Event::MappingEnd | Event::Void => Ok(None),
             Event::Scalar(scalar) => {
                 self.len += 1;
                 self.key = Some(&scalar.value);
@@ -1141,6 +1142,7 @@ fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
         Event::MappingStart(_) => de::Error::invalid_type(Unexpected::Map, exp),
         Event::SequenceEnd => panic!("unexpected end of sequence"),
         Event::MappingEnd => panic!("unexpected end of mapping"),
+        Event::Void => error::end_of_stream(),
     }
 }
 
@@ -1189,6 +1191,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                 }
                 Event::SequenceEnd => panic!("unexpected end of sequence"),
                 Event::MappingEnd => panic!("unexpected end of mapping"),
+                Event::Void => break Err(error::end_of_stream()),
             }
         }
         // The de::Error impl creates errors with unknown line and column. Fill
@@ -1463,6 +1466,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
             Event::SequenceStart(_) | Event::MappingStart(_) => true,
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
+            Event::Void => false,
         };
         if is_some {
             visitor.visit_some(self)
@@ -1500,6 +1504,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                 }
             }
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_unit(visitor),
+            Event::Void => visitor.visit_unit(),
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
@@ -1529,6 +1534,11 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_seq(visitor),
             Event::SequenceStart(_) => self.visit_sequence(visitor, mark),
+            Event::Void => {
+                *self.pos -= 1;
+                let mut seq = SeqAccess { de: self, len: 0 };
+                visitor.visit_seq(&mut seq)
+            }
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
@@ -1561,6 +1571,15 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_map(visitor),
             Event::MappingStart(_) => self.visit_mapping(visitor, mark),
+            Event::Void => {
+                *self.pos -= 1;
+                let mut seq = MapAccess {
+                    de: self,
+                    len: 0,
+                    key: None,
+                };
+                visitor.visit_map(&mut seq)
+            }
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
@@ -1581,6 +1600,15 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                 .jump(&mut pos)?
                 .deserialize_struct(name, fields, visitor),
             Event::MappingStart(_) => self.visit_mapping(visitor, mark),
+            Event::Void => {
+                *self.pos -= 1;
+                let mut seq = MapAccess {
+                    de: self,
+                    len: 0,
+                    key: None,
+                };
+                visitor.visit_map(&mut seq)
+            }
             other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
@@ -1633,6 +1661,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
             }
             Event::SequenceEnd => panic!("unexpected end of sequence"),
             Event::MappingEnd => panic!("unexpected end of mapping"),
+            Event::Void => Err(error::end_of_stream()),
         }
     }
 
