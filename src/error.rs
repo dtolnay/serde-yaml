@@ -26,6 +26,7 @@ pub(crate) enum ErrorImpl {
     MoreThanOneDocument,
     RecursionLimitExceeded(libyaml::Mark),
     RepetitionLimitExceeded,
+    BytesUnsupported,
     UnknownAnchor(libyaml::Mark),
 
     Shared(Arc<ErrorImpl>),
@@ -118,6 +119,10 @@ pub(crate) fn recursion_limit_exceeded(mark: libyaml::Mark) -> Error {
 
 pub(crate) fn repetition_limit_exceeded() -> Error {
     Error(Box::new(ErrorImpl::RepetitionLimitExceeded))
+}
+
+pub(crate) fn bytes_unsupported() -> Error {
+    Error(Box::new(ErrorImpl::BytesUnsupported))
 }
 
 pub(crate) fn unknown_anchor(mark: libyaml::Mark) -> Error {
@@ -235,6 +240,9 @@ impl ErrorImpl {
                 write!(f, "recursion limit exceeded at {}", mark)
             }
             ErrorImpl::RepetitionLimitExceeded => f.write_str("repetition limit exceeded"),
+            ErrorImpl::BytesUnsupported => {
+                f.write_str("serialization and deserialization of bytes in YAML is not implemented")
+            }
             ErrorImpl::UnknownAnchor(mark) => write!(f, "unknown anchor at {}", mark),
             ErrorImpl::Shared(err) => err.display(f),
         }
@@ -252,6 +260,7 @@ impl ErrorImpl {
                 f.debug_tuple("RecursionLimitExceeded").field(mark).finish()
             }
             ErrorImpl::RepetitionLimitExceeded => f.debug_tuple("RepetitionLimitExceeded").finish(),
+            ErrorImpl::BytesUnsupported => f.debug_tuple("BytesUnsupported").finish(),
             ErrorImpl::UnknownAnchor(mark) => f.debug_tuple("UnknownAnchor").field(mark).finish(),
             ErrorImpl::Shared(err) => err.debug(f),
         }

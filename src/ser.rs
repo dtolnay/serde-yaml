@@ -364,8 +364,8 @@ where
         })
     }
 
-    fn serialize_bytes(self, value: &[u8]) -> Result<()> {
-        self.collect_seq(value)
+    fn serialize_bytes(self, _value: &[u8]) -> Result<()> {
+        Err(error::bytes_unsupported())
     }
 
     fn serialize_unit(self) -> Result<()> {

@@ -1417,18 +1417,18 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
         self.deserialize_str(visitor)
     }
 
-    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_any(visitor)
+        Err(error::bytes_unsupported())
     }
 
-    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_byte_buf<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_bytes(visitor)
+        Err(error::bytes_unsupported())
     }
 
     /// Parses `null` as None and any other values as `Some(...)`.

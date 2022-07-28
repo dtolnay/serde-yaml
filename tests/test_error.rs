@@ -7,9 +7,9 @@ use serde_yaml::Deserializer;
 use std::collections::BTreeMap;
 use std::fmt::{self, Debug};
 
-fn test_error<T>(yaml: &str, expected: &str)
+fn test_error<'de, T>(yaml: &'de str, expected: &str)
 where
-    T: serde::de::DeserializeOwned + Debug,
+    T: Deserialize<'de> + Debug,
 {
     let result = serde_yaml::from_str::<T>(yaml);
     assert_eq!(expected, result.unwrap_err().to_string());
@@ -96,6 +96,12 @@ fn test_ignored_unknown_anchor() {
     "};
     let expected = "unknown anchor at line 1 column 5";
     test_error::<Wrapper>(yaml, expected);
+}
+
+#[test]
+fn test_bytes() {
+    let expected = "serialization and deserialization of bytes in YAML is not implemented";
+    test_error::<&[u8]>("...", expected);
 }
 
 #[test]
