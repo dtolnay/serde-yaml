@@ -1,6 +1,6 @@
 use crate::mapping::Entry;
-use crate::{private, Mapping, Value};
-use std::fmt;
+use crate::{mapping, private, Mapping, Value};
+use std::fmt::{self, Debug};
 use std::ops;
 
 /// A type that can be used to index into a `serde_yaml::Value`. See the `get`
@@ -63,61 +63,85 @@ impl Index for usize {
     }
 }
 
+fn index_into_mapping<'v, I>(index: &I, v: &'v Value) -> Option<&'v Value>
+where
+    I: ?Sized + mapping::Index,
+{
+    match v.untag_ref() {
+        Value::Mapping(map) => map.get(index),
+        _ => None,
+    }
+}
+
+fn index_into_mut_mapping<'v, I>(index: &I, v: &'v mut Value) -> Option<&'v mut Value>
+where
+    I: ?Sized + mapping::Index,
+{
+    match v.untag_mut() {
+        Value::Mapping(map) => map.get_mut(index),
+        _ => None,
+    }
+}
+
+fn index_or_insert_mapping<'v, I>(index: &I, mut v: &'v mut Value) -> &'v mut Value
+where
+    I: ?Sized + mapping::Index + ToOwned + Debug,
+    Value: From<I::Owned>,
+{
+    if let Value::Null = *v {
+        *v = Value::Mapping(Mapping::new());
+        return match v {
+            Value::Mapping(map) => match map.entry(index.to_owned().into()) {
+                Entry::Vacant(entry) => entry.insert(Value::Null),
+                Entry::Occupied(_) => unreachable!(),
+            },
+            _ => unreachable!(),
+        };
+    }
+    loop {
+        match v {
+            Value::Mapping(map) => {
+                return map.entry(index.to_owned().into()).or_insert(Value::Null);
+            }
+            Value::Tagged(tagged) => v = &mut tagged.value,
+            _ => panic!("cannot access key {:?} in YAML {}", index, Type(v)),
+        }
+    }
+}
+
 impl Index for Value {
     fn index_into<'v>(&self, v: &'v Value) -> Option<&'v Value> {
-        match v.untag_ref() {
-            Value::Mapping(map) => map.get(self),
-            _ => None,
-        }
+        index_into_mapping(self, v)
     }
     fn index_into_mut<'v>(&self, v: &'v mut Value) -> Option<&'v mut Value> {
-        match v.untag_mut() {
-            Value::Mapping(map) => map.get_mut(self),
-            _ => None,
-        }
+        index_into_mut_mapping(self, v)
     }
-    fn index_or_insert<'v>(&self, mut v: &'v mut Value) -> &'v mut Value {
-        if let Value::Null = *v {
-            *v = Value::Mapping(Mapping::new());
-            return match v {
-                Value::Mapping(map) => match map.entry(self.clone()) {
-                    Entry::Vacant(entry) => entry.insert(Value::Null),
-                    Entry::Occupied(_) => unreachable!(),
-                },
-                _ => unreachable!(),
-            };
-        }
-        loop {
-            match v {
-                Value::Mapping(map) => return map.entry(self.clone()).or_insert(Value::Null),
-                Value::Tagged(tagged) => v = &mut tagged.value,
-                _ => panic!("cannot access key {:?} in YAML {}", self, Type(v)),
-            }
-        }
+    fn index_or_insert<'v>(&self, v: &'v mut Value) -> &'v mut Value {
+        index_or_insert_mapping(self, v)
     }
 }
 
 impl Index for str {
     fn index_into<'v>(&self, v: &'v Value) -> Option<&'v Value> {
-        Value::String(self.into()).index_into(v)
+        index_into_mapping(self, v)
     }
     fn index_into_mut<'v>(&self, v: &'v mut Value) -> Option<&'v mut Value> {
-        Value::String(self.into()).index_into_mut(v)
+        index_into_mut_mapping(self, v)
     }
     fn index_or_insert<'v>(&self, v: &'v mut Value) -> &'v mut Value {
-        Value::String(self.into()).index_or_insert(v)
+        index_or_insert_mapping(self, v)
     }
 }
 
 impl Index for String {
     fn index_into<'v>(&self, v: &'v Value) -> Option<&'v Value> {
-        Value::String(self.clone()).index_into(v)
+        self.as_str().index_into(v)
     }
     fn index_into_mut<'v>(&self, v: &'v mut Value) -> Option<&'v mut Value> {
-        Value::String(self.clone()).index_into_mut(v)
+        self.as_str().index_into_mut(v)
     }
     fn index_or_insert<'v>(&self, v: &'v mut Value) -> &'v mut Value {
-        Value::String(self.clone()).index_or_insert(v)
+        self.as_str().index_or_insert(v)
     }
 }
 
