@@ -9,12 +9,8 @@
 //! This crate is a Rust library for using the [Serde] serialization framework
 //! with data in [YAML] file format.
 //!
-//! This library does not reimplement a YAML parser; it uses [yaml-rust] which
-//! is a pure Rust YAML 1.2 implementation.
-//!
 //! [Serde]: https://github.com/serde-rs/serde
 //! [YAML]: https://yaml.org/
-//! [yaml-rust]: https://github.com/chyh1990/yaml-rust
 //!
 //! # Examples
 //!
