@@ -178,6 +178,13 @@ impl Mapping {
             iter: self.map.values_mut(),
         }
     }
+
+    /// Return an owning iterator over the values of the map.
+    pub fn into_values(self) -> IntoValues {
+        IntoValues {
+            iter: self.map.into_values(),
+        }
+    }
 }
 
 /// A type that can be used to index into a `serde_yaml::Mapping`. See the
@@ -542,6 +549,13 @@ pub struct ValuesMut<'a> {
 }
 
 delegate_iterator!((ValuesMut<'a>) => &'a mut Value);
+
+/// Iterator of the values of a `serde_yaml::Mapping`.
+pub struct IntoValues {
+    iter: indexmap::map::IntoValues<Value, Value>,
+}
+
+delegate_iterator!((IntoValues) => Value);
 
 /// Entry for an existing key-value pair or a vacant location to insert one.
 pub enum Entry<'a> {
