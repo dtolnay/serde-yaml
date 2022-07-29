@@ -3,7 +3,7 @@
 use indoc::indoc;
 use serde::de::{Deserialize, SeqAccess, Visitor};
 use serde_derive::{Deserialize, Serialize};
-use serde_yaml::Deserializer;
+use serde_yaml::{Deserializer, Value};
 use std::collections::BTreeMap;
 use std::fmt::{self, Debug};
 
@@ -13,6 +13,13 @@ where
 {
     let result = serde_yaml::from_str::<T>(yaml);
     assert_eq!(expected, result.unwrap_err().to_string());
+}
+
+#[test]
+fn test_scan_error() {
+    let yaml = ">\n@";
+    let expected = "found character that cannot start any token at line 2 column 1, while scanning for the next token";
+    test_error::<Value>(yaml, expected);
 }
 
 #[test]

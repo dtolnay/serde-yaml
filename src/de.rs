@@ -101,17 +101,20 @@ impl<'de> Deserializer<'de> {
         let mut pos = 0;
         let mut jumpcount = 0;
 
-        match &self.progress {
+        match self.progress {
             Progress::Iterable(_) => return Err(error::new(ErrorImpl::MoreThanOneDocument)),
             Progress::Document(document) => {
                 let t = f(&mut DeserializerFromEvents {
-                    document,
+                    document: &document,
                     pos: &mut pos,
                     jumpcount: &mut jumpcount,
                     path: Path::Root,
                     remaining_depth: 128,
                     current_enum: None,
                 })?;
+                if let Some(parse_error) = document.error {
+                    return Err(error::shared(parse_error));
+                }
                 return Ok(t);
             }
             _ => {}
@@ -130,6 +133,9 @@ impl<'de> Deserializer<'de> {
             remaining_depth: 128,
             current_enum: None,
         })?;
+        if let Some(parse_error) = document.error {
+            return Err(error::shared(parse_error));
+        }
         if loader.next_document().is_none() {
             Ok(t)
         } else {
