@@ -18,7 +18,7 @@ where
 #[test]
 fn test_scan_error() {
     let yaml = ">\n@";
-    let expected = "deserializing from YAML containing more than one document is not supported";
+    let expected = "found character that cannot start any token at line 2 column 1, while scanning for the next token";
     test_error::<Value>(yaml, expected);
 }
 
