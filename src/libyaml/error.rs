@@ -72,7 +72,10 @@ impl Display for Error {
         }
         if let Some(context) = &self.context {
             write!(formatter, ", {}", context)?;
-            if self.context_mark.sys.line != 0 || self.context_mark.sys.column != 0 {
+            if (self.context_mark.sys.line != 0 || self.context_mark.sys.column != 0)
+                && (self.context_mark.sys.line != self.problem_mark.sys.line
+                    || self.context_mark.sys.column != self.problem_mark.sys.column)
+            {
                 write!(formatter, " at {}", self.context_mark)?;
             }
         }
