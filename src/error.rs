@@ -196,33 +196,40 @@ impl ErrorImpl {
         }
     }
 
-    fn display(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn mark(&self) -> Option<libyaml::Mark> {
         match self {
-            ErrorImpl::Message(msg, None) => Display::fmt(msg, f),
-            ErrorImpl::Message(msg, Some(Pos { mark, path })) => {
-                if path == "." {
-                    write!(f, "{} at {}", msg, mark)
-                } else {
-                    write!(f, "{}: {} at {}", path, msg, mark)
+            ErrorImpl::Message(_, Some(Pos { mark, path: _ }))
+            | ErrorImpl::RecursionLimitExceeded(mark)
+            | ErrorImpl::UnknownAnchor(mark) => Some(*mark),
+            ErrorImpl::Shared(err) => err.mark(),
+            _ => None,
+        }
+    }
+
+    fn message_no_mark(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ErrorImpl::Message(msg, None) => f.write_str(msg),
+            ErrorImpl::Message(msg, Some(Pos { mark: _, path })) => {
+                if path != "." {
+                    write!(f, "{}: ", path)?;
                 }
+                f.write_str(msg)
             }
-            ErrorImpl::Libyaml(err) => Display::fmt(err, f),
+            ErrorImpl::Libyaml(_) => unreachable!(),
             ErrorImpl::Io(err) => Display::fmt(err, f),
             ErrorImpl::FromUtf8(err) => Display::fmt(err, f),
             ErrorImpl::EndOfStream => f.write_str("EOF while parsing a value"),
             ErrorImpl::MoreThanOneDocument => f.write_str(
                 "deserializing from YAML containing more than one document is not supported",
             ),
-            ErrorImpl::RecursionLimitExceeded(mark) => {
-                write!(f, "recursion limit exceeded at {}", mark)
-            }
+            ErrorImpl::RecursionLimitExceeded(_mark) => f.write_str("recursion limit exceeded"),
             ErrorImpl::RepetitionLimitExceeded => f.write_str("repetition limit exceeded"),
             ErrorImpl::BytesUnsupported => {
                 f.write_str("serialization and deserialization of bytes in YAML is not implemented")
             }
-            ErrorImpl::UnknownAnchor(mark) => write!(f, "unknown anchor at {}", mark),
+            ErrorImpl::UnknownAnchor(_mark) => f.write_str("unknown anchor"),
             ErrorImpl::SerializeNestedEnum => {
-                write!(f, "serializing nested enums in YAML is not supported yet")
+                f.write_str("serializing nested enums in YAML is not supported yet")
             }
             ErrorImpl::ScalarInMerge => {
                 f.write_str("expected a mapping or list of mappings for merging, but found scalar")
@@ -234,7 +241,21 @@ impl ErrorImpl {
             ErrorImpl::SequenceInMergeElement => {
                 f.write_str("expected a mapping for merging, but found sequence")
             }
+            ErrorImpl::Shared(_) => unreachable!(),
+        }
+    }
+
+    fn display(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ErrorImpl::Libyaml(err) => Display::fmt(err, f),
             ErrorImpl::Shared(err) => err.display(f),
+            _ => {
+                self.message_no_mark(f)?;
+                if let Some(mark) = self.mark() {
+                    write!(f, " at {}", mark)?;
+                }
+                Ok(())
+            }
         }
     }
 
