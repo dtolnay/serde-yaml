@@ -98,6 +98,7 @@ impl Debug for Error {
         } {
             formatter.field("kind", &format_args!("{}", kind));
         }
+        formatter.field("problem", &self.problem);
         if self.problem_mark.sys.line != 0 || self.problem_mark.sys.column != 0 {
             formatter.field("problem_mark", &self.problem_mark);
         } else if self.problem_offset != 0 {
