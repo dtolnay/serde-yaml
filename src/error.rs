@@ -259,24 +259,28 @@ impl ErrorImpl {
 
     fn debug(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ErrorImpl::Message(msg, pos) => f.debug_tuple("Message").field(msg).field(pos).finish(),
-            ErrorImpl::Libyaml(err) => f.debug_tuple("Libyaml").field(err).finish(),
-            ErrorImpl::Io(io) => f.debug_tuple("Io").field(io).finish(),
-            ErrorImpl::FromUtf8(from_utf8) => f.debug_tuple("FromUtf8").field(from_utf8).finish(),
-            ErrorImpl::EndOfStream => f.write_str("EndOfStream"),
-            ErrorImpl::MoreThanOneDocument => f.write_str("MoreThanOneDocument"),
-            ErrorImpl::RecursionLimitExceeded(mark) => {
-                f.debug_tuple("RecursionLimitExceeded").field(mark).finish()
-            }
-            ErrorImpl::RepetitionLimitExceeded => f.write_str("RepetitionLimitExceeded"),
-            ErrorImpl::BytesUnsupported => f.write_str("BytesUnsupported"),
-            ErrorImpl::UnknownAnchor(mark) => f.debug_tuple("UnknownAnchor").field(mark).finish(),
-            ErrorImpl::SerializeNestedEnum => f.write_str("SerializeNestedEnum"),
-            ErrorImpl::ScalarInMerge => f.write_str("ScalarInMerge"),
-            ErrorImpl::TaggedInMerge => f.write_str("TaggedInMerge"),
-            ErrorImpl::ScalarInMergeElement => f.write_str("ScalarInMergeElement"),
-            ErrorImpl::SequenceInMergeElement => f.write_str("SequenceInMergeElement"),
+            ErrorImpl::Libyaml(err) => Debug::fmt(err, f),
             ErrorImpl::Shared(err) => err.debug(f),
+            _ => {
+                f.write_str("Error(")?;
+                struct MessageNoMark<'a>(&'a ErrorImpl);
+                impl<'a> Display for MessageNoMark<'a> {
+                    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        self.0.message_no_mark(f)
+                    }
+                }
+                let msg = MessageNoMark(self).to_string();
+                Debug::fmt(&msg, f)?;
+                if let Some(mark) = self.mark() {
+                    write!(
+                        f,
+                        ", line: {}, column: {}",
+                        mark.line() + 1,
+                        mark.column() + 1,
+                    )?;
+                }
+                f.write_str(")")
+            }
         }
     }
 }
