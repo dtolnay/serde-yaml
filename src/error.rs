@@ -179,12 +179,7 @@ impl de::Error for Error {
 
 impl ErrorImpl {
     fn location(&self) -> Option<Location> {
-        match self {
-            ErrorImpl::Message(_, Some(pos)) => Some(Location::from_mark(pos.mark)),
-            ErrorImpl::Libyaml(err) => Some(Location::from_mark(err.mark())),
-            ErrorImpl::Shared(err) => err.location(),
-            _ => None,
-        }
+        self.mark().map(Location::from_mark)
     }
 
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
@@ -201,6 +196,7 @@ impl ErrorImpl {
             ErrorImpl::Message(_, Some(Pos { mark, path: _ }))
             | ErrorImpl::RecursionLimitExceeded(mark)
             | ErrorImpl::UnknownAnchor(mark) => Some(*mark),
+            ErrorImpl::Libyaml(err) => Some(err.mark()),
             ErrorImpl::Shared(err) => err.mark(),
             _ => None,
         }
