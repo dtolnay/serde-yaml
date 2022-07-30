@@ -252,7 +252,9 @@ impl ErrorImpl {
             _ => {
                 self.message_no_mark(f)?;
                 if let Some(mark) = self.mark() {
-                    write!(f, " at {}", mark)?;
+                    if mark.line() != 0 || mark.column() != 0 {
+                        write!(f, " at {}", mark)?;
+                    }
                 }
                 Ok(())
             }
