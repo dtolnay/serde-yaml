@@ -179,12 +179,7 @@ impl de::Error for Error {
 
 impl ErrorImpl {
     fn location(&self) -> Option<Location> {
-        match self {
-            ErrorImpl::Message(_, Some(pos)) => Some(Location::from_mark(pos.mark)),
-            ErrorImpl::Libyaml(err) => Some(Location::from_mark(err.mark())),
-            ErrorImpl::Shared(err) => err.location(),
-            _ => None,
-        }
+        self.mark().map(Location::from_mark)
     }
 
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
@@ -196,33 +191,41 @@ impl ErrorImpl {
         }
     }
 
-    fn display(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn mark(&self) -> Option<libyaml::Mark> {
         match self {
-            ErrorImpl::Message(msg, None) => Display::fmt(msg, f),
-            ErrorImpl::Message(msg, Some(Pos { mark, path })) => {
-                if path == "." {
-                    write!(f, "{} at {}", msg, mark)
-                } else {
-                    write!(f, "{}: {} at {}", path, msg, mark)
+            ErrorImpl::Message(_, Some(Pos { mark, path: _ }))
+            | ErrorImpl::RecursionLimitExceeded(mark)
+            | ErrorImpl::UnknownAnchor(mark) => Some(*mark),
+            ErrorImpl::Libyaml(err) => Some(err.mark()),
+            ErrorImpl::Shared(err) => err.mark(),
+            _ => None,
+        }
+    }
+
+    fn message_no_mark(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ErrorImpl::Message(msg, None) => f.write_str(msg),
+            ErrorImpl::Message(msg, Some(Pos { mark: _, path })) => {
+                if path != "." {
+                    write!(f, "{}: ", path)?;
                 }
+                f.write_str(msg)
             }
-            ErrorImpl::Libyaml(err) => Display::fmt(err, f),
+            ErrorImpl::Libyaml(_) => unreachable!(),
             ErrorImpl::Io(err) => Display::fmt(err, f),
             ErrorImpl::FromUtf8(err) => Display::fmt(err, f),
             ErrorImpl::EndOfStream => f.write_str("EOF while parsing a value"),
             ErrorImpl::MoreThanOneDocument => f.write_str(
                 "deserializing from YAML containing more than one document is not supported",
             ),
-            ErrorImpl::RecursionLimitExceeded(mark) => {
-                write!(f, "recursion limit exceeded at {}", mark)
-            }
+            ErrorImpl::RecursionLimitExceeded(_mark) => f.write_str("recursion limit exceeded"),
             ErrorImpl::RepetitionLimitExceeded => f.write_str("repetition limit exceeded"),
             ErrorImpl::BytesUnsupported => {
                 f.write_str("serialization and deserialization of bytes in YAML is not implemented")
             }
-            ErrorImpl::UnknownAnchor(mark) => write!(f, "unknown anchor at {}", mark),
+            ErrorImpl::UnknownAnchor(_mark) => f.write_str("unknown anchor"),
             ErrorImpl::SerializeNestedEnum => {
-                write!(f, "serializing nested enums in YAML is not supported yet")
+                f.write_str("serializing nested enums in YAML is not supported yet")
             }
             ErrorImpl::ScalarInMerge => {
                 f.write_str("expected a mapping or list of mappings for merging, but found scalar")
@@ -234,30 +237,50 @@ impl ErrorImpl {
             ErrorImpl::SequenceInMergeElement => {
                 f.write_str("expected a mapping for merging, but found sequence")
             }
+            ErrorImpl::Shared(_) => unreachable!(),
+        }
+    }
+
+    fn display(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ErrorImpl::Libyaml(err) => Display::fmt(err, f),
             ErrorImpl::Shared(err) => err.display(f),
+            _ => {
+                self.message_no_mark(f)?;
+                if let Some(mark) = self.mark() {
+                    if mark.line() != 0 || mark.column() != 0 {
+                        write!(f, " at {}", mark)?;
+                    }
+                }
+                Ok(())
+            }
         }
     }
 
     fn debug(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ErrorImpl::Message(msg, pos) => f.debug_tuple("Message").field(msg).field(pos).finish(),
-            ErrorImpl::Libyaml(err) => f.debug_tuple("Libyaml").field(err).finish(),
-            ErrorImpl::Io(io) => f.debug_tuple("Io").field(io).finish(),
-            ErrorImpl::FromUtf8(from_utf8) => f.debug_tuple("FromUtf8").field(from_utf8).finish(),
-            ErrorImpl::EndOfStream => f.write_str("EndOfStream"),
-            ErrorImpl::MoreThanOneDocument => f.write_str("MoreThanOneDocument"),
-            ErrorImpl::RecursionLimitExceeded(mark) => {
-                f.debug_tuple("RecursionLimitExceeded").field(mark).finish()
-            }
-            ErrorImpl::RepetitionLimitExceeded => f.write_str("RepetitionLimitExceeded"),
-            ErrorImpl::BytesUnsupported => f.write_str("BytesUnsupported"),
-            ErrorImpl::UnknownAnchor(mark) => f.debug_tuple("UnknownAnchor").field(mark).finish(),
-            ErrorImpl::SerializeNestedEnum => f.write_str("SerializeNestedEnum"),
-            ErrorImpl::ScalarInMerge => f.write_str("ScalarInMerge"),
-            ErrorImpl::TaggedInMerge => f.write_str("TaggedInMerge"),
-            ErrorImpl::ScalarInMergeElement => f.write_str("ScalarInMergeElement"),
-            ErrorImpl::SequenceInMergeElement => f.write_str("SequenceInMergeElement"),
+            ErrorImpl::Libyaml(err) => Debug::fmt(err, f),
             ErrorImpl::Shared(err) => err.debug(f),
+            _ => {
+                f.write_str("Error(")?;
+                struct MessageNoMark<'a>(&'a ErrorImpl);
+                impl<'a> Display for MessageNoMark<'a> {
+                    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        self.0.message_no_mark(f)
+                    }
+                }
+                let msg = MessageNoMark(self).to_string();
+                Debug::fmt(&msg, f)?;
+                if let Some(mark) = self.mark() {
+                    write!(
+                        f,
+                        ", line: {}, column: {}",
+                        mark.line() + 1,
+                        mark.column() + 1,
+                    )?;
+                }
+                f.write_str(")")
+            }
         }
     }
 }
