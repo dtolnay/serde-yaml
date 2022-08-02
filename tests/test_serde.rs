@@ -6,6 +6,7 @@
 )]
 
 use indoc::indoc;
+use serde::ser::SerializeMap;
 use serde_derive::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Number, Value};
 use std::collections::BTreeMap;
@@ -196,6 +197,29 @@ fn test_map() {
         y: 2
     "};
     test_serde(&thing, yaml);
+}
+
+#[test]
+fn test_map_key_value() {
+    struct Map;
+
+    impl serde::Serialize for Map {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            // Test maps which do not serialize using serialize_entry.
+            let mut map = serializer.serialize_map(Some(1))?;
+            map.serialize_key("k")?;
+            map.serialize_value("v")?;
+            map.end()
+        }
+    }
+
+    let yaml = indoc! {"
+        k: v
+    "};
+    assert_eq!(yaml, serde_yaml::to_string(&Map).unwrap());
 }
 
 #[test]
