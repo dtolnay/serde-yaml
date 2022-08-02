@@ -177,6 +177,7 @@ mod number;
 mod path;
 mod ser;
 pub mod value;
+pub mod with;
 
 // Prevent downstream code from implementing the Index trait.
 mod private {
