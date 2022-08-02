@@ -87,30 +87,22 @@ impl<'de> Deserialize<'de> for Value {
                 Deserialize::deserialize(deserializer)
             }
 
-            fn visit_seq<V>(self, mut visitor: V) -> Result<Value, V::Error>
+            fn visit_seq<A>(self, data: A) -> Result<Value, A::Error>
             where
-                V: SeqAccess<'de>,
+                A: SeqAccess<'de>,
             {
-                let mut vec = Vec::new();
-
-                while let Some(element) = visitor.next_element()? {
-                    vec.push(element);
-                }
-
-                Ok(Value::Sequence(vec))
+                let de = serde::de::value::SeqAccessDeserializer::new(data);
+                let sequence = Sequence::deserialize(de)?;
+                Ok(Value::Sequence(sequence))
             }
 
-            fn visit_map<V>(self, mut visitor: V) -> Result<Value, V::Error>
+            fn visit_map<A>(self, data: A) -> Result<Value, A::Error>
             where
-                V: MapAccess<'de>,
+                A: MapAccess<'de>,
             {
-                let mut values = Mapping::new();
-
-                while let Some((key, value)) = visitor.next_entry()? {
-                    values.insert(key, value);
-                }
-
-                Ok(Value::Mapping(values))
+                let de = serde::de::value::MapAccessDeserializer::new(data);
+                let mapping = Mapping::deserialize(de)?;
+                Ok(Value::Mapping(mapping))
             }
 
             fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
