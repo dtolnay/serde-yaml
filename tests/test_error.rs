@@ -432,3 +432,38 @@ fn test_billion_laughs() {
     let expected = "repetition limit exceeded";
     test_error::<BTreeMap<String, X>>(yaml, expected);
 }
+
+#[test]
+fn test_duplicate_keys() {
+    let yaml = indoc! {"
+        ---
+        thing: true
+        thing: false
+    "};
+    let expected = "duplicate entry with key \"thing\" at line 2 column 1";
+    test_error::<Value>(yaml, expected);
+
+    let yaml = indoc! {"
+        ---
+        null: true
+        ~: false
+    "};
+    let expected = "duplicate entry with null key at line 2 column 1";
+    test_error::<Value>(yaml, expected);
+
+    let yaml = indoc! {"
+        ---
+        99: true
+        99: false
+    "};
+    let expected = "duplicate entry with key 99 at line 2 column 1";
+    test_error::<Value>(yaml, expected);
+
+    let yaml = indoc! {"
+        ---
+        {}: true
+        {}: false
+    "};
+    let expected = "duplicate entry in YAML map at line 2 column 1";
+    test_error::<Value>(yaml, expected);
+}

@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::cmp::Ordering;
 use std::collections::hash_map::DefaultHasher;
-use std::fmt;
+use std::fmt::{self, Display};
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
 use std::mem;
@@ -726,18 +726,47 @@ impl<'de> Deserialize<'de> for Mapping {
             }
 
             #[inline]
-            fn visit_map<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
+            fn visit_map<A>(self, mut data: A) -> Result<Self::Value, A::Error>
             where
-                V: serde::de::MapAccess<'de>,
+                A: serde::de::MapAccess<'de>,
             {
-                let mut values = Mapping::new();
-                while let Some((k, v)) = visitor.next_entry()? {
-                    values.insert(k, v);
+                let mut mapping = Mapping::new();
+
+                while let Some(key) = data.next_key()? {
+                    match mapping.entry(key) {
+                        Entry::Occupied(entry) => {
+                            return Err(serde::de::Error::custom(DuplicateKeyError { entry }));
+                        }
+                        Entry::Vacant(entry) => {
+                            let value = data.next_value()?;
+                            entry.insert(value);
+                        }
+                    }
                 }
-                Ok(values)
+
+                Ok(mapping)
             }
         }
 
         deserializer.deserialize_map(Visitor)
+    }
+}
+
+struct DuplicateKeyError<'a> {
+    entry: OccupiedEntry<'a>,
+}
+
+impl<'a> Display for DuplicateKeyError<'a> {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("duplicate entry ")?;
+        match self.entry.key() {
+            Value::Null => formatter.write_str("with null key"),
+            Value::Bool(boolean) => write!(formatter, "with key `{}`", boolean),
+            Value::Number(number) => write!(formatter, "with key {}", number),
+            Value::String(string) => write!(formatter, "with key {:?}", string),
+            Value::Sequence(_) | Value::Mapping(_) | Value::Tagged(_) => {
+                formatter.write_str("in YAML map")
+            }
+        }
     }
 }
