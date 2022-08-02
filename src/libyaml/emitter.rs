@@ -23,6 +23,7 @@ struct EmitterPinned<'a> {
     write_error: Option<io::Error>,
 }
 
+#[derive(Debug)]
 pub(crate) enum Event<'a> {
     StreamStart,
     StreamEnd,
@@ -35,12 +36,14 @@ pub(crate) enum Event<'a> {
     MappingEnd,
 }
 
+#[derive(Debug)]
 pub(crate) struct Scalar<'a> {
     pub tag: Option<String>,
     pub value: &'a str,
     pub style: ScalarStyle,
 }
 
+#[derive(Debug)]
 pub(crate) enum ScalarStyle {
     Any,
     Plain,
@@ -48,10 +51,12 @@ pub(crate) enum ScalarStyle {
     Literal,
 }
 
+#[derive(Debug)]
 pub(crate) struct Sequence {
     pub tag: Option<String>,
 }
 
+#[derive(Debug)]
 pub(crate) struct Mapping {
     pub tag: Option<String>,
 }
