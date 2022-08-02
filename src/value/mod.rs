@@ -8,8 +8,7 @@ mod partial_eq;
 mod ser;
 mod tagged;
 
-use crate::error::{self, ErrorImpl};
-use crate::{Error, Mapping};
+use crate::error::{self, Error, ErrorImpl};
 use serde::de::{Deserialize, DeserializeOwned, IntoDeserializer};
 use serde::Serialize;
 use std::hash::{Hash, Hasher};
@@ -18,6 +17,8 @@ use std::mem;
 pub use self::index::Index;
 pub use self::ser::Serializer;
 pub use self::tagged::{Tag, TaggedValue};
+#[doc(inline)]
+pub use crate::mapping::Mapping;
 pub use crate::number::Number;
 
 /// Represents any valid YAML value.
