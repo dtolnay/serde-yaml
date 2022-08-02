@@ -17,7 +17,7 @@ indexmap = { version = "1.9", features = ["std"] }
 itoa = "1.0"
 ryu = "1.0"
 serde = "1.0.139"
-unsafe-libyaml = "0.2.1"
+unsafe-libyaml = "0.2.2"
 
 [dev-dependencies]
 anyhow = "1.0"
