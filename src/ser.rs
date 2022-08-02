@@ -635,8 +635,8 @@ where
         T: ?Sized + ser::Serialize,
     {
         if let State::CheckForTag = self.state {
-            self.emit_mapping_start()?;
             self.state = State::NothingInParticular;
+            self.emit_mapping_start()?;
         }
         key.serialize(&mut **self)
     }
