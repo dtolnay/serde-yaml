@@ -328,8 +328,8 @@ fn test_invalid_scalar_type() {
         x: [i32; 1],
     }
 
-    let yaml = "x:\n";
-    let expected = "x: invalid type: unit value, expected an array of length 1 at line 1 column 3";
+    let yaml = "x: ''\n";
+    let expected = "x: invalid type: string \"\", expected an array of length 1 at line 1 column 4";
     test_error::<S>(yaml, expected);
 }
 

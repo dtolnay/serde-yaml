@@ -536,7 +536,11 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
         V: Visitor<'de>,
     {
         let (value, len) = self.recursion_check(mark, |de| {
-            let mut seq = SeqAccess { de, len: 0 };
+            let mut seq = SeqAccess {
+                empty: false,
+                de,
+                len: 0,
+            };
             let value = visitor.visit_seq(&mut seq)?;
             Ok((value, seq.len))
         })?;
@@ -550,6 +554,7 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
     {
         let (value, len) = self.recursion_check(mark, |de| {
             let mut map = MapAccess {
+                empty: false,
                 de,
                 len: 0,
                 key: None,
@@ -563,7 +568,11 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
 
     fn end_sequence(&mut self, len: usize) -> Result<()> {
         let total = {
-            let mut seq = SeqAccess { de: self, len };
+            let mut seq = SeqAccess {
+                empty: false,
+                de: self,
+                len,
+            };
             while de::SeqAccess::next_element::<IgnoredAny>(&mut seq)?.is_some() {}
             seq.len
         };
@@ -591,6 +600,7 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
     fn end_mapping(&mut self, len: usize) -> Result<()> {
         let total = {
             let mut map = MapAccess {
+                empty: false,
                 de: self,
                 len,
                 key: None,
@@ -636,6 +646,7 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
 }
 
 struct SeqAccess<'de, 'document, 'seq> {
+    empty: bool,
     de: &'seq mut DeserializerFromEvents<'de, 'document>,
     len: usize,
 }
@@ -647,6 +658,9 @@ impl<'de, 'document, 'seq> de::SeqAccess<'de> for SeqAccess<'de, 'document, 'seq
     where
         T: DeserializeSeed<'de>,
     {
+        if self.empty {
+            return Ok(None);
+        }
         match self.de.peek_event()? {
             Event::SequenceEnd | Event::Void => Ok(None),
             _ => {
@@ -669,6 +683,7 @@ impl<'de, 'document, 'seq> de::SeqAccess<'de> for SeqAccess<'de, 'document, 'seq
 }
 
 struct MapAccess<'de, 'document, 'map> {
+    empty: bool,
     de: &'map mut DeserializerFromEvents<'de, 'document>,
     len: usize,
     key: Option<&'document [u8]>,
@@ -681,6 +696,9 @@ impl<'de, 'document, 'map> de::MapAccess<'de> for MapAccess<'de, 'document, 'map
     where
         K: DeserializeSeed<'de>,
     {
+        if self.empty {
+            return Ok(None);
+        }
         match self.de.peek_event()? {
             Event::MappingEnd | Event::Void => Ok(None),
             Event::Scalar(scalar) => {
@@ -1564,12 +1582,23 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_seq(visitor),
             Event::SequenceStart(_) => self.visit_sequence(visitor, mark),
-            Event::Void => {
-                *self.pos -= 1;
-                let mut seq = SeqAccess { de: self, len: 0 };
-                visitor.visit_seq(&mut seq)
+            other => {
+                if match other {
+                    Event::Void => true,
+                    Event::Scalar(scalar) => {
+                        scalar.value.is_empty() && scalar.style == ScalarStyle::Plain
+                    }
+                    _ => false,
+                } {
+                    visitor.visit_seq(SeqAccess {
+                        empty: true,
+                        de: self,
+                        len: 0,
+                    })
+                } else {
+                    Err(invalid_type(other, &visitor))
+                }
             }
-            other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
     }
@@ -1601,16 +1630,24 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_map(visitor),
             Event::MappingStart(_) => self.visit_mapping(visitor, mark),
-            Event::Void => {
-                *self.pos -= 1;
-                let mut map = MapAccess {
-                    de: self,
-                    len: 0,
-                    key: None,
-                };
-                visitor.visit_map(&mut map)
+            other => {
+                if match other {
+                    Event::Void => true,
+                    Event::Scalar(scalar) => {
+                        scalar.value.is_empty() && scalar.style == ScalarStyle::Plain
+                    }
+                    _ => false,
+                } {
+                    visitor.visit_map(MapAccess {
+                        empty: true,
+                        de: self,
+                        len: 0,
+                        key: None,
+                    })
+                } else {
+                    Err(invalid_type(other, &visitor))
+                }
             }
-            other => Err(invalid_type(other, &visitor)),
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
     }

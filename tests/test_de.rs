@@ -550,3 +550,22 @@ fn test_no_required_fields() {
         assert_eq!(expected, deserialized);
     }
 }
+
+#[test]
+fn test_empty_scalar() {
+    #[derive(Deserialize, PartialEq, Debug)]
+    struct Struct<T> {
+        thing: T,
+    }
+
+    let yaml = "thing:\n";
+    let expected = Struct {
+        thing: serde_yaml::Sequence::new(),
+    };
+    test_de(yaml, &expected);
+
+    let expected = Struct {
+        thing: serde_yaml::Mapping::new(),
+    };
+    test_de(yaml, &expected);
+}
