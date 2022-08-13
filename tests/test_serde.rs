@@ -448,6 +448,28 @@ fn test_struct_variant() {
 }
 
 #[test]
+fn test_tagged_map_value() {
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    struct Bindings {
+        profile: Profile,
+    }
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    enum Profile {
+        ClassValidator { class_name: String },
+    }
+    let thing = Bindings {
+        profile: Profile::ClassValidator {
+            class_name: "ApplicationConfig".to_owned(),
+        },
+    };
+    let yaml = indoc! {"
+        profile: !ClassValidator
+          class_name: ApplicationConfig
+    "};
+    test_serde(&thing, yaml);
+}
+
+#[test]
 fn test_value() {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct GenericInstructions {
