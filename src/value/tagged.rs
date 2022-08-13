@@ -149,15 +149,15 @@ impl Hash for Tag {
     }
 }
 
-impl Debug for Tag {
+impl Display for Tag {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "!{}", nobang(&self.string))
     }
 }
 
-impl Display for Tag {
+impl Debug for Tag {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "!{}", nobang(&self.string))
+        Display::fmt(self, formatter)
     }
 }
 
