@@ -81,7 +81,7 @@ pub mod singleton_map {
     use serde::ser::{
         self, Serialize, SerializeMap, SerializeStructVariant, SerializeTupleVariant, Serializer,
     };
-    use std::fmt;
+    use std::fmt::{self, Display};
 
     #[allow(missing_docs)]
     pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
@@ -310,6 +310,13 @@ pub mod singleton_map {
             map.serialize_key(variant)?;
             let mapping = Mapping::with_capacity(len);
             Ok(SerializeStructVariantAsSingletonMap { map, mapping })
+        }
+
+        fn collect_str<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
+        where
+            T: ?Sized + Display,
+        {
+            self.delegate.collect_str(value)
         }
     }
 
