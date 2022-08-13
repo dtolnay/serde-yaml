@@ -166,8 +166,19 @@ impl Serialize for TaggedValue {
     where
         S: Serializer,
     {
+        struct SerializeTag<'a>(&'a Tag);
+
+        impl<'a> Serialize for SerializeTag<'a> {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: Serializer,
+            {
+                serializer.collect_str(self.0)
+            }
+        }
+
         let mut map = serializer.serialize_map(Some(1))?;
-        map.serialize_entry(&format_args!("!{}", nobang(&self.tag.string)), &self.value)?;
+        map.serialize_entry(&SerializeTag(&self.tag), &self.value)?;
         map.end()
     }
 }
