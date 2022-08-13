@@ -3,7 +3,7 @@
 use indoc::indoc;
 use serde::de::IntoDeserializer;
 use serde::Deserialize;
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 use serde_yaml::{Number, Value};
 
 #[test]
@@ -130,4 +130,20 @@ fn test_debug() {
     };
 
     assert_eq!(debug, expected);
+}
+
+#[test]
+fn test_tagged() {
+    #[derive(Serialize)]
+    enum Enum {
+        Variant(usize),
+    }
+
+    let value = serde_yaml::to_value(&Enum::Variant(0)).unwrap();
+
+    let deserialized: serde_yaml::Value = serde_yaml::from_value(value.clone()).unwrap();
+    assert_eq!(value, deserialized);
+
+    let serialized = serde_yaml::to_value(&value).unwrap();
+    assert_eq!(value, serialized);
 }
