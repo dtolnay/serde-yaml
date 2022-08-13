@@ -6,7 +6,7 @@ mod from;
 mod index;
 mod partial_eq;
 mod ser;
-mod tagged;
+pub(crate) mod tagged;
 
 use crate::error::{self, Error, ErrorImpl};
 use serde::de::{Deserialize, DeserializeOwned, IntoDeserializer};

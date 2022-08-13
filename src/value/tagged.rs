@@ -9,6 +9,7 @@ use serde::ser::{Serialize, SerializeMap, Serializer};
 use std::cmp::Ordering;
 use std::fmt::{self, Debug, Display};
 use std::hash::{Hash, Hasher};
+use std::mem;
 
 /// A representation of YAML's `!Tag` syntax, used for enums.
 ///
@@ -319,5 +320,60 @@ impl<'de> VariantAccess<'de> for &'de Value {
         } else {
             Err(Error::invalid_type(self.unexpected(), &"struct variant"))
         }
+    }
+}
+
+pub(crate) enum MaybeTag {
+    Tag(String),
+    NotTag(String),
+}
+
+pub(crate) fn check_for_tag<T>(value: &T) -> MaybeTag
+where
+    T: ?Sized + Display,
+{
+    enum CheckForTag {
+        Empty,
+        Bang,
+        Tag(String),
+        NotTag(String),
+    }
+
+    impl fmt::Write for CheckForTag {
+        fn write_str(&mut self, s: &str) -> fmt::Result {
+            if s.is_empty() {
+                return Ok(());
+            }
+            match self {
+                CheckForTag::Empty => {
+                    if s == "!" {
+                        *self = CheckForTag::Bang;
+                    } else {
+                        *self = CheckForTag::NotTag(s.to_owned());
+                    }
+                }
+                CheckForTag::Bang => {
+                    *self = CheckForTag::Tag(s.to_owned());
+                }
+                CheckForTag::Tag(string) => {
+                    let mut string = mem::take(string);
+                    string.push_str(s);
+                    *self = CheckForTag::NotTag(string);
+                }
+                CheckForTag::NotTag(string) => {
+                    string.push_str(s);
+                }
+            }
+            Ok(())
+        }
+    }
+
+    let mut check_for_tag = CheckForTag::Empty;
+    fmt::write(&mut check_for_tag, format_args!("{}", value)).unwrap();
+    match check_for_tag {
+        CheckForTag::Empty => MaybeTag::NotTag(String::new()),
+        CheckForTag::Bang => MaybeTag::NotTag("!".to_owned()),
+        CheckForTag::Tag(string) => MaybeTag::Tag(string),
+        CheckForTag::NotTag(string) => MaybeTag::NotTag(string),
     }
 }

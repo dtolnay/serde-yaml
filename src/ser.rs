@@ -5,6 +5,7 @@
 use crate::error::{self, Error, ErrorImpl};
 use crate::libyaml;
 use crate::libyaml::emitter::{Emitter, Event, Mapping, Scalar, ScalarStyle, Sequence};
+use crate::value::tagged::{self, MaybeTag};
 use serde::de::Visitor;
 use serde::ser::{self, Serializer as _};
 use std::fmt::{self, Display};
@@ -498,49 +499,10 @@ where
     where
         T: ?Sized + Display,
     {
-        enum CheckForTag {
-            Empty,
-            Bang,
-            Tag(String),
-            NotTag(String),
-        }
-
-        impl fmt::Write for CheckForTag {
-            fn write_str(&mut self, s: &str) -> fmt::Result {
-                if s.is_empty() {
-                    return Ok(());
-                }
-                match self {
-                    CheckForTag::Empty => {
-                        if s == "!" {
-                            *self = CheckForTag::Bang;
-                        } else {
-                            *self = CheckForTag::NotTag(s.to_owned());
-                        }
-                    }
-                    CheckForTag::Bang => {
-                        *self = CheckForTag::Tag(s.to_owned());
-                    }
-                    CheckForTag::Tag(string) => {
-                        let mut string = mem::take(string);
-                        string.push_str(s);
-                        *self = CheckForTag::NotTag(string);
-                    }
-                    CheckForTag::NotTag(string) => {
-                        string.push_str(s);
-                    }
-                }
-                Ok(())
-            }
-        }
-
         let string = if let State::CheckForTag | State::CheckForDuplicateTag = self.state {
-            let mut check_for_tag = CheckForTag::Empty;
-            fmt::write(&mut check_for_tag, format_args!("{}", value)).unwrap();
-            match check_for_tag {
-                CheckForTag::Empty => String::new(),
-                CheckForTag::Bang => "!".to_owned(),
-                CheckForTag::Tag(string) => {
+            match tagged::check_for_tag(value) {
+                MaybeTag::NotTag(string) => string,
+                MaybeTag::Tag(string) => {
                     return if let State::CheckForDuplicateTag = self.state {
                         Err(error::new(ErrorImpl::SerializeNestedEnum))
                     } else {
@@ -548,7 +510,6 @@ where
                         Ok(())
                     };
                 }
-                CheckForTag::NotTag(string) => string,
             }
         } else {
             value.to_string()
