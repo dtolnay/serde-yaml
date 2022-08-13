@@ -432,10 +432,7 @@ impl<'de> Deserializer<'de> for Value {
     where
         V: Visitor<'de>,
     {
-        match self.untag() {
-            Value::Mapping(v) => visit_mapping(v, visitor),
-            other => Err(other.invalid_type(&visitor)),
-        }
+        self.deserialize_map(visitor)
     }
 
     fn deserialize_enum<V>(
@@ -950,10 +947,7 @@ impl<'de> Deserializer<'de> for &'de Value {
     where
         V: Visitor<'de>,
     {
-        match self.untag_ref() {
-            Value::Mapping(v) => visit_mapping_ref(v, visitor),
-            other => Err(other.invalid_type(&visitor)),
-        }
+        self.deserialize_map(visitor)
     }
 
     fn deserialize_enum<V>(
