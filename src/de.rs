@@ -1617,31 +1617,14 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
 
     fn deserialize_struct<V>(
         self,
-        name: &'static str,
-        fields: &'static [&'static str],
+        _name: &'static str,
+        _fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        let (next, mark) = self.next_event_mark()?;
-        match next {
-            Event::Alias(mut pos) => self
-                .jump(&mut pos)?
-                .deserialize_struct(name, fields, visitor),
-            Event::MappingStart(_) => self.visit_mapping(visitor, mark),
-            Event::Void => {
-                *self.pos -= 1;
-                let mut map = MapAccess {
-                    de: self,
-                    len: 0,
-                    key: None,
-                };
-                visitor.visit_map(&mut map)
-            }
-            other => Err(invalid_type(other, &visitor)),
-        }
-        .map_err(|err| error::fix_mark(err, mark, self.path))
+        self.deserialize_map(visitor)
     }
 
     /// Parses an enum as a single key:value pair where the key identifies the
