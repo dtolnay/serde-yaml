@@ -325,7 +325,7 @@ fn test_invalid_scalar_type() {
     #[derive(Deserialize, Debug)]
     struct S {
         #[allow(dead_code)]
-        x: [(); 1],
+        x: [i32; 1],
     }
 
     let yaml = "x:\n";
