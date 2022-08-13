@@ -3,6 +3,7 @@
 use indoc::indoc;
 use serde::de::{Deserialize, SeqAccess, Visitor};
 use serde_derive::{Deserialize, Serialize};
+use serde_yaml::value::{Tag, TaggedValue};
 use serde_yaml::{Deserializer, Value};
 use std::collections::BTreeMap;
 use std::fmt::{self, Debug};
@@ -182,6 +183,16 @@ fn test_serialize_nested_enum() {
     assert_eq!(error.to_string(), expected);
 
     let e = Outer::Inner(Inner::Struct { x: 0 });
+    let error = serde_yaml::to_string(&e).unwrap_err();
+    assert_eq!(error.to_string(), expected);
+
+    let e = Value::Tagged(Box::new(TaggedValue {
+        tag: Tag::new("Outer"),
+        value: Value::Tagged(Box::new(TaggedValue {
+            tag: Tag::new("Inner"),
+            value: Value::Null,
+        })),
+    }));
     let error = serde_yaml::to_string(&e).unwrap_err();
     assert_eq!(error.to_string(), expected);
 }
