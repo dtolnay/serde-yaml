@@ -156,8 +156,8 @@ impl Debug for Tag {
 }
 
 impl Display for Tag {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "!{}", nobang(&self.string))
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "!{}", nobang(&self.string))
     }
 }
 
