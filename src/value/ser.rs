@@ -251,25 +251,6 @@ pub struct SerializeArray {
     sequence: Sequence,
 }
 
-pub struct SerializeTupleVariant {
-    tag: &'static str,
-    sequence: Sequence,
-}
-
-pub struct SerializeMap {
-    mapping: Mapping,
-    next_key: Option<Value>,
-}
-
-pub struct SerializeStruct {
-    mapping: Mapping,
-}
-
-pub struct SerializeStructVariant {
-    tag: &'static str,
-    mapping: Mapping,
-}
-
 impl ser::SerializeSeq for SerializeArray {
     type Ok = Value;
     type Error = Error;
@@ -319,6 +300,11 @@ impl ser::SerializeTupleStruct for SerializeArray {
     }
 }
 
+pub struct SerializeTupleVariant {
+    tag: &'static str,
+    sequence: Sequence,
+}
+
 impl ser::SerializeTupleVariant for SerializeTupleVariant {
     type Ok = Value;
     type Error = Error;
@@ -337,6 +323,11 @@ impl ser::SerializeTupleVariant for SerializeTupleVariant {
             value: Value::Sequence(self.sequence),
         })))
     }
+}
+
+pub struct SerializeMap {
+    mapping: Mapping,
+    next_key: Option<Value>,
 }
 
 impl ser::SerializeMap for SerializeMap {
@@ -376,6 +367,10 @@ impl ser::SerializeMap for SerializeMap {
     }
 }
 
+pub struct SerializeStruct {
+    mapping: Mapping,
+}
+
 impl ser::SerializeStruct for SerializeStruct {
     type Ok = Value;
     type Error = Error;
@@ -391,6 +386,11 @@ impl ser::SerializeStruct for SerializeStruct {
     fn end(self) -> Result<Value> {
         Ok(Value::Mapping(self.mapping))
     }
+}
+
+pub struct SerializeStructVariant {
+    tag: &'static str,
+    mapping: Mapping,
 }
 
 impl ser::SerializeStructVariant for SerializeStructVariant {
