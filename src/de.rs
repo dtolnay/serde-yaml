@@ -1603,12 +1603,12 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
             Event::MappingStart(_) => self.visit_mapping(visitor, mark),
             Event::Void => {
                 *self.pos -= 1;
-                let mut seq = MapAccess {
+                let mut map = MapAccess {
                     de: self,
                     len: 0,
                     key: None,
                 };
-                visitor.visit_map(&mut seq)
+                visitor.visit_map(&mut map)
             }
             other => Err(invalid_type(other, &visitor)),
         }
@@ -1632,12 +1632,12 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
             Event::MappingStart(_) => self.visit_mapping(visitor, mark),
             Event::Void => {
                 *self.pos -= 1;
-                let mut seq = MapAccess {
+                let mut map = MapAccess {
                     de: self,
                     len: 0,
                     key: None,
                 };
-                visitor.visit_map(&mut seq)
+                visitor.visit_map(&mut map)
             }
             other => Err(invalid_type(other, &visitor)),
         }
