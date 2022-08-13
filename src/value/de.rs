@@ -184,7 +184,7 @@ where
     let len = mapping.len();
     let mut deserializer = MapRefDeserializer::new(mapping);
     let map = visitor.visit_map(&mut deserializer)?;
-    let remaining = deserializer.iter.len();
+    let remaining = deserializer.iter.unwrap().len();
     if remaining == 0 {
         Ok(map)
     } else {
@@ -390,6 +390,7 @@ impl<'de> Deserializer<'de> for Value {
     {
         match self.untag() {
             Value::Sequence(v) => visit_sequence(v, visitor),
+            Value::Null => visit_sequence(Sequence::new(), visitor),
             other => Err(other.invalid_type(&visitor)),
         }
     }
@@ -419,6 +420,7 @@ impl<'de> Deserializer<'de> for Value {
     {
         match self.untag() {
             Value::Mapping(v) => visit_mapping(v, visitor),
+            Value::Null => visit_mapping(Mapping::new(), visitor),
             other => Err(other.invalid_type(&visitor)),
         }
     }
@@ -903,8 +905,10 @@ impl<'de> Deserializer<'de> for &'de Value {
     where
         V: Visitor<'de>,
     {
+        static EMPTY: Sequence = Sequence::new();
         match self.untag_ref() {
             Value::Sequence(v) => visit_sequence_ref(v, visitor),
+            Value::Null => visit_sequence_ref(&EMPTY, visitor),
             other => Err(other.invalid_type(&visitor)),
         }
     }
@@ -934,6 +938,10 @@ impl<'de> Deserializer<'de> for &'de Value {
     {
         match self.untag_ref() {
             Value::Mapping(v) => visit_mapping_ref(v, visitor),
+            Value::Null => visitor.visit_map(&mut MapRefDeserializer {
+                iter: None,
+                value: None,
+            }),
             other => Err(other.invalid_type(&visitor)),
         }
     }
@@ -1138,14 +1146,14 @@ impl<'de> SeqAccess<'de> for SeqRefDeserializer<'de> {
 }
 
 pub(crate) struct MapRefDeserializer<'de> {
-    iter: <&'de Mapping as IntoIterator>::IntoIter,
+    iter: Option<<&'de Mapping as IntoIterator>::IntoIter>,
     value: Option<&'de Value>,
 }
 
 impl<'de> MapRefDeserializer<'de> {
     pub(crate) fn new(map: &'de Mapping) -> Self {
         MapRefDeserializer {
-            iter: map.iter(),
+            iter: Some(map.iter()),
             value: None,
         }
     }
@@ -1158,7 +1166,7 @@ impl<'de> MapAccess<'de> for MapRefDeserializer<'de> {
     where
         T: DeserializeSeed<'de>,
     {
-        match self.iter.next() {
+        match self.iter.as_mut().and_then(Iterator::next) {
             Some((key, value)) => {
                 self.value = Some(value);
                 seed.deserialize(key).map(Some)
@@ -1178,7 +1186,7 @@ impl<'de> MapAccess<'de> for MapRefDeserializer<'de> {
     }
 
     fn size_hint(&self) -> Option<usize> {
-        match self.iter.size_hint() {
+        match self.iter.as_ref()?.size_hint() {
             (lower, Some(upper)) if lower == upper => Some(upper),
             _ => None,
         }
