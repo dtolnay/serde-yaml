@@ -152,6 +152,7 @@
     clippy::missing_panics_doc,
     clippy::never_loop,
     clippy::return_self_not_must_use,
+    clippy::too_many_lines,
     clippy::unsafe_removed_from_name,
     clippy::wildcard_in_or_patterns,
     // noisy
