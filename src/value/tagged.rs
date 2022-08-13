@@ -7,7 +7,7 @@ use serde::de::{
 };
 use serde::ser::{Serialize, SerializeMap, Serializer};
 use std::cmp::Ordering;
-use std::fmt::{self, Debug};
+use std::fmt::{self, Debug, Display};
 use std::hash::{Hash, Hasher};
 
 /// A representation of YAML's `!Tag` syntax, used for enums.
@@ -67,10 +67,12 @@ impl Tag {
     /// let tag = Tag::new("Thing");
     /// assert!(tag == "Thing");
     /// assert!(tag == "!Thing");
+    /// assert!(tag.to_string() == "!Thing");
     ///
     /// let tag = Tag::new("!Thing");
     /// assert!(tag == "Thing");
     /// assert!(tag == "!Thing");
+    /// assert!(tag.to_string() == "!Thing");
     /// ```
     ///
     /// Such a tag would serialize to `!Thing` in YAML regardless of whether a
@@ -150,6 +152,12 @@ impl Hash for Tag {
 impl Debug for Tag {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "!{}", nobang(&self.string))
+    }
+}
+
+impl Display for Tag {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "!{}", nobang(&self.string))
     }
 }
 
