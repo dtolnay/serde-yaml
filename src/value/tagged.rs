@@ -323,12 +323,12 @@ impl<'de> VariantAccess<'de> for &'de Value {
     }
 }
 
-pub(crate) enum MaybeTag {
+pub(crate) enum MaybeTag<T> {
     Tag(String),
-    NotTag(String),
+    NotTag(T),
 }
 
-pub(crate) fn check_for_tag<T>(value: &T) -> MaybeTag
+pub(crate) fn check_for_tag<T>(value: &T) -> MaybeTag<String>
 where
     T: ?Sized + Display,
 {
