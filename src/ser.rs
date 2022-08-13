@@ -50,6 +50,7 @@ pub struct Serializer<W> {
 enum State {
     NothingInParticular,
     CheckForTag,
+    CheckForDuplicateTag,
     FoundTag(String),
     AlreadyTagged,
 }
@@ -89,10 +90,7 @@ where
     }
 
     fn emit_scalar(&mut self, mut scalar: Scalar) -> Result<()> {
-        if let State::CheckForTag = self.state {
-            self.state = State::NothingInParticular;
-            self.emit_mapping_start()?;
-        }
+        self.flush_mapping_start()?;
         if let Some(tag) = self.take_tag() {
             scalar.tag = Some(tag);
         }
@@ -102,10 +100,7 @@ where
     }
 
     fn emit_sequence_start(&mut self) -> Result<()> {
-        if let State::CheckForTag = self.state {
-            self.state = State::NothingInParticular;
-            self.emit_mapping_start()?;
-        }
+        self.flush_mapping_start()?;
         self.value_start()?;
         let tag = self.take_tag();
         self.emitter.emit(Event::SequenceStart(Sequence { tag }))?;
@@ -118,10 +113,7 @@ where
     }
 
     fn emit_mapping_start(&mut self) -> Result<()> {
-        if let State::CheckForTag = self.state {
-            self.state = State::NothingInParticular;
-            self.emit_mapping_start()?;
-        }
+        self.flush_mapping_start()?;
         self.value_start()?;
         let tag = self.take_tag();
         self.emitter.emit(Event::MappingStart(Mapping { tag }))?;
@@ -160,6 +152,16 @@ where
             self.state = state;
             None
         }
+    }
+
+    fn flush_mapping_start(&mut self) -> Result<()> {
+        if let State::CheckForTag = self.state {
+            self.state = State::NothingInParticular;
+            self.emit_mapping_start()?;
+        } else if let State::CheckForDuplicateTag = self.state {
+            self.state = State::NothingInParticular;
+        }
+        Ok(())
     }
 }
 
@@ -460,7 +462,12 @@ where
 
     fn serialize_map(mut self, len: Option<usize>) -> Result<Self::SerializeMap> {
         if len == Some(1) {
-            self.state = State::CheckForTag;
+            self.state = if let State::FoundTag(_) = self.state {
+                self.emit_mapping_start()?;
+                State::CheckForDuplicateTag
+            } else {
+                State::CheckForTag
+            };
         } else {
             self.emit_mapping_start()?;
         }
@@ -527,15 +534,19 @@ where
             }
         }
 
-        let string = if let State::CheckForTag = self.state {
+        let string = if let State::CheckForTag | State::CheckForDuplicateTag = self.state {
             let mut check_for_tag = CheckForTag::Empty;
             fmt::write(&mut check_for_tag, format_args!("{}", value)).unwrap();
             match check_for_tag {
                 CheckForTag::Empty => String::new(),
                 CheckForTag::Bang => "!".to_owned(),
                 CheckForTag::Tag(string) => {
-                    self.state = State::FoundTag(string);
-                    return Ok(());
+                    return if let State::CheckForDuplicateTag = self.state {
+                        Err(error::new(ErrorImpl::SerializeNestedEnum))
+                    } else {
+                        self.state = State::FoundTag(string);
+                        Ok(())
+                    };
                 }
                 CheckForTag::NotTag(string) => string,
             }
@@ -634,10 +645,7 @@ where
     where
         T: ?Sized + ser::Serialize,
     {
-        if let State::CheckForTag = self.state {
-            self.state = State::NothingInParticular;
-            self.emit_mapping_start()?;
-        }
+        self.flush_mapping_start()?;
         key.serialize(&mut **self)
     }
 
