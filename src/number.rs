@@ -293,8 +293,8 @@ impl Number {
 impl Display for Number {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self.n {
-            N::PosInt(i) => Display::fmt(&i, formatter),
-            N::NegInt(i) => Display::fmt(&i, formatter),
+            N::PosInt(i) => formatter.write_str(itoa::Buffer::new().format(i)),
+            N::NegInt(i) => formatter.write_str(itoa::Buffer::new().format(i)),
             N::Float(f) if f.is_nan() => formatter.write_str(".nan"),
             N::Float(f) if f.is_infinite() => {
                 if f.is_sign_negative() {
@@ -303,7 +303,7 @@ impl Display for Number {
                     formatter.write_str(".inf")
                 }
             }
-            N::Float(f) => Display::fmt(&f, formatter),
+            N::Float(f) => formatter.write_str(ryu::Buffer::new().format_finite(f)),
         }
     }
 }
