@@ -11,6 +11,7 @@ use serde_derive::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Number, Value};
 use std::collections::BTreeMap;
 use std::fmt::Debug;
+use std::iter;
 
 fn test_serde<T>(thing: &T, yaml: &str)
 where
@@ -524,6 +525,26 @@ fn test_mapping() {
         substructure:
           a: foo
           b: bar
+    "};
+
+    test_serde(&thing, yaml);
+}
+
+#[test]
+fn test_long_string() {
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    struct Data {
+        pub string: String,
+    }
+
+    let thing = Data {
+        string: iter::repeat(["word", " "]).flatten().take(69).collect(),
+    };
+
+    let yaml = indoc! {"
+        string: word word word word word word word word word word word word word word word
+          word word word word word word word word word word word word word word word word
+          word word word word
     "};
 
     test_serde(&thing, yaml);
