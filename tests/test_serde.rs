@@ -542,9 +542,7 @@ fn test_long_string() {
     };
 
     let yaml = indoc! {"
-        string: word word word word word word word word word word word word word word word
-          word word word word word word word word word word word word word word word word
-          word word word word
+        string: word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word
     "};
 
     test_serde(&thing, yaml);

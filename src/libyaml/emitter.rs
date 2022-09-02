@@ -70,6 +70,7 @@ impl<'a> Emitter<'a> {
                 panic!("malloc error: {}", libyaml::Error::emit_error(emitter));
             }
             sys::yaml_emitter_set_unicode(emitter, true);
+            sys::yaml_emitter_set_width(emitter, -1);
             addr_of_mut!((*owned.ptr).write).write(write);
             addr_of_mut!((*owned.ptr).write_error).write(None);
             sys::yaml_emitter_set_output(emitter, write_handler, owned.ptr.cast());
