@@ -19,7 +19,7 @@ where
     let serialized = serde_yaml::to_string(&thing).unwrap();
     assert_eq!(yaml, serialized);
 
-    let value = serde_yaml::to_value(&thing).unwrap();
+    let value = serde_yaml::to_value(thing).unwrap();
     let serialized = serde_yaml::to_string(&value).unwrap();
     assert_eq!(yaml, serialized);
 
