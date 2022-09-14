@@ -1154,19 +1154,11 @@ fn is_plain_or_tagged_literal_scalar(
     scalar: &Scalar,
     tagged_already: bool,
 ) -> bool {
-    if scalar.style == ScalarStyle::Plain {
-        return true;
+    match (scalar.style, &scalar.tag, tagged_already) {
+        (ScalarStyle::Plain, _, _) => true,
+        (ScalarStyle::Literal, Some(tag), false) => tag == expected,
+        _ => false,
     }
-    if tagged_already {
-        return false;
-    }
-    if scalar.style != ScalarStyle::Literal {
-        return false;
-    }
-    if let Some(tag) = &scalar.tag {
-        return tag == expected;
-    }
-    false
 }
 
 fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
