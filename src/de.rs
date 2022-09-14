@@ -923,20 +923,17 @@ fn parse_borrowed_str<'de>(
 }
 
 fn parse_null(scalar: &[u8]) -> Option<()> {
-    if scalar == b"~" || scalar == b"null" {
-        Some(())
-    } else {
-        None
+    match scalar {
+        b"null" | b"Null" | b"NULL" | b"~" => Some(()),
+        _ => None,
     }
 }
 
 fn parse_bool(scalar: &str) -> Option<bool> {
-    if scalar == "true" {
-        Some(true)
-    } else if scalar == "false" {
-        Some(false)
-    } else {
-        None
+    match scalar {
+        "true" | "True" | "TRUE" => Some(true),
+        "false" | "False" | "FALSE" => Some(false),
+        _ => None,
     }
 }
 
