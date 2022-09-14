@@ -594,3 +594,69 @@ fn test_python_safe_dump() {
     let expected = Frob { foo: 7200 };
     test_de(yaml, &expected);
 }
+
+#[test]
+fn test_tag_resolution() {
+    // https://yaml.org/spec/1.2.2/#1032-tag-resolution
+    let yaml = indoc! {"
+        - null
+        - Null
+        - NULL
+        - ~
+        -
+        - true
+        - True
+        - TRUE
+        - false
+        - False
+        - FALSE
+        - y
+        - Y
+        - yes
+        - Yes
+        - YES
+        - n
+        - N
+        - no
+        - No
+        - NO
+        - on
+        - On
+        - ON
+        - off
+        - Off
+        - OFF
+    "};
+
+    let expected = vec![
+        Value::Null,
+        Value::Null,
+        Value::Null,
+        Value::Null,
+        Value::Null,
+        Value::Bool(true),
+        Value::Bool(true),
+        Value::Bool(true),
+        Value::Bool(false),
+        Value::Bool(false),
+        Value::Bool(false),
+        Value::String("y".to_owned()),
+        Value::String("Y".to_owned()),
+        Value::String("yes".to_owned()),
+        Value::String("Yes".to_owned()),
+        Value::String("YES".to_owned()),
+        Value::String("n".to_owned()),
+        Value::String("N".to_owned()),
+        Value::String("no".to_owned()),
+        Value::String("No".to_owned()),
+        Value::String("NO".to_owned()),
+        Value::String("on".to_owned()),
+        Value::String("On".to_owned()),
+        Value::String("ON".to_owned()),
+        Value::String("off".to_owned()),
+        Value::String("Off".to_owned()),
+        Value::String("OFF".to_owned()),
+    ];
+
+    test_de(yaml, &expected);
+}
