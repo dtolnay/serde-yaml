@@ -569,3 +569,28 @@ fn test_empty_scalar() {
     };
     test_de(yaml, &expected);
 }
+
+#[test]
+fn test_python_safe_dump() {
+    #[derive(Deserialize, PartialEq, Debug)]
+    struct Frob {
+        foo: u32,
+    }
+
+    // This matches output produced by PyYAML's `yaml.safe_dump` when using the
+    // default_style parameter.
+    //
+    //    >>> import yaml
+    //    >>> d = {"foo": 7200}
+    //    >>> print(yaml.safe_dump(d, default_style="|"))
+    //    "foo": !!int |-
+    //      7200
+    //
+    let yaml = indoc! {r#"
+        "foo": !!int |-
+            7200
+    "#};
+
+    let expected = Frob { foo: 7200 };
+    test_de(yaml, &expected);
+}

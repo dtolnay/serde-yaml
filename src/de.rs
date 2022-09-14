@@ -1149,6 +1149,18 @@ where
     }
 }
 
+fn is_plain_or_tagged_literal_scalar(
+    expected: &str,
+    scalar: &Scalar,
+    tagged_already: bool,
+) -> bool {
+    match (scalar.style, &scalar.tag, tagged_already) {
+        (ScalarStyle::Plain, _, _) => true,
+        (ScalarStyle::Literal, Some(tag), false) => tag == expected,
+        _ => false,
+    }
+}
+
 fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
     enum Void {}
 
@@ -1250,11 +1262,14 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
     where
         V: Visitor<'de>,
     {
+        let tagged_already = self.current_enum.is_some();
         let (next, mark) = self.next_event_mark()?;
         loop {
             match next {
                 Event::Alias(mut pos) => break self.jump(&mut pos)?.deserialize_bool(visitor),
-                Event::Scalar(scalar) if scalar.style == ScalarStyle::Plain => {
+                Event::Scalar(scalar)
+                    if is_plain_or_tagged_literal_scalar(Tag::BOOL, scalar, tagged_already) =>
+                {
                     if let Ok(value) = str::from_utf8(&scalar.value) {
                         if let Some(boolean) = parse_bool(value) {
                             break visitor.visit_bool(boolean);
@@ -1293,11 +1308,14 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
     where
         V: Visitor<'de>,
     {
+        let tagged_already = self.current_enum.is_some();
         let (next, mark) = self.next_event_mark()?;
         loop {
             match next {
                 Event::Alias(mut pos) => break self.jump(&mut pos)?.deserialize_i64(visitor),
-                Event::Scalar(scalar) if scalar.style == ScalarStyle::Plain => {
+                Event::Scalar(scalar)
+                    if is_plain_or_tagged_literal_scalar(Tag::INT, scalar, tagged_already) =>
+                {
                     if let Ok(value) = str::from_utf8(&scalar.value) {
                         if let Some(int) = parse_signed_int(value, i64::from_str_radix) {
                             break visitor.visit_i64(int);
@@ -1315,11 +1333,14 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
     where
         V: Visitor<'de>,
     {
+        let tagged_already = self.current_enum.is_some();
         let (next, mark) = self.next_event_mark()?;
         loop {
             match next {
                 Event::Alias(mut pos) => break self.jump(&mut pos)?.deserialize_i128(visitor),
-                Event::Scalar(scalar) if scalar.style == ScalarStyle::Plain => {
+                Event::Scalar(scalar)
+                    if is_plain_or_tagged_literal_scalar(Tag::INT, scalar, tagged_already) =>
+                {
                     if let Ok(value) = str::from_utf8(&scalar.value) {
                         if let Some(int) = parse_signed_int(value, i128::from_str_radix) {
                             break visitor.visit_i128(int);
@@ -1358,11 +1379,14 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
     where
         V: Visitor<'de>,
     {
+        let tagged_already = self.current_enum.is_some();
         let (next, mark) = self.next_event_mark()?;
         loop {
             match next {
                 Event::Alias(mut pos) => break self.jump(&mut pos)?.deserialize_u64(visitor),
-                Event::Scalar(scalar) if scalar.style == ScalarStyle::Plain => {
+                Event::Scalar(scalar)
+                    if is_plain_or_tagged_literal_scalar(Tag::INT, scalar, tagged_already) =>
+                {
                     if let Ok(value) = str::from_utf8(&scalar.value) {
                         if let Some(int) = parse_unsigned_int(value, u64::from_str_radix) {
                             break visitor.visit_u64(int);
@@ -1380,11 +1404,14 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
     where
         V: Visitor<'de>,
     {
+        let tagged_already = self.current_enum.is_some();
         let (next, mark) = self.next_event_mark()?;
         loop {
             match next {
                 Event::Alias(mut pos) => break self.jump(&mut pos)?.deserialize_u128(visitor),
-                Event::Scalar(scalar) if scalar.style == ScalarStyle::Plain => {
+                Event::Scalar(scalar)
+                    if is_plain_or_tagged_literal_scalar(Tag::INT, scalar, tagged_already) =>
+                {
                     if let Ok(value) = str::from_utf8(&scalar.value) {
                         if let Some(int) = parse_unsigned_int(value, u128::from_str_radix) {
                             break visitor.visit_u128(int);
@@ -1409,11 +1436,14 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
     where
         V: Visitor<'de>,
     {
+        let tagged_already = self.current_enum.is_some();
         let (next, mark) = self.next_event_mark()?;
         loop {
             match next {
                 Event::Alias(mut pos) => break self.jump(&mut pos)?.deserialize_f64(visitor),
-                Event::Scalar(scalar) if scalar.style == ScalarStyle::Plain => {
+                Event::Scalar(scalar)
+                    if is_plain_or_tagged_literal_scalar(Tag::FLOAT, scalar, tagged_already) =>
+                {
                     if let Ok(value) = str::from_utf8(&scalar.value) {
                         if let Some(float) = parse_f64(value) {
                             break visitor.visit_f64(float);
