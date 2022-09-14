@@ -8,7 +8,6 @@ documentation = "https://docs.rs/serde_yaml/"
 edition = "2021"
 keywords = ["yaml", "serde", "serialization"]
 license = "MIT OR Apache-2.0"
-readme = "README.md"
 repository = "https://github.com/dtolnay/serde-yaml"
 rust-version = "1.58"
 
