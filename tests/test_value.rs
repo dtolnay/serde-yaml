@@ -97,7 +97,7 @@ fn test_merge() {
 #[test]
 fn test_debug() {
     let yaml = indoc! {"
-        Null: ~
+        'Null': ~
         Bool: true
         Number: 1
         String: ...
