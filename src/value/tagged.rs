@@ -83,6 +83,18 @@ impl Tag {
             string: string.into(),
         }
     }
+
+    /// Get the local tag as a [`str`] with the leading `!` stripped.
+    ///
+    /// ```
+    /// use serde_yaml::value::Tag;
+    ///
+    /// assert_eq!(Tag::new("Thing").as_str_stripped(), "Thing");
+    /// assert_eq!(Tag::new("!Thing").as_str_stripped(), "Thing");
+    /// ```
+    pub fn as_str_stripped(&self) -> &str {
+        nobang(&self.string)
+    }
 }
 
 impl Value {
