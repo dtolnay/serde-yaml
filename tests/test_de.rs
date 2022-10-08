@@ -1,7 +1,8 @@
 #![allow(
     clippy::cast_lossless,
     clippy::cast_possible_wrap,
-    clippy::derive_partial_eq_without_eq
+    clippy::derive_partial_eq_without_eq,
+    clippy::uninlined_format_args
 )]
 
 use indoc::indoc;

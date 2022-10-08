@@ -1,4 +1,8 @@
-#![allow(clippy::derive_partial_eq_without_eq, clippy::eq_op)]
+#![allow(
+    clippy::derive_partial_eq_without_eq,
+    clippy::eq_op,
+    clippy::uninlined_format_args
+)]
 
 use indoc::indoc;
 use serde::de::IntoDeserializer;
