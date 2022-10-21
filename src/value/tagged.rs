@@ -5,6 +5,7 @@ use serde::de::value::{BorrowedStrDeserializer, StrDeserializer};
 use serde::de::{
     Deserialize, DeserializeSeed, Deserializer, EnumAccess, Error as _, VariantAccess, Visitor,
 };
+use serde::forward_to_deserialize_any;
 use serde::ser::{Serialize, SerializeMap, Serializer};
 use std::cmp::Ordering;
 use std::fmt::{self, Debug, Display};
@@ -213,6 +214,31 @@ impl<'de> Deserialize<'de> for TaggedValue {
     }
 }
 
+impl<'de> Deserializer<'de> for TaggedValue {
+    type Error = Error;
+
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Error>
+    where
+        V: Visitor<'de>,
+    {
+        visitor.visit_enum(self)
+    }
+
+    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Error>
+    where
+        V: Visitor<'de>,
+    {
+        drop(self);
+        visitor.visit_unit()
+    }
+
+    forward_to_deserialize_any! {
+        bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string bytes
+        byte_buf option unit unit_struct newtype_struct seq tuple tuple_struct
+        map struct enum identifier
+    }
+}
+
 impl<'de> EnumAccess<'de> for TaggedValue {
     type Error = Error;
     type Variant = Value;
@@ -265,6 +291,30 @@ impl<'de> VariantAccess<'de> for Value {
         } else {
             Err(Error::invalid_type(self.unexpected(), &"struct variant"))
         }
+    }
+}
+
+impl<'de> Deserializer<'de> for &'de TaggedValue {
+    type Error = Error;
+
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Error>
+    where
+        V: Visitor<'de>,
+    {
+        visitor.visit_enum(self)
+    }
+
+    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Error>
+    where
+        V: Visitor<'de>,
+    {
+        visitor.visit_unit()
+    }
+
+    forward_to_deserialize_any! {
+        bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string bytes
+        byte_buf option unit unit_struct newtype_struct seq tuple tuple_struct
+        map struct enum identifier
     }
 }
 
