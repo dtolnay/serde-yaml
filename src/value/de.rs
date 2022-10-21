@@ -2,8 +2,8 @@ use crate::value::{tagged, Tag, TaggedValue};
 use crate::{number, Error, Mapping, Sequence, Value};
 use serde::de::value::{BorrowedStrDeserializer, StrDeserializer};
 use serde::de::{
-    self, Deserialize, DeserializeSeed, Deserializer, EnumAccess, Error as SError, Expected,
-    MapAccess, SeqAccess, Unexpected, VariantAccess, Visitor,
+    self, Deserialize, DeserializeSeed, Deserializer, EnumAccess, Error as _, Expected, MapAccess,
+    SeqAccess, Unexpected, VariantAccess, Visitor,
 };
 use serde::forward_to_deserialize_any;
 use std::fmt;
@@ -26,56 +26,56 @@ impl<'de> Deserialize<'de> for Value {
 
             fn visit_bool<E>(self, b: bool) -> Result<Value, E>
             where
-                E: SError,
+                E: de::Error,
             {
                 Ok(Value::Bool(b))
             }
 
             fn visit_i64<E>(self, i: i64) -> Result<Value, E>
             where
-                E: SError,
+                E: de::Error,
             {
                 Ok(Value::Number(i.into()))
             }
 
             fn visit_u64<E>(self, u: u64) -> Result<Value, E>
             where
-                E: SError,
+                E: de::Error,
             {
                 Ok(Value::Number(u.into()))
             }
 
             fn visit_f64<E>(self, f: f64) -> Result<Value, E>
             where
-                E: SError,
+                E: de::Error,
             {
                 Ok(Value::Number(f.into()))
             }
 
             fn visit_str<E>(self, s: &str) -> Result<Value, E>
             where
-                E: SError,
+                E: de::Error,
             {
                 Ok(Value::String(s.to_owned()))
             }
 
             fn visit_string<E>(self, s: String) -> Result<Value, E>
             where
-                E: SError,
+                E: de::Error,
             {
                 Ok(Value::String(s))
             }
 
             fn visit_unit<E>(self) -> Result<Value, E>
             where
-                E: SError,
+                E: de::Error,
             {
                 Ok(Value::Null)
             }
 
             fn visit_none<E>(self) -> Result<Value, E>
             where
-                E: SError,
+                E: de::Error,
             {
                 Ok(Value::Null)
             }
