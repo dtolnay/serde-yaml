@@ -668,6 +668,69 @@ impl Value {
         }
         Ok(())
     }
+
+    /// Merges another [Value] into the current instance.
+    ///
+    /// The provided [Value] will overwrite any value available in the current instance.
+    /// [Mapping]s are merged using a recursive strategy.
+    ///
+    /// ```
+    /// use serde_yaml::Value;
+    ///
+    /// let first = "\
+    /// top-level:
+    ///   a:
+    ///     b: 1
+    ///     c: '2'
+    ///   d:
+    ///     list:
+    ///     - foo
+    ///     - bar
+    /// ";
+    ///
+    /// let second = "\
+    /// top-level:
+    ///   a:
+    ///     b: 3
+    ///     e: hello
+    ///   d:
+    ///     list:
+    ///     - baz
+    /// ";
+    ///
+    /// let mut first_value: Value = serde_yaml::from_str(first).unwrap();
+    /// let second_value: Value = serde_yaml::from_str(second).unwrap();
+    ///
+    /// first_value.merge(second_value).unwrap();
+    ///
+    /// let expected = "\
+    /// top-level:
+    ///   a:
+    ///     b: 3
+    ///     c: '2'
+    ///     e: hello
+    ///   d:
+    ///     list:
+    ///     - foo
+    ///     - bar
+    ///     - baz
+    /// ";
+    ///
+    /// let actual = serde_yaml::to_string(&first_value).unwrap();
+    /// assert_eq!(expected, actual);
+    /// ```
+    pub fn merge(&mut self, mut other: Value) -> Result<(), Error> {
+        self.apply_merge()?;
+        other.apply_merge()?;
+
+        Ok(match (self, other) {
+            (Self::Mapping(a), Self::Mapping(b)) => a.merge_with(b),
+            (Self::Sequence(a), Self::Sequence(b)) => a.extend(b),
+            (Self::Tagged(a), other) => a.value.merge(other)?,
+            (a, Self::Tagged(other)) => a.merge(other.value)?,
+            _ => return Err(error::new(ErrorImpl::InvalidMergeOperation)),
+        })
+    }
 }
 
 impl Eq for Value {}

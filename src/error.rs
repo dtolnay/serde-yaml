@@ -33,6 +33,7 @@ pub(crate) enum ErrorImpl {
     TaggedInMerge,
     ScalarInMergeElement,
     SequenceInMergeElement,
+    InvalidMergeOperation,
 
     Shared(Arc<ErrorImpl>),
 }
@@ -236,6 +237,9 @@ impl ErrorImpl {
             }
             ErrorImpl::SequenceInMergeElement => {
                 f.write_str("expected a mapping for merging, but found sequence")
+            }
+            ErrorImpl::InvalidMergeOperation => {
+                f.write_str("merging is only available between two mappings or two sequences")
             }
             ErrorImpl::Shared(_) => unreachable!(),
         }

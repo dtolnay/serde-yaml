@@ -185,6 +185,26 @@ impl Mapping {
             iter: self.map.into_values(),
         }
     }
+
+    /// Merges another mapping into the current instance.
+    pub fn merge_with(&mut self, other: Mapping) {
+        other.into_iter().for_each(|(k, v)| {
+            match (self.get_mut(&k), v) {
+                (None, other_v) => {
+                    self.insert(k, other_v);
+                }
+                (Some(Value::Mapping(v)), Value::Mapping(other_v)) => {
+                    v.merge_with(other_v);
+                }
+                (Some(Value::Sequence(v)), Value::Sequence(other_v)) => {
+                    v.extend(other_v);
+                }
+                (_, other_v) => {
+                    self.insert(k, other_v);
+                }
+            };
+        });
+    }
 }
 
 /// A type that can be used to index into a `serde_yaml::Mapping`. See the
