@@ -147,7 +147,6 @@
     clippy::derive_partial_eq_without_eq,
     clippy::doc_markdown,
     clippy::items_after_statements,
-    clippy::let_underscore_drop,
     clippy::manual_map,
     clippy::missing_panics_doc,
     clippy::never_loop,
