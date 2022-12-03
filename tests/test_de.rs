@@ -51,6 +51,18 @@ where
     serde_yaml::from_str::<serde::de::IgnoredAny>(yaml).unwrap();
 }
 
+fn test_de_handles_bom<T>(yaml: &str, expected: &T)
+    where
+        T: serde::de::DeserializeOwned + PartialEq + Debug
+{
+    // Test it works without the BOM first as a sanity check
+    test_de(yaml, expected);
+
+    // Test that it works with a BOM prepended
+    let yaml_with_bom = "\u{feff}".to_owned() + yaml;
+    test_de(&yaml_with_bom, expected);
+}
+
 #[test]
 fn test_borrowed() {
     let yaml = indoc! {"
@@ -344,9 +356,27 @@ fn test_de_mapping() {
 
 #[test]
 fn test_byte_order_mark() {
-    let yaml = "\u{feff}- 0\n";
+    let yaml = "- 0\n";
     let expected = vec![0];
-    test_de(yaml, &expected);
+    test_de_handles_bom(yaml, &expected);
+
+    #[derive(Deserialize, PartialEq, Debug)]
+    struct TestStruct {
+        name: String,
+        age: u32,
+    }
+    let yaml = "{name: bob, age: 10}\n";
+    let expected = TestStruct{
+        name: "bob".to_string(),
+        age: 10,
+    };
+    test_de_handles_bom(yaml, &expected);
+
+    let yaml = indoc! {"
+        name: bob
+        age: 10
+    "};
+    test_de_handles_bom(yaml, &expected);
 }
 
 #[test]
