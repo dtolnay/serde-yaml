@@ -360,6 +360,10 @@ fn test_byte_order_mark() {
     let expected = vec![0];
     test_de_handles_bom(yaml, &expected);
 
+    let yaml = "- 0\n- 1\n";
+    let expected = vec![0, 1];
+    test_de_handles_bom(yaml, &expected);
+
     #[derive(Deserialize, PartialEq, Debug)]
     struct TestStruct {
         name: String,
