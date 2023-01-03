@@ -318,6 +318,10 @@ pub mod singleton_map {
         {
             self.delegate.collect_str(value)
         }
+
+        fn is_human_readable(&self) -> bool {
+            self.delegate.is_human_readable()
+        }
     }
 
     struct SerializeTupleVariantAsSingletonMap<M> {
@@ -628,6 +632,10 @@ pub mod singleton_map {
             V: Visitor<'de>,
         {
             self.delegate.deserialize_ignored_any(visitor)
+        }
+
+        fn is_human_readable(&self) -> bool {
+            self.delegate.is_human_readable()
         }
     }
 
@@ -1183,6 +1191,10 @@ pub mod singleton_map_recursive {
         {
             self.delegate.collect_str(value)
         }
+
+        fn is_human_readable(&self) -> bool {
+            self.delegate.is_human_readable()
+        }
     }
 
     impl<D> SerializeSeq for SingletonMapRecursive<D>
@@ -1652,6 +1664,10 @@ pub mod singleton_map_recursive {
         {
             self.delegate
                 .deserialize_ignored_any(SingletonMapRecursive { delegate: visitor })
+        }
+
+        fn is_human_readable(&self) -> bool {
+            self.delegate.is_human_readable()
         }
     }
 
