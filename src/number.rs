@@ -518,7 +518,7 @@ from_float!(f32 f64);
 
 // This is fine, because we don't _really_ implement hash for floats
 // all other hash functions should work as expected
-#[allow(clippy::derive_hash_xor_eq)]
+#[allow(clippy::derived_hash_with_manual_eq)]
 impl Hash for Number {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self.n {
