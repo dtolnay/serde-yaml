@@ -97,7 +97,7 @@ pub(crate) fn debug_lossy(mut bytes: &[u8], formatter: &mut fmt::Formatter) -> f
         let mut written = 0;
         for (i, ch) in valid.char_indices() {
             let esc = ch.escape_debug();
-            if esc.len() != 1 {
+            if esc.len() != 1 && ch != '\'' {
                 formatter.write_str(&valid[written..i])?;
                 for ch in esc {
                     formatter.write_char(ch)?;
