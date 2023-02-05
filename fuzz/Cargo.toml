@@ -9,8 +9,10 @@ publish = false
 cargo-fuzz = true
 
 [dependencies]
+arbitrary = { version = "1.2.3", features = ["derive"] }
 libfuzzer-sys = "0.4"
-serde_yaml = { path = ".." }
+serde = { version = "1.0.152", features = ["derive"] }
+serde_yaml = { path = ".."}
 
 [[bin]]
 name = "fuzz_from_slice"
@@ -19,3 +21,9 @@ test = false
 doc = false
 
 [workspace]
+
+[[bin]]
+name = "differential"
+path = "fuzz_targets/differential.rs"
+test = false
+doc = false
