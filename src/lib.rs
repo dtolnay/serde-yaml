@@ -147,6 +147,7 @@
     clippy::derived_hash_with_manual_eq,
     clippy::doc_markdown,
     clippy::items_after_statements,
+    clippy::let_underscore_untyped,
     clippy::manual_map,
     clippy::missing_panics_doc,
     clippy::never_loop,
