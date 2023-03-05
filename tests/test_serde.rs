@@ -265,7 +265,7 @@ fn test_string_escapes() {
     test_serde(&"\u{1f}\u{feff}".to_owned(), yaml);
 
     let yaml = indoc! {r#"
-        "\U0001F389"
+        🎉
     "#};
     test_serde(&"\u{1f389}".to_owned(), yaml);
 }
