@@ -1,7 +1,7 @@
 use crate::libyaml::{emitter, error as libyaml};
 use crate::path::Path;
 use serde::{de, ser};
-use std::error;
+use std::error::Error as StdError;
 use std::fmt::{self, Debug, Display};
 use std::io;
 use std::result;
@@ -145,8 +145,8 @@ impl From<emitter::Error> for Error {
     }
 }
 
-impl error::Error for Error {
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+impl StdError for Error {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
         self.0.source()
     }
 }
@@ -182,7 +182,7 @@ impl ErrorImpl {
         self.mark().map(Location::from_mark)
     }
 
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
             ErrorImpl::Io(err) => Some(err),
             ErrorImpl::FromUtf8(err) => Some(err),
