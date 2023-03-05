@@ -245,6 +245,27 @@ fn test_basic_struct() {
 }
 
 #[test]
+fn test_string_escapes() {
+    let yaml = indoc! {r#"
+        ascii
+    "#};
+    test_serde(&"ascii".to_owned(), yaml);
+
+    let yaml = indoc! {r#"
+        "\0\a\b\t\n\v\f\r\e\"\\\N\L\P"
+    "#};
+    test_serde(
+        &"\0\u{7}\u{8}\t\n\u{b}\u{c}\r\u{1b}\"\\\u{85}\u{2028}\u{2029}".to_owned(),
+        yaml,
+    );
+
+    let yaml = indoc! {r#"
+        "\x1F\uFEFF"
+    "#};
+    test_serde(&"\u{1f}\u{feff}".to_owned(), yaml);
+}
+
+#[test]
 fn test_multiline_string() {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct Struct {
