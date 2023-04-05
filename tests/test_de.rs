@@ -2,6 +2,7 @@
     clippy::cast_lossless,
     clippy::cast_possible_wrap,
     clippy::derive_partial_eq_without_eq,
+    clippy::similar_names,
     clippy::uninlined_format_args
 )]
 
