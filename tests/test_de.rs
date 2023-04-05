@@ -26,6 +26,12 @@ where
     assert_eq!(*expected, deserialized);
 
     serde_yaml::from_str::<serde::de::IgnoredAny>(yaml).unwrap();
+
+    let mut deserializer = Deserializer::from_str(yaml);
+    let document = deserializer.next().unwrap();
+    let deserialized = T::deserialize(document).unwrap();
+    assert_eq!(*expected, deserialized);
+    assert!(deserializer.next().is_none());
 }
 
 fn test_de_no_value<'de, T>(yaml: &'de str, expected: &T)
