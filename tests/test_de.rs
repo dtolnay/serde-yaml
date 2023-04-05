@@ -556,6 +556,10 @@ fn test_no_required_fields() {
         let expected = BTreeMap::new();
         let deserialized: BTreeMap<char, usize> = serde_yaml::from_str(document).unwrap();
         assert_eq!(expected, deserialized);
+
+        let expected = None;
+        let deserialized: Option<String> = serde_yaml::from_str(document).unwrap();
+        assert_eq!(expected, deserialized);
     }
 }
 
