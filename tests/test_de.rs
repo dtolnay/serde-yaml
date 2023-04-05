@@ -560,6 +560,10 @@ fn test_no_required_fields() {
         let expected = None;
         let deserialized: Option<String> = serde_yaml::from_str(document).unwrap();
         assert_eq!(expected, deserialized);
+
+        let expected = Value::Null;
+        let deserialized: Value = serde_yaml::from_str(document).unwrap();
+        assert_eq!(expected, deserialized);
     }
 }
 

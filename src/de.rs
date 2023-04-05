@@ -1247,7 +1247,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                 }
                 Event::SequenceEnd => panic!("unexpected end of sequence"),
                 Event::MappingEnd => panic!("unexpected end of mapping"),
-                Event::Void => break Err(error::new(ErrorImpl::EndOfStream)),
+                Event::Void => break visitor.visit_none(),
             }
         }
         // The de::Error impl creates errors with unknown line and column. Fill
