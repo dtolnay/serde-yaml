@@ -79,10 +79,15 @@ impl Tag {
     ///
     /// Such a tag would serialize to `!Thing` in YAML regardless of whether a
     /// '!' was included in the call to `Tag::new`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `string.is_empty()`. There is no syntax in YAML for an empty
+    /// tag.
     pub fn new(string: impl Into<String>) -> Self {
-        Tag {
-            string: string.into(),
-        }
+        let tag: String = string.into();
+        assert!(!tag.is_empty(), "empty YAML tag is not allowed");
+        Tag { string: tag }
     }
 }
 
