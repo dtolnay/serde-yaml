@@ -1,4 +1,5 @@
-use crate::value::{tagged, Tag, TaggedValue};
+use crate::value::tagged::{self, TagStringVisitor};
+use crate::value::TaggedValue;
 use crate::{number, Error, Mapping, Sequence, Value};
 use serde::de::value::{BorrowedStrDeserializer, StrDeserializer};
 use serde::de::{
@@ -109,11 +110,7 @@ impl<'de> Deserialize<'de> for Value {
             where
                 A: EnumAccess<'de>,
             {
-                let (tag, contents) = data.variant::<String>()?;
-                if tag.is_empty() {
-                    return Err(A::Error::custom("empty YAML tag is not allowed"));
-                }
-                let tag = Tag::new(tag);
+                let (tag, contents) = data.variant_seed(TagStringVisitor)?;
                 let value = contents.newtype_variant()?;
                 Ok(Value::Tagged(Box::new(TaggedValue { tag, value })))
             }
