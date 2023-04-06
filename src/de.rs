@@ -1190,6 +1190,15 @@ fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
     }
 }
 
+fn parse_tag(libyaml_tag: &Option<Tag>) -> Option<&str> {
+    let bytes: &[u8] = libyaml_tag.as_ref()?;
+    if let (b'!', rest) = bytes.split_first()? {
+        str::from_utf8(rest).ok()
+    } else {
+        None
+    }
+}
+
 impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 'document> {
     type Error = Error;
 
@@ -1203,11 +1212,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
             if tagged_already {
                 return None;
             }
-            if let (b'!', tag) = tag.as_ref()?.split_first()? {
-                str::from_utf8(tag).ok()
-            } else {
-                None
-            }
+            parse_tag(tag)
         }
         loop {
             match next {
@@ -1731,45 +1736,34 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                         .deserialize_enum(name, variants, visitor)
                 }
                 Event::Scalar(scalar) => {
-                    if let Some((b'!', tag)) = scalar.tag.as_ref().and_then(|tag| tag.split_first())
-                    {
-                        if let Ok(tag) = str::from_utf8(tag) {
-                            return visitor.visit_enum(EnumAccess {
-                                de: self,
-                                name: Some(name),
-                                tag,
-                            });
-                        }
+                    if let Some(tag) = parse_tag(&scalar.tag) {
+                        return visitor.visit_enum(EnumAccess {
+                            de: self,
+                            name: Some(name),
+                            tag,
+                        });
                     }
                     visitor.visit_enum(UnitVariantAccess { de: self })
                 }
                 Event::MappingStart(mapping) => {
-                    if let Some((b'!', tag)) =
-                        mapping.tag.as_ref().and_then(|tag| tag.split_first())
-                    {
-                        if let Ok(tag) = str::from_utf8(tag) {
-                            return visitor.visit_enum(EnumAccess {
-                                de: self,
-                                name: Some(name),
-                                tag,
-                            });
-                        }
+                    if let Some(tag) = parse_tag(&mapping.tag) {
+                        return visitor.visit_enum(EnumAccess {
+                            de: self,
+                            name: Some(name),
+                            tag,
+                        });
                     }
                     let err =
                         de::Error::invalid_type(Unexpected::Map, &"a YAML tag starting with '!'");
                     Err(error::fix_mark(err, mark, self.path))
                 }
                 Event::SequenceStart(sequence) => {
-                    if let Some((b'!', tag)) =
-                        sequence.tag.as_ref().and_then(|tag| tag.split_first())
-                    {
-                        if let Ok(tag) = str::from_utf8(tag) {
-                            return visitor.visit_enum(EnumAccess {
-                                de: self,
-                                name: Some(name),
-                                tag,
-                            });
-                        }
+                    if let Some(tag) = parse_tag(&sequence.tag) {
+                        return visitor.visit_enum(EnumAccess {
+                            de: self,
+                            name: Some(name),
+                            tag,
+                        });
                     }
                     let err =
                         de::Error::invalid_type(Unexpected::Seq, &"a YAML tag starting with '!'");
