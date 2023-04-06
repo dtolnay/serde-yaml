@@ -195,6 +195,44 @@ impl<'de> Deserialize<'de> for TaggedValue {
     where
         D: Deserializer<'de>,
     {
+        struct TagStringVisitor;
+
+        impl<'de> Visitor<'de> for TagStringVisitor {
+            type Value = Tag;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a YAML tag string")
+            }
+
+            fn visit_str<E>(self, string: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_string(string.to_owned())
+            }
+
+            fn visit_string<E>(self, string: String) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                if string.is_empty() {
+                    return Err(E::custom("empty YAML tag is not allowed"));
+                }
+                Ok(Tag::new(string))
+            }
+        }
+
+        impl<'de> DeserializeSeed<'de> for TagStringVisitor {
+            type Value = Tag;
+
+            fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                deserializer.deserialize_string(self)
+            }
+        }
+
         struct TaggedValueVisitor;
 
         impl<'de> Visitor<'de> for TaggedValueVisitor {
@@ -208,11 +246,7 @@ impl<'de> Deserialize<'de> for TaggedValue {
             where
                 A: EnumAccess<'de>,
             {
-                let (tag, contents) = data.variant::<String>()?;
-                if tag.is_empty() {
-                    return Err(A::Error::custom("empty YAML tag is not allowed"));
-                }
-                let tag = Tag::new(tag);
+                let (tag, contents) = data.variant_seed(TagStringVisitor)?;
                 let value = contents.newtype_variant()?;
                 Ok(TaggedValue { tag, value })
             }
