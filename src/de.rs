@@ -1191,9 +1191,12 @@ fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
 }
 
 fn parse_tag(libyaml_tag: &Option<Tag>) -> Option<&str> {
-    let bytes: &[u8] = libyaml_tag.as_ref()?;
+    let mut bytes: &[u8] = libyaml_tag.as_ref()?;
     if let (b'!', rest) = bytes.split_first()? {
-        str::from_utf8(rest).ok()
+        if !rest.is_empty() {
+            bytes = rest;
+        }
+        str::from_utf8(bytes).ok()
     } else {
         None
     }
