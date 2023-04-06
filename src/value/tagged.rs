@@ -118,7 +118,10 @@ impl Value {
 }
 
 pub(crate) fn nobang(maybe_banged: &str) -> &str {
-    maybe_banged.strip_prefix('!').unwrap_or(maybe_banged)
+    match maybe_banged.strip_prefix('!') {
+        Some("") | None => maybe_banged,
+        Some(unbanged) => unbanged,
+    }
 }
 
 impl Eq for Tag {}
