@@ -195,44 +195,6 @@ impl<'de> Deserialize<'de> for TaggedValue {
     where
         D: Deserializer<'de>,
     {
-        struct TagStringVisitor;
-
-        impl<'de> Visitor<'de> for TagStringVisitor {
-            type Value = Tag;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a YAML tag string")
-            }
-
-            fn visit_str<E>(self, string: &str) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                self.visit_string(string.to_owned())
-            }
-
-            fn visit_string<E>(self, string: String) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                if string.is_empty() {
-                    return Err(E::custom("empty YAML tag is not allowed"));
-                }
-                Ok(Tag::new(string))
-            }
-        }
-
-        impl<'de> DeserializeSeed<'de> for TagStringVisitor {
-            type Value = Tag;
-
-            fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-            where
-                D: Deserializer<'de>,
-            {
-                deserializer.deserialize_string(self)
-            }
-        }
-
         struct TaggedValueVisitor;
 
         impl<'de> Visitor<'de> for TaggedValueVisitor {
@@ -412,6 +374,44 @@ impl<'de> VariantAccess<'de> for &'de Value {
         } else {
             Err(Error::invalid_type(self.unexpected(), &"struct variant"))
         }
+    }
+}
+
+pub(crate) struct TagStringVisitor;
+
+impl<'de> Visitor<'de> for TagStringVisitor {
+    type Value = Tag;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a YAML tag string")
+    }
+
+    fn visit_str<E>(self, string: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        self.visit_string(string.to_owned())
+    }
+
+    fn visit_string<E>(self, string: String) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        if string.is_empty() {
+            return Err(E::custom("empty YAML tag is not allowed"));
+        }
+        Ok(Tag::new(string))
+    }
+}
+
+impl<'de> DeserializeSeed<'de> for TagStringVisitor {
+    type Value = Tag;
+
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_string(self)
     }
 }
 
