@@ -209,6 +209,9 @@ impl<'de> Deserialize<'de> for TaggedValue {
                 A: EnumAccess<'de>,
             {
                 let (tag, contents) = data.variant::<String>()?;
+                if tag.is_empty() {
+                    return Err(A::Error::custom("empty YAML tag is not allowed"));
+                }
                 let tag = Tag::new(tag);
                 let value = contents.newtype_variant()?;
                 Ok(TaggedValue { tag, value })
