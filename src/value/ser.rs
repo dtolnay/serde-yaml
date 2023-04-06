@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::{self, Error, ErrorImpl};
 use crate::value::tagged::{self, MaybeTag};
 use crate::value::{to_value, Mapping, Number, Sequence, Tag, TaggedValue, Value};
 use serde::ser::{self, Serialize};
@@ -177,6 +177,9 @@ impl ser::Serializer for Serializer {
     where
         T: ?Sized + ser::Serialize,
     {
+        if variant.is_empty() {
+            return Err(error::new(ErrorImpl::EmptyTag));
+        }
         Ok(Value::Tagged(Box::new(TaggedValue {
             tag: Tag::new(variant),
             value: to_value(value)?,
@@ -217,6 +220,9 @@ impl ser::Serializer for Serializer {
         variant: &'static str,
         len: usize,
     ) -> Result<SerializeTupleVariant> {
+        if variant.is_empty() {
+            return Err(error::new(ErrorImpl::EmptyTag));
+        }
         Ok(SerializeTupleVariant {
             tag: variant,
             sequence: Sequence::with_capacity(len),
@@ -247,6 +253,9 @@ impl ser::Serializer for Serializer {
         variant: &'static str,
         _len: usize,
     ) -> Result<SerializeStructVariant> {
+        if variant.is_empty() {
+            return Err(error::new(ErrorImpl::EmptyTag));
+        }
         Ok(SerializeStructVariant {
             tag: variant,
             mapping: Mapping::new(),
