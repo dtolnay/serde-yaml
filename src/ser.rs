@@ -461,7 +461,7 @@ where
         Ok(self)
     }
 
-    fn serialize_map(mut self, len: Option<usize>) -> Result<Self::SerializeMap> {
+    fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
         if len == Some(1) {
             self.state = if let State::FoundTag(_) = self.state {
                 self.emit_mapping_start()?;
