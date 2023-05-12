@@ -1,12 +1,17 @@
 #![allow(clippy::zero_sized_map_values)]
 
 use indoc::indoc;
-use serde::de::{Deserialize, SeqAccess, Visitor};
+use serde::de::Deserialize;
+#[cfg(not(miri))]
+use serde::de::{SeqAccess, Visitor};
 use serde_derive::{Deserialize, Serialize};
 use serde_yaml::value::{Tag, TaggedValue};
 use serde_yaml::{Deserializer, Value};
+#[cfg(not(miri))]
 use std::collections::BTreeMap;
-use std::fmt::{self, Debug};
+#[cfg(not(miri))]
+use std::fmt;
+use std::fmt::Debug;
 
 fn test_error<'de, T>(yaml: &'de str, expected: &str)
 where
