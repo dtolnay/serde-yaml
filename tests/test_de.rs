@@ -676,3 +676,40 @@ fn test_tag_resolution() {
 
     test_de(yaml, &expected);
 }
+
+#[test]
+fn test_enum_untagged() {
+    #[derive(Deserialize, PartialEq, Debug)]
+    #[serde(untagged)]
+    pub enum UntaggedEnum {
+        A { r#match: bool },
+        AB { r#match: String },
+        B { #[serde(rename = "if")] r#match: bool },
+        C(String)
+    }
+
+    // A
+    {
+        let expected = UntaggedEnum::A { r#match: true };
+        let deserialized: UntaggedEnum = serde_yaml::from_str("match: True").unwrap();
+        assert_eq!(expected, deserialized);
+    }
+    // AB
+    {
+        let expected = UntaggedEnum::AB { r#match: "T".to_owned() };
+        let deserialized: UntaggedEnum = serde_yaml::from_str("match: T").unwrap();
+        assert_eq!(expected, deserialized);
+    }
+    // B
+    {
+        let expected = UntaggedEnum::B { r#match: true };
+        let deserialized: UntaggedEnum = serde_yaml::from_str("if: True").unwrap();
+        assert_eq!(expected, deserialized);
+    }
+    // C
+    {
+        let expected = UntaggedEnum::C("match".to_owned());
+        let deserialized: UntaggedEnum = serde_yaml::from_str("match").unwrap();
+        assert_eq!(expected, deserialized);
+    }
+}
