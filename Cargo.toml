@@ -9,10 +9,10 @@ edition = "2021"
 keywords = ["yaml", "serde", "serialization"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/dtolnay/serde-yaml"
-rust-version = "1.58"
+rust-version = "1.64"
 
 [dependencies]
-indexmap = { version = "1.9", features = ["std"] }
+indexmap = "2"
 itoa = "1.0"
 ryu = "1.0"
 serde = "1.0.139"
