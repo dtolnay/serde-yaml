@@ -1,9 +1,11 @@
-use crate::Error;
+use crate::de;
+use crate::error::{self, Error, ErrorImpl};
 use serde::de::{Unexpected, Visitor};
 use serde::{forward_to_deserialize_any, Deserialize, Deserializer, Serialize, Serializer};
 use std::cmp::Ordering;
 use std::fmt::{self, Display};
 use std::hash::{Hash, Hasher};
+use std::str::FromStr;
 
 /// Represents a YAML number, whether integer or floating point.
 #[derive(Clone, PartialEq, PartialOrd)]
@@ -308,6 +310,22 @@ impl Display for Number {
     }
 }
 
+impl FromStr for Number {
+    type Err = Error;
+
+    fn from_str(repr: &str) -> Result<Self, Self::Err> {
+        if let Ok(result) = de::visit_int(NumberVisitor, repr) {
+            return result;
+        }
+        if !de::digits_but_not_number(repr) {
+            if let Some(float) = de::parse_f64(repr) {
+                return Ok(float.into());
+            }
+        }
+        Err(error::new(ErrorImpl::FailedToParseNumber))
+    }
+}
+
 impl PartialEq for N {
     fn eq(&self, other: &N) -> bool {
         match (*self, *other) {
@@ -389,37 +407,37 @@ impl Serialize for Number {
     }
 }
 
+struct NumberVisitor;
+
+impl<'de> Visitor<'de> for NumberVisitor {
+    type Value = Number;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a number")
+    }
+
+    #[inline]
+    fn visit_i64<E>(self, value: i64) -> Result<Number, E> {
+        Ok(value.into())
+    }
+
+    #[inline]
+    fn visit_u64<E>(self, value: u64) -> Result<Number, E> {
+        Ok(value.into())
+    }
+
+    #[inline]
+    fn visit_f64<E>(self, value: f64) -> Result<Number, E> {
+        Ok(value.into())
+    }
+}
+
 impl<'de> Deserialize<'de> for Number {
     #[inline]
     fn deserialize<D>(deserializer: D) -> Result<Number, D::Error>
     where
         D: Deserializer<'de>,
     {
-        struct NumberVisitor;
-
-        impl<'de> Visitor<'de> for NumberVisitor {
-            type Value = Number;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a number")
-            }
-
-            #[inline]
-            fn visit_i64<E>(self, value: i64) -> Result<Number, E> {
-                Ok(value.into())
-            }
-
-            #[inline]
-            fn visit_u64<E>(self, value: u64) -> Result<Number, E> {
-                Ok(value.into())
-            }
-
-            #[inline]
-            fn visit_f64<E>(self, value: f64) -> Result<Number, E> {
-                Ok(value.into())
-            }
-        }
-
         deserializer.deserialize_any(NumberVisitor)
     }
 }

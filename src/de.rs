@@ -1063,7 +1063,7 @@ fn parse_negative_int<T>(
     from_str_radix(scalar, 10).ok()
 }
 
-fn parse_f64(scalar: &str) -> Option<f64> {
+pub(crate) fn parse_f64(scalar: &str) -> Option<f64> {
     let unpositive = if let Some(unpositive) = scalar.strip_prefix('+') {
         if unpositive.starts_with(['+', '-']) {
             return None;
@@ -1089,14 +1089,14 @@ fn parse_f64(scalar: &str) -> Option<f64> {
     None
 }
 
-fn digits_but_not_number(scalar: &str) -> bool {
+pub(crate) fn digits_but_not_number(scalar: &str) -> bool {
     // Leading zero(s) followed by numeric characters is a string according to
     // the YAML 1.2 spec. https://yaml.org/spec/1.2/spec.html#id2761292
     let scalar = scalar.strip_prefix(['-', '+']).unwrap_or(scalar);
     scalar.len() > 1 && scalar.starts_with('0') && scalar[1..].bytes().all(|b| b.is_ascii_digit())
 }
 
-fn visit_int<'de, V>(visitor: V, v: &str) -> Result<Result<V::Value>, V>
+pub(crate) fn visit_int<'de, V>(visitor: V, v: &str) -> Result<Result<V::Value>, V>
 where
     V: Visitor<'de>,
 {
