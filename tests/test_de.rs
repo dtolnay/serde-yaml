@@ -8,7 +8,7 @@
 
 use indoc::indoc;
 use serde_derive::Deserialize;
-use serde_yaml::{Deserializer, Value};
+use serde_yaml::{Deserializer, Number, Value};
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
@@ -675,4 +675,31 @@ fn test_tag_resolution() {
     ];
 
     test_de(yaml, &expected);
+}
+
+#[test]
+fn test_parse_number() {
+    let n = "111".parse::<Number>().unwrap();
+    assert_eq!(n, Number::from(111));
+
+    let n = "-111".parse::<Number>().unwrap();
+    assert_eq!(n, Number::from(-111));
+
+    let n = "-1.1".parse::<Number>().unwrap();
+    assert_eq!(n, Number::from(-1.1));
+
+    let n = ".nan".parse::<Number>().unwrap();
+    assert_eq!(n, Number::from(f64::NAN));
+
+    let n = ".inf".parse::<Number>().unwrap();
+    assert_eq!(n, Number::from(f64::INFINITY));
+
+    let n = "-.inf".parse::<Number>().unwrap();
+    assert_eq!(n, Number::from(f64::NEG_INFINITY));
+
+    let err = "null".parse::<Number>().unwrap_err();
+    assert_eq!(err.to_string(), "failed to parse YAML number");
+
+    let err = " 1 ".parse::<Number>().unwrap_err();
+    assert_eq!(err.to_string(), "failed to parse YAML number");
 }
