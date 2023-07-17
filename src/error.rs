@@ -34,6 +34,7 @@ pub(crate) enum ErrorImpl {
     ScalarInMergeElement,
     SequenceInMergeElement,
     EmptyTag,
+    FailedToParseNumber,
 
     Shared(Arc<ErrorImpl>),
 }
@@ -239,6 +240,7 @@ impl ErrorImpl {
                 f.write_str("expected a mapping for merging, but found sequence")
             }
             ErrorImpl::EmptyTag => f.write_str("empty YAML tag is not allowed"),
+            ErrorImpl::FailedToParseNumber => f.write_str("failed to parse YAML number"),
             ErrorImpl::Shared(_) => unreachable!(),
         }
     }
