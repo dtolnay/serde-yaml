@@ -149,7 +149,7 @@ impl Ord for Tag {
 
 impl PartialOrd for Tag {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        PartialOrd::partial_cmp(nobang(&self.string), nobang(&other.string))
+        Some(self.cmp(other))
     }
 }
 
