@@ -311,7 +311,7 @@ fn test_strings_needing_quote() {
         boolean: 'true'
         integer: '1'
         void: 'null'
-        leading_zeros: 007
+        leading_zeros: '007'
     "#};
     test_serde(&thing, yaml);
 }
