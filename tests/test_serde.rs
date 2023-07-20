@@ -299,16 +299,19 @@ fn test_strings_needing_quote() {
         boolean: String,
         integer: String,
         void: String,
+        leading_zeros: String,
     }
     let thing = Struct {
         boolean: "true".to_owned(),
         integer: "1".to_owned(),
         void: "null".to_owned(),
+        leading_zeros: "007".to_owned(),
     };
     let yaml = indoc! {r#"
         boolean: 'true'
         integer: '1'
         void: 'null'
+        leading_zeros: '007'
     "#};
     test_serde(&thing, yaml);
 }
