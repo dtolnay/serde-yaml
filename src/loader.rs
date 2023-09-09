@@ -16,6 +16,17 @@ pub(crate) struct Document<'input> {
     pub error: Option<Arc<ErrorImpl>>,
     /// Map from alias id to index in events.
     pub aliases: BTreeMap<usize, usize>,
+    /// Anchor id to name.
+    pub anchors: BTreeMap<usize, String>,
+}
+
+macro_rules! anchor_name {
+    ($anchor:expr) => {{
+        format!("{:?}", $anchor)
+            .trim_start_matches("\"")
+            .trim_end_matches("\"")
+            .to_owned()
+    }};
 }
 
 impl<'input> Loader<'input> {
@@ -54,6 +65,7 @@ impl<'input> Loader<'input> {
             events: Vec::new(),
             error: None,
             aliases: BTreeMap::new(),
+            anchors: BTreeMap::new(),
         };
 
         loop {
@@ -79,6 +91,7 @@ impl<'input> Loader<'input> {
                 }
                 YamlEvent::DocumentStart => continue,
                 YamlEvent::DocumentEnd => return Some(document),
+
                 YamlEvent::Alias(alias) => match anchors.get(&alias) {
                     Some(id) => Event::Alias(*id),
                     None => {
@@ -89,16 +102,18 @@ impl<'input> Loader<'input> {
                 YamlEvent::Scalar(mut scalar) => {
                     if let Some(anchor) = scalar.anchor.take() {
                         let id = anchors.len();
-                        anchors.insert(anchor, id);
                         document.aliases.insert(id, document.events.len());
+                        document.anchors.insert(id, anchor_name!(anchor));
+                        anchors.insert(anchor, id);
                     }
                     Event::Scalar(scalar)
                 }
                 YamlEvent::SequenceStart(mut sequence_start) => {
                     if let Some(anchor) = sequence_start.anchor.take() {
                         let id = anchors.len();
-                        anchors.insert(anchor, id);
                         document.aliases.insert(id, document.events.len());
+                        document.anchors.insert(id, anchor_name!(anchor));
+                        anchors.insert(anchor, id);
                     }
                     Event::SequenceStart(sequence_start)
                 }
@@ -106,8 +121,9 @@ impl<'input> Loader<'input> {
                 YamlEvent::MappingStart(mut mapping_start) => {
                     if let Some(anchor) = mapping_start.anchor.take() {
                         let id = anchors.len();
-                        anchors.insert(anchor, id);
                         document.aliases.insert(id, document.events.len());
+                        document.anchors.insert(id, anchor_name!(anchor));
+                        anchors.insert(anchor, id);
                     }
                     Event::MappingStart(mapping_start)
                 }
