@@ -80,7 +80,7 @@ pub(crate) enum Progress<'de> {
 /// # Examples
 ///
 /// The following YAML document:
-/// ```
+/// ```yaml
 /// a:
 ///   enum: &io
 ///     INPUT: 0
@@ -92,7 +92,7 @@ pub(crate) enum Progress<'de> {
 /// ```
 ///
 /// Is represented by the following `DocumentAnchor`:
-/// ```
+/// ```json
 /// DocumentAnchor {
 ///   anchor_name: "io",
 ///   anchor_path: "/a/enum",
