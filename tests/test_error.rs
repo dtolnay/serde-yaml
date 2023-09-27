@@ -249,7 +249,7 @@ fn test_variant_not_a_seq() {
     enum E {
         V(usize),
     }
-    let yaml = indoc! {r"
+    let yaml = indoc! {"
         ---
         !V
         value: 0
