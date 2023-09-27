@@ -246,9 +246,9 @@ fn test_basic_struct() {
 
 #[test]
 fn test_string_escapes() {
-    let yaml = indoc! {r#"
+    let yaml = indoc! {r"
         ascii
-    "#};
+    "};
     test_serde(&"ascii".to_owned(), yaml);
 
     let yaml = indoc! {r#"
@@ -264,9 +264,9 @@ fn test_string_escapes() {
     "#};
     test_serde(&"\u{1f}\u{feff}".to_owned(), yaml);
 
-    let yaml = indoc! {r#"
+    let yaml = indoc! {r"
         🎉
-    "#};
+    "};
     test_serde(&"\u{1f389}".to_owned(), yaml);
 }
 
@@ -281,14 +281,14 @@ fn test_multiline_string() {
         trailing_newline: "aaa\nbbb\n".to_owned(),
         no_trailing_newline: "aaa\nbbb".to_owned(),
     };
-    let yaml = indoc! {r#"
+    let yaml = indoc! {r"
         trailing_newline: |
           aaa
           bbb
         no_trailing_newline: |-
           aaa
           bbb
-    "#};
+    "};
     test_serde(&thing, yaml);
 }
 
@@ -307,12 +307,12 @@ fn test_strings_needing_quote() {
         void: "null".to_owned(),
         leading_zeros: "007".to_owned(),
     };
-    let yaml = indoc! {r#"
+    let yaml = indoc! {r"
         boolean: 'true'
         integer: '1'
         void: 'null'
         leading_zeros: '007'
-    "#};
+    "};
     test_serde(&thing, yaml);
 }
 

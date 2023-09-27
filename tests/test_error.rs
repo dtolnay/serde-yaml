@@ -249,11 +249,11 @@ fn test_variant_not_a_seq() {
     enum E {
         V(usize),
     }
-    let yaml = indoc! {r#"
+    let yaml = indoc! {r"
         ---
         !V
         value: 0
-    "#};
+    "};
     let expected = "invalid type: map, expected usize at line 2 column 1";
     test_error::<E>(yaml, expected);
 }
