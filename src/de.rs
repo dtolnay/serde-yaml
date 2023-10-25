@@ -1079,7 +1079,7 @@ pub(crate) fn parse_f64(scalar: &str) -> Option<f64> {
         return Some(f64::NEG_INFINITY);
     }
     if let ".nan" | ".NaN" | ".NAN" = scalar {
-        return Some(f64::NAN);
+        return Some(f64::NAN.copysign(1.0));
     }
     if let Ok(float) = unpositive.parse::<f64>() {
         if float.is_finite() {
