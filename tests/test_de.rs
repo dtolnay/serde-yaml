@@ -690,6 +690,7 @@ fn test_parse_number() {
 
     let n = ".nan".parse::<Number>().unwrap();
     assert_eq!(n, Number::from(f64::NAN));
+    assert!(n.as_f64().unwrap().is_sign_positive());
 
     let n = ".inf".parse::<Number>().unwrap();
     assert_eq!(n, Number::from(f64::INFINITY));
