@@ -451,6 +451,13 @@ fn test_numbers() {
 }
 
 #[test]
+fn test_nan() {
+    // There is no negative NaN in YAML.
+    assert!(serde_yaml::from_str::<f32>(".nan").unwrap().is_sign_positive());
+    assert!(serde_yaml::from_str::<f64>(".nan").unwrap().is_sign_positive());
+}
+
+#[test]
 fn test_stateful() {
     struct Seed(i64);
 
