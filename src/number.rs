@@ -522,14 +522,15 @@ from_unsigned!(u8 u16 u32 u64 usize);
 
 impl From<f32> for Number {
     fn from(f: f32) -> Self {
-        Number {
-            n: N::Float(f as f64),
-        }
+        Number::from(f as f64)
     }
 }
 
 impl From<f64> for Number {
-    fn from(f: f64) -> Self {
+    fn from(mut f: f64) -> Self {
+        if f.is_nan() {
+            f = f.copysign(1.0);
+        }
         Number { n: N::Float(f) }
     }
 }
