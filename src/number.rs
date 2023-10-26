@@ -529,7 +529,8 @@ impl From<f32> for Number {
 impl From<f64> for Number {
     fn from(mut f: f64) -> Self {
         if f.is_nan() {
-            f = f.copysign(1.0);
+            // Destroy NaN sign, signaling, and payload. YAML only has one NaN.
+            f = f64::NAN.copysign(1.0);
         }
         Number { n: N::Float(f) }
     }
