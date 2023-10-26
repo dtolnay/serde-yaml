@@ -517,22 +517,22 @@ macro_rules! from_unsigned {
     };
 }
 
-macro_rules! from_float {
-    ($($float_ty:ident)*) => {
-        $(
-            impl From<$float_ty> for Number {
-                #[inline]
-                fn from(f: $float_ty) -> Self {
-                    Number { n: N::Float(f as f64) }
-                }
-            }
-        )*
+from_signed!(i8 i16 i32 i64 isize);
+from_unsigned!(u8 u16 u32 u64 usize);
+
+impl From<f32> for Number {
+    fn from(f: f32) -> Self {
+        Number {
+            n: N::Float(f as f64),
+        }
     }
 }
 
-from_signed!(i8 i16 i32 i64 isize);
-from_unsigned!(u8 u16 u32 u64 usize);
-from_float!(f32 f64);
+impl From<f64> for Number {
+    fn from(f: f64) -> Self {
+        Number { n: N::Float(f) }
+    }
+}
 
 // This is fine, because we don't _really_ implement hash for floats
 // all other hash functions should work as expected
