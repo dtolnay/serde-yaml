@@ -1096,6 +1096,20 @@ pub(crate) fn digits_but_not_number(scalar: &str) -> bool {
     scalar.len() > 1 && scalar.starts_with('0') && scalar[1..].bytes().all(|b| b.is_ascii_digit())
 }
 
+/// If a string looks like it could be parsed as some other type by some YAML
+/// parser on the round trip, or could otherwise be ambiguous, then we should
+/// serialize it with quotes to be safe.
+/// This avoids the norway problem https://hitchdev.com/strictyaml/why/implicit-typing-removed/
+pub(crate) fn ambiguous_string(scalar: &str) -> bool {
+    parse_bool(scalar).is_some()
+        || parse_null(scalar.as_bytes()).is_some()
+        || scalar.len() == 0
+        || scalar.bytes().nth(0).unwrap().is_ascii_digit()
+        || scalar.starts_with('-')
+        || scalar.starts_with('.')
+        || scalar.starts_with("+")
+}
+
 pub(crate) fn visit_int<'de, V>(visitor: V, v: &str) -> Result<Result<V::Value>, V>
 where
     V: Visitor<'de>,

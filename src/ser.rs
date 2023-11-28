@@ -339,8 +339,12 @@ where
                 Ok(ScalarStyle::SingleQuoted)
             }
 
-            fn visit_str<E>(self, _v: &str) -> Result<Self::Value, E> {
-                Ok(ScalarStyle::SingleQuoted)
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> {
+                if crate::de::ambiguous_string(v) {
+                    Ok(ScalarStyle::SingleQuoted)
+                } else {
+                    Ok(ScalarStyle::Any)
+                }
             }
 
             fn visit_unit<E>(self) -> Result<Self::Value, E> {

@@ -314,6 +314,27 @@ fn test_strings_needing_quote() {
         leading_zeros: '007'
     "};
     test_serde(&thing, yaml);
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    struct Struct2 {
+        string: String,
+    }
+    // Long hex values that don't fit in a u64 need to be quoted.
+    let thing2 = Struct2 {
+        string: "0xffaed20B7B67e498A3bEEf97386ec1849EFeE6Ac".to_owned(),
+    };
+    let yaml2 = indoc! {"
+        string: '0xffaed20B7B67e498A3bEEf97386ec1849EFeE6Ac'
+    "};
+    test_serde(&thing2, yaml2);
+
+    let thing3 = Struct2 {
+        string: "".to_owned(),
+    };
+    let yaml3 = indoc! {"
+        string: ''
+    "};
+    test_serde(&thing3, yaml3);
 }
 
 #[test]
