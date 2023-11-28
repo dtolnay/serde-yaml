@@ -340,11 +340,7 @@ where
             }
 
             fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> {
-                Ok(if crate::de::digits_but_not_number(v) {
-                    ScalarStyle::SingleQuoted
-                } else {
-                    ScalarStyle::Any
-                })
+                Ok(ScalarStyle::SingleQuoted)
             }
 
             fn visit_unit<E>(self) -> Result<Self::Value, E> {
