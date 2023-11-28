@@ -1115,6 +1115,14 @@ pub(crate) fn ambiguous_string(scalar: &str) -> bool {
         || lower_scalar == "yes"
         || lower_scalar == "n"
         || lower_scalar == "no"
+        || lower_scalar == "on"
+        || lower_scalar == "off"
+        || lower_scalar == "true"
+        || lower_scalar == "false"
+        || lower_scalar == "null"
+        || lower_scalar == "nil"
+        || lower_scalar == "~"
+        || lower_scalar == "nan"
 }
 
 pub(crate) fn visit_int<'de, V>(visitor: V, v: &str) -> Result<Result<V::Value>, V>

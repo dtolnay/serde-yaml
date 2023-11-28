@@ -314,44 +314,62 @@ fn test_strings_needing_quote() {
         leading_zeros: '007'
     "};
     test_serde(&thing, yaml);
+}
 
+#[test]
+fn test_moar_strings_needing_quote() {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
-    struct Struct2 {
-        string: String,
+    struct Struct {
+        s: String,
     }
-    // Long hex values that don't fit in a u64 need to be quoted.
-    let thing2 = Struct2 {
-        string: "0xffaed20B7B67e498A3bEEf97386ec1849EFeE6Ac".to_owned(),
-    };
-    let yaml2 = indoc! {"
-        string: '0xffaed20B7B67e498A3bEEf97386ec1849EFeE6Ac'
-    "};
-    test_serde(&thing2, yaml2);
 
-    let thing3 = Struct2 {
-        string: "".to_owned(),
-    };
-    let yaml3 = indoc! {"
-        string: ''
-    "};
-    test_serde(&thing3, yaml3);
-
-    let thing4 = Struct2 {
-        string: " ".to_owned(),
-    };
-    let yaml4 = indoc! {"
-        string: ' '
-    "};
-    test_serde(&thing4, yaml4);
-
-    // The literal norway problem https://hitchdev.com/strictyaml/why/implicit-typing-removed/
-    let thing5 = Struct2 {
-        string: "NO".to_owned(),
-    };
-    let yaml5 = indoc! {"
-        string: 'NO'
-    "};
-    test_serde(&thing5, yaml5);
+    for s in &[
+        // Short hex values.
+        "0x0",
+        "0x1",
+        // Long hex values that don't fit in a u64 need to be quoted.
+        "0xffaed20B7B67e498A3bEEf97386ec1849EFeE6Ac",
+        // "empty" strings.
+        "",
+        " ",
+        // The norway problem https://hitchdev.com/strictyaml/why/implicit-typing-removed/
+        "NO",
+        "no",
+        "No",
+        "Yes",
+        "YES",
+        "yes",
+        "True",
+        "TRUE",
+        "true",
+        "False",
+        "FALSE",
+        "false",
+        "y",
+        "Y",
+        "n",
+        "N",
+        "on",
+        "On",
+        "ON",
+        "off",
+        "Off",
+        "OFF",
+        "0",
+        "1",
+        "null",
+        "Null",
+        "NULL",
+        "nil",
+        "Nil",
+        "NIL",
+    ] {
+        let thing = Struct {
+            s: s.to_string(),
+        };
+        let yaml = format!("s: '{}'\n", s);
+        test_serde(&thing, &yaml);
+    }
 }
 
 #[test]
