@@ -339,7 +339,7 @@ where
                 Ok(ScalarStyle::SingleQuoted)
             }
 
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> {
+            fn visit_str<E>(self, _v: &str) -> Result<Self::Value, E> {
                 Ok(ScalarStyle::SingleQuoted)
             }
 
