@@ -1101,13 +1101,20 @@ pub(crate) fn digits_but_not_number(scalar: &str) -> bool {
 /// serialize it with quotes to be safe.
 /// This avoids the norway problem https://hitchdev.com/strictyaml/why/implicit-typing-removed/
 pub(crate) fn ambiguous_string(scalar: &str) -> bool {
-    parse_bool(scalar).is_some()
-        || parse_null(scalar.as_bytes()).is_some()
-        || scalar.len() == 0
-        || scalar.bytes().nth(0).unwrap().is_ascii_digit()
-        || scalar.starts_with('-')
-        || scalar.starts_with('.')
-        || scalar.starts_with("+")
+    let lower_scalar = scalar.to_lowercase();
+    parse_bool(&lower_scalar).is_some()
+        || parse_null(&lower_scalar.as_bytes()).is_some()
+        || lower_scalar.len() == 0
+        || lower_scalar.bytes().nth(0).unwrap().is_ascii_digit()
+        || lower_scalar.starts_with('-')
+        || lower_scalar.starts_with('.')
+        || lower_scalar.starts_with("+")
+        // Things that we don't parse as bool but could be parsed as bool by
+        // other YAML parsers.
+        || lower_scalar == "y"
+        || lower_scalar == "yes"
+        || lower_scalar == "n"
+        || lower_scalar == "no"
 }
 
 pub(crate) fn visit_int<'de, V>(visitor: V, v: &str) -> Result<Result<V::Value>, V>

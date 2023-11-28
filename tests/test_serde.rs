@@ -195,7 +195,7 @@ fn test_map() {
     thing.insert("y".to_owned(), 2);
     let yaml = indoc! {"
         x: 1
-        y: 2
+        'y': 2
     "};
     test_serde(&thing, yaml);
 }
@@ -238,7 +238,7 @@ fn test_basic_struct() {
     };
     let yaml = indoc! {r#"
         x: -4
-        y: "hi\tquoted"
+        'y': "hi\tquoted"
         z: true
     "#};
     test_serde(&thing, yaml);
@@ -335,6 +335,23 @@ fn test_strings_needing_quote() {
         string: ''
     "};
     test_serde(&thing3, yaml3);
+
+    let thing4 = Struct2 {
+        string: " ".to_owned(),
+    };
+    let yaml4 = indoc! {"
+        string: ' '
+    "};
+    test_serde(&thing4, yaml4);
+
+    // The literal norway problem https://hitchdev.com/strictyaml/why/implicit-typing-removed/
+    let thing5 = Struct2 {
+        string: "NO".to_owned(),
+    };
+    let yaml5 = indoc! {"
+        string: 'NO'
+    "};
+    test_serde(&thing5, yaml5);
 }
 
 #[test]
