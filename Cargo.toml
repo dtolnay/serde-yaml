@@ -16,7 +16,7 @@ indexmap = "2"
 itoa = "1.0"
 ryu = "1.0"
 serde = "1.0.190"
-unsafe-libyaml = "0.2.7"
+unsafe-libyaml = "0.2.10"
 
 [dev-dependencies]
 anyhow = "1.0"
