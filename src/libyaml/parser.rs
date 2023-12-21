@@ -110,15 +110,16 @@ unsafe fn convert_event<'input>(
         sys::YAML_STREAM_END_EVENT => Event::StreamEnd,
         sys::YAML_DOCUMENT_START_EVENT => Event::DocumentStart,
         sys::YAML_DOCUMENT_END_EVENT => Event::DocumentEnd,
-        sys::YAML_ALIAS_EVENT => Event::Alias(optional_anchor(sys.data.alias.anchor).unwrap()),
+        sys::YAML_ALIAS_EVENT => {
+            Event::Alias(unsafe { optional_anchor(sys.data.alias.anchor) }.unwrap())
+        }
         sys::YAML_SCALAR_EVENT => Event::Scalar(Scalar {
-            anchor: optional_anchor(sys.data.scalar.anchor),
-            tag: optional_tag(sys.data.scalar.tag),
-            value: Box::from(slice::from_raw_parts(
-                sys.data.scalar.value,
-                sys.data.scalar.length as usize,
-            )),
-            style: match sys.data.scalar.style {
+            anchor: unsafe { optional_anchor(sys.data.scalar.anchor) },
+            tag: unsafe { optional_tag(sys.data.scalar.tag) },
+            value: Box::from(unsafe {
+                slice::from_raw_parts(sys.data.scalar.value, sys.data.scalar.length as usize)
+            }),
+            style: match unsafe { sys.data.scalar.style } {
                 sys::YAML_PLAIN_SCALAR_STYLE => ScalarStyle::Plain,
                 sys::YAML_SINGLE_QUOTED_SCALAR_STYLE => ScalarStyle::SingleQuoted,
                 sys::YAML_DOUBLE_QUOTED_SCALAR_STYLE => ScalarStyle::DoubleQuoted,
@@ -133,13 +134,13 @@ unsafe fn convert_event<'input>(
             },
         }),
         sys::YAML_SEQUENCE_START_EVENT => Event::SequenceStart(SequenceStart {
-            anchor: optional_anchor(sys.data.sequence_start.anchor),
-            tag: optional_tag(sys.data.sequence_start.tag),
+            anchor: unsafe { optional_anchor(sys.data.sequence_start.anchor) },
+            tag: unsafe { optional_tag(sys.data.sequence_start.tag) },
         }),
         sys::YAML_SEQUENCE_END_EVENT => Event::SequenceEnd,
         sys::YAML_MAPPING_START_EVENT => Event::MappingStart(MappingStart {
-            anchor: optional_anchor(sys.data.mapping_start.anchor),
-            tag: optional_tag(sys.data.mapping_start.tag),
+            anchor: unsafe { optional_anchor(sys.data.mapping_start.anchor) },
+            tag: unsafe { optional_tag(sys.data.mapping_start.tag) },
         }),
         sys::YAML_MAPPING_END_EVENT => Event::MappingEnd,
         sys::YAML_NO_EVENT => unreachable!(),
@@ -149,13 +150,13 @@ unsafe fn convert_event<'input>(
 
 unsafe fn optional_anchor(anchor: *const u8) -> Option<Anchor> {
     let ptr = NonNull::new(anchor as *mut i8)?;
-    let cstr = CStr::from_ptr(ptr);
+    let cstr = unsafe { CStr::from_ptr(ptr) };
     Some(Anchor(Box::from(cstr.to_bytes())))
 }
 
 unsafe fn optional_tag(tag: *const u8) -> Option<Tag> {
     let ptr = NonNull::new(tag as *mut i8)?;
-    let cstr = CStr::from_ptr(ptr);
+    let cstr = unsafe { CStr::from_ptr(ptr) };
     Some(Tag(Box::from(cstr.to_bytes())))
 }
 
