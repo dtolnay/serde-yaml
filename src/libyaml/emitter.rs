@@ -197,13 +197,14 @@ impl<'a> Emitter<'a> {
 
 unsafe fn write_handler(data: *mut c_void, buffer: *mut u8, size: u64) -> i32 {
     let data = data.cast::<EmitterPinned>();
-    match io::Write::write_all(
-        &mut *(*data).write,
-        slice::from_raw_parts(buffer, size as usize),
-    ) {
+    match io::Write::write_all(unsafe { &mut *(*data).write }, unsafe {
+        slice::from_raw_parts(buffer, size as usize)
+    }) {
         Ok(()) => 1,
         Err(err) => {
-            (*data).write_error = Some(err);
+            unsafe {
+                (*data).write_error = Some(err);
+            }
             0
         }
     }
