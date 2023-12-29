@@ -1105,6 +1105,7 @@ pub(crate) fn ambiguous_string(scalar: &str) -> bool {
     parse_bool(&lower_scalar).is_some()
         || parse_null(&lower_scalar.as_bytes()).is_some()
         || lower_scalar.len() == 0
+        // Can unwrap because we just checked the length.
         || lower_scalar.bytes().nth(0).unwrap().is_ascii_digit()
         || lower_scalar.starts_with('-')
         || lower_scalar.starts_with('.')

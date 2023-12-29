@@ -367,6 +367,18 @@ fn test_moar_strings_needing_quote() {
         "9.3",
         // https://github.com/dtolnay/serde-yaml/pull/398#discussion_r1432944356
         "2E234567",
+        // https://yaml.org/spec/1.2.2/#1022-tag-resolution
+        "0o7",
+        "0x3A",
+        "+12.3",
+        "0.",
+        "-0.0",
+        "12e3",
+        "-2E+05",
+        "0",
+        "-0",
+        "3",
+        "-19",
     ] {
         let thing = Struct {
             s: s.to_string(),
