@@ -363,6 +363,10 @@ fn test_moar_strings_needing_quote() {
         "nil",
         "Nil",
         "NIL",
+        // https://hitchdev.com/strictyaml/why/implicit-typing-removed/#string-or-float
+        "9.3",
+        // https://github.com/dtolnay/serde-yaml/pull/398#discussion_r1432944356
+        "2E234567",
     ] {
         let thing = Struct {
             s: s.to_string(),
