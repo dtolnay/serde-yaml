@@ -134,7 +134,6 @@
     clippy::match_same_arms,
     clippy::module_name_repetitions,
     clippy::needless_pass_by_value,
-    clippy::option_if_let_else,
     clippy::redundant_else,
     clippy::single_match_else,
     // code is acceptable
