@@ -15,13 +15,13 @@ rust-version = "1.64"
 indexmap = "2"
 itoa = "1.0"
 ryu = "1.0"
-serde = "1.0.194"
+serde = "1.0.195"
 unsafe-libyaml = "0.2.10"
 
 [dev-dependencies]
 anyhow = "1.0.79"
 indoc = "2.0"
-serde_derive = "1.0.194"
+serde_derive = "1.0.195"
 
 [lib]
 doc-scrape-examples = false

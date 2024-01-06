@@ -49,18 +49,16 @@ fn test_incorrect_type() {
 #[test]
 fn test_incorrect_nested_type() {
     #[derive(Deserialize, Debug)]
-    struct A {
-        #[allow(dead_code)]
-        b: Vec<B>,
+    pub struct A {
+        pub b: Vec<B>,
     }
     #[derive(Deserialize, Debug)]
-    enum B {
+    pub enum B {
         C(C),
     }
     #[derive(Deserialize, Debug)]
-    struct C {
-        #[allow(dead_code)]
-        d: bool,
+    pub struct C {
+        pub d: bool,
     }
     let yaml = indoc! {"
         b:
@@ -80,11 +78,9 @@ fn test_empty() {
 #[test]
 fn test_missing_field() {
     #[derive(Deserialize, Debug)]
-    struct Basic {
-        #[allow(dead_code)]
-        v: bool,
-        #[allow(dead_code)]
-        w: bool,
+    pub struct Basic {
+        pub v: bool,
+        pub w: bool,
     }
     let yaml = indoc! {"
         ---
@@ -107,9 +103,8 @@ fn test_unknown_anchor() {
 #[test]
 fn test_ignored_unknown_anchor() {
     #[derive(Deserialize, Debug)]
-    struct Wrapper {
-        #[allow(dead_code)]
-        c: (),
+    pub struct Wrapper {
+        pub c: (),
     }
     let yaml = indoc! {"
         b: [*a]
@@ -161,7 +156,7 @@ fn test_second_document_syntax_error() {
 #[test]
 fn test_missing_enum_tag() {
     #[derive(Deserialize, Debug)]
-    enum E {
+    pub enum E {
         V(usize),
     }
     let yaml = indoc! {r#"
@@ -175,11 +170,11 @@ fn test_missing_enum_tag() {
 #[test]
 fn test_serialize_nested_enum() {
     #[derive(Serialize, Debug)]
-    enum Outer {
+    pub enum Outer {
         Inner(Inner),
     }
     #[derive(Serialize, Debug)]
-    enum Inner {
+    pub enum Inner {
         Newtype(usize),
         Tuple(usize, usize),
         Struct { x: usize },
@@ -213,11 +208,11 @@ fn test_serialize_nested_enum() {
 #[test]
 fn test_deserialize_nested_enum() {
     #[derive(Deserialize, Debug)]
-    enum Outer {
+    pub enum Outer {
         Inner(Inner),
     }
     #[derive(Deserialize, Debug)]
-    enum Inner {
+    pub enum Inner {
         Variant(Vec<usize>),
     }
 
@@ -246,7 +241,7 @@ fn test_deserialize_nested_enum() {
 #[test]
 fn test_variant_not_a_seq() {
     #[derive(Deserialize, Debug)]
-    enum E {
+    pub enum E {
         V(usize),
     }
     let yaml = indoc! {"
@@ -260,11 +255,10 @@ fn test_variant_not_a_seq() {
 
 #[test]
 fn test_struct_from_sequence() {
-    #[allow(dead_code)]
     #[derive(Deserialize, Debug)]
-    struct Struct {
-        x: usize,
-        y: usize,
+    pub struct Struct {
+        pub x: usize,
+        pub y: usize,
     }
     let yaml = indoc! {"
         [0, 0]
@@ -336,9 +330,8 @@ fn test_long_tuple() {
 #[test]
 fn test_invalid_scalar_type() {
     #[derive(Deserialize, Debug)]
-    struct S {
-        #[allow(dead_code)]
-        x: [i32; 1],
+    pub struct S {
+        pub x: [i32; 1],
     }
 
     let yaml = "x: ''\n";
@@ -350,9 +343,8 @@ fn test_invalid_scalar_type() {
 #[test]
 fn test_infinite_recursion_objects() {
     #[derive(Deserialize, Debug)]
-    struct S {
-        #[allow(dead_code)]
-        x: Option<Box<S>>,
+    pub struct S {
+        pub x: Option<Box<S>>,
     }
 
     let yaml = "&a {'x': *a}";
@@ -364,7 +356,7 @@ fn test_infinite_recursion_objects() {
 #[test]
 fn test_infinite_recursion_arrays() {
     #[derive(Deserialize, Debug)]
-    struct S(usize, Option<Box<S>>);
+    pub struct S(pub usize, pub Option<Box<S>>);
 
     let yaml = "&a [0, *a]";
     let expected = "recursion limit exceeded";
@@ -375,7 +367,7 @@ fn test_infinite_recursion_arrays() {
 #[test]
 fn test_infinite_recursion_newtype() {
     #[derive(Deserialize, Debug)]
-    struct S(Option<Box<S>>);
+    pub struct S(pub Option<Box<S>>);
 
     let yaml = "&a [*a]";
     let expected = "recursion limit exceeded";
@@ -386,9 +378,8 @@ fn test_infinite_recursion_newtype() {
 #[test]
 fn test_finite_recursion_objects() {
     #[derive(Deserialize, Debug)]
-    struct S {
-        #[allow(dead_code)]
-        x: Option<Box<S>>,
+    pub struct S {
+        pub x: Option<Box<S>>,
     }
 
     let yaml = "{'x':".repeat(1_000) + &"}".repeat(1_000);
@@ -400,7 +391,7 @@ fn test_finite_recursion_objects() {
 #[test]
 fn test_finite_recursion_arrays() {
     #[derive(Deserialize, Debug)]
-    struct S(usize, Option<Box<S>>);
+    pub struct S(pub usize, pub Option<Box<S>>);
 
     let yaml = "[0, ".repeat(1_000) + &"]".repeat(1_000);
     let expected = "recursion limit exceeded at line 1 column 513";
