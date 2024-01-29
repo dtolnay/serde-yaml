@@ -76,7 +76,7 @@ impl Mapping {
         index.index_into_mut(self)
     }
 
-    /// Gets the given key’s corresponding entry in the map for insertion and/or
+    /// Gets the given key's corresponding entry in the map for insertion and/or
     /// in-place manipulation.
     #[inline]
     pub fn entry(&mut self, k: Value) -> Entry {
@@ -89,7 +89,7 @@ impl Mapping {
     /// Removes and returns the value corresponding to the key from the map.
     ///
     /// This is equivalent to [`.swap_remove(index)`][Self::swap_remove],
-    /// replacing this entry’s position with the last element. If you need to
+    /// replacing this entry's position with the last element. If you need to
     /// preserve the relative order of the keys in the map, use
     /// [`.shift_remove(key)`][Self::shift_remove] instead.
     #[inline]
@@ -100,7 +100,7 @@ impl Mapping {
     /// Remove and return the key-value pair.
     ///
     /// This is equivalent to [`.swap_remove_entry(index)`][Self::swap_remove_entry],
-    /// replacing this entry’s position with the last element. If you need to
+    /// replacing this entry's position with the last element. If you need to
     /// preserve the relative order of the keys in the map, use
     /// [`.shift_remove_entry(key)`][Self::shift_remove_entry] instead.
     #[inline]
