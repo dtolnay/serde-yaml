@@ -145,8 +145,6 @@ impl<'a, T: Clone + Into<Value>> From<&'a [T]> for Value {
     }
 }
 
-use std::iter::FromIterator;
-
 impl<T: Into<Value>> FromIterator<T> for Value {
     /// Convert an iteratable type to a YAML sequence
     ///
