@@ -115,7 +115,7 @@
 //! }
 //! ```
 
-#![doc(html_root_url = "https://docs.rs/serde_yaml/0.9.31")]
+#![doc(html_root_url = "https://docs.rs/serde_yaml/0.9.32")]
 #![deny(missing_docs, unsafe_op_in_unsafe_fn)]
 // Suppressed clippy_pedantic lints
 #![allow(
