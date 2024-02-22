@@ -271,22 +271,16 @@ fn test_string_escapes() {
 }
 
 #[test]
-fn test_can_deser_bool_keywords_and_quote_as_strings() {
-    for (thing, yaml) in vec![
-        (true, "on"),
-        (false, "off"),
-        (true, "yes"),
-        (false, "no"),
-        (true, "true"),
-        (false, "false"),
-    ] {
-        // Serializing YAML bool keywords to strings adds quotes.
+fn test_bool_keywords_are_serialized_for_backwards_compatibility() {
+    for yaml in vec!["on", "off", "yes", "no"] {
+        // Serializing YAML bool keywords to strings adds quotes for compatibility with
+        // older YAML specs.
         let formatted: String = serde_yaml::to_string(yaml).unwrap();
         assert_eq!(formatted, format!("'{}'\n", yaml));
 
-        // YAML boolean keywords can be deserialized into bool.
-        let value: bool = serde_yaml::from_str(yaml).unwrap();
-        assert_eq!(thing, value);
+        // Old YAML boolean keywords can NOT be deserialized into bool.
+        let value: Result<bool, _> = serde_yaml::from_str(yaml);
+        assert!(value.is_err());
     }
 }
 

@@ -352,16 +352,19 @@ where
             }
         }
 
-        let style = if value.contains('\n') {
-            ScalarStyle::Literal
-        } else {
-            let result = crate::de::visit_untagged_scalar(
-                InferScalarStyle,
-                value,
-                None,
-                libyaml::parser::ScalarStyle::Plain,
-            );
-            result.unwrap_or(ScalarStyle::Any)
+        let style = match value {
+            // Backwards compatibility with pre-YAML 1.2.2 spec for boolean keywords.
+            "on" | "ON" | "yes" | "YES" | "no" | "NO" | "off" | "OFF" => ScalarStyle::SingleQuoted,
+            _ if value.contains('\n') => ScalarStyle::Literal,
+            _ => {
+                let result = crate::de::visit_untagged_scalar(
+                    InferScalarStyle,
+                    value,
+                    None,
+                    libyaml::parser::ScalarStyle::Plain,
+                );
+                result.unwrap_or(ScalarStyle::Any)
+            }
         };
 
         self.emit_scalar(Scalar {
