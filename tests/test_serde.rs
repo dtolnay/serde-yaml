@@ -271,17 +271,42 @@ fn test_string_escapes() {
 }
 
 #[test]
-fn test_bool_keywords_are_serialized_for_backwards_compatibility() {
-    for yaml in vec!["on", "off", "yes", "no"] {
-        // Serializing YAML bool keywords to strings adds quotes for compatibility with
-        // older YAML specs.
-        let formatted: String = serde_yaml::to_string(yaml).unwrap();
-        assert_eq!(formatted, format!("'{}'\n", yaml));
+fn test_boolish_serialization() {
+    let thing = vec![
+        Value::String("on".to_owned()),
+        Value::String("ON".to_owned()),
+        Value::String("off".to_owned()),
+        Value::String("OFF".to_owned()),
+        Value::String("yes".to_owned()),
+        Value::String("YES".to_owned()),
+        Value::String("no".to_owned()),
+        Value::String("NO".to_owned()),
+        Value::String("true".to_owned()),
+        Value::String("TRUE".to_owned()),
+        Value::String("false".to_owned()),
+        Value::String("FALSE".to_owned()),
+        Value::Bool(true),
+        Value::Bool(false),
+    ];
 
-        // Old YAML boolean keywords can NOT be deserialized into bool.
-        let value: Result<bool, _> = serde_yaml::from_str(yaml);
-        assert!(value.is_err());
-    }
+    let yaml = indoc! {"
+        - 'on'
+        - 'ON'
+        - 'off'
+        - 'OFF'
+        - 'yes'
+        - 'YES'
+        - 'no'
+        - 'NO'
+        - 'true'
+        - 'TRUE'
+        - 'false'
+        - 'FALSE'
+        - true
+        - false
+    "};
+
+    test_serde(&thing, yaml);
 }
 
 #[test]
