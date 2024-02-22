@@ -931,8 +931,8 @@ fn parse_null(scalar: &[u8]) -> Option<()> {
 
 fn parse_bool(scalar: &str) -> Option<bool> {
     match scalar {
-        "true" | "True" | "TRUE" => Some(true),
-        "false" | "False" | "FALSE" => Some(false),
+        "true" | "True" | "TRUE" | "on" | "ON" | "yes" | "YES" => Some(true),
+        "false" | "False" | "FALSE" | "off" | "OFF" | "no" | "NO" => Some(false),
         _ => None,
     }
 }

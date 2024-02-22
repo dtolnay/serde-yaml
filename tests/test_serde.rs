@@ -271,6 +271,26 @@ fn test_string_escapes() {
 }
 
 #[test]
+fn test_can_deser_bool_keywords_and_quote_as_strings() {
+    for (thing, yaml) in vec![
+        (true, "on"),
+        (false, "off"),
+        (true, "yes"),
+        (false, "no"),
+        (true, "true"),
+        (false, "false"),
+    ] {
+        // Serializing them as strings renders them with quotes.
+        let formatted: String = serde_yaml::to_string(yaml).unwrap();
+        assert_eq!(formatted, format!("'{}'\n", yaml));
+
+        // YAML boolean keywords can be deserialized into bool.
+        let value: bool = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(thing, value);
+    }
+}
+
+#[test]
 fn test_multiline_string() {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct Struct {
