@@ -209,10 +209,10 @@ fn test_enum_representations() {
         - !Tuple
           - 0
           - 0
-        - !Struct {x: 0, y: 0}
+        - !Struct {x: 0, 'y': 0}
         - !Struct
           x: 0
-          y: 0
+          'y': 0
         - !String '...'
         - !String ...
         - !Number 0
@@ -390,7 +390,7 @@ fn test_bomb() {
         v: &v [*u,*u,*u,*u,*u,*u,*u,*u,*u]
         w: &w [*v,*v,*v,*v,*v,*v,*v,*v,*v]
         x: &x [*w,*w,*w,*w,*w,*w,*w,*w,*w]
-        y: &y [*x,*x,*x,*x,*x,*x,*x,*x,*x]
+        'y': &y [*x,*x,*x,*x,*x,*x,*x,*x,*x]
         z: &z [*y,*y,*y,*y,*y,*y,*y,*y,*y]
         expected: string
     "};

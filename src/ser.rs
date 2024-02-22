@@ -353,8 +353,11 @@ where
         }
 
         let style = match value {
-            // Backwards compatibility with pre-YAML 1.2.2 spec for boolean keywords.
-            "on" | "ON" | "yes" | "YES" | "no" | "NO" | "off" | "OFF" => ScalarStyle::SingleQuoted,
+            // Backwards compatibility with old YAML boolean scalars.
+            // See https://yaml.org/type/bool.html
+            "y" | "Y" | "yes" | "Yes" | "YES" | "n" | "N" | "no" | "No" | "NO" | "true"
+            | "True" | "TRUE" | "false" | "False" | "FALSE" | "on" | "On" | "ON" | "off"
+            | "Off" | "OFF" => ScalarStyle::SingleQuoted,
             _ if value.contains('\n') => ScalarStyle::Literal,
             _ => {
                 let result = crate::de::visit_untagged_scalar(

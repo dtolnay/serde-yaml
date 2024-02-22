@@ -63,8 +63,8 @@ fn test_merge() {
     // From https://yaml.org/type/merge.html.
     let yaml = indoc! {"
         ---
-        - &CENTER { x: 1, y: 2 }
-        - &LEFT { x: 0, y: 2 }
+        - &CENTER { x: 1, 'y': 2 }
+        - &LEFT { x: 0, 'y': 2 }
         - &BIG { r: 10 }
         - &SMALL { r: 1 }
 
@@ -72,7 +72,7 @@ fn test_merge() {
 
         - # Explicit keys
           x: 1
-          y: 2
+          'y': 2
           r: 10
           label: center/big
 
