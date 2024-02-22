@@ -280,7 +280,7 @@ fn test_can_deser_bool_keywords_and_quote_as_strings() {
         (true, "true"),
         (false, "false"),
     ] {
-        // Serializing them as strings renders them with quotes.
+        // Serializing YAML bool keywords to strings adds quotes.
         let formatted: String = serde_yaml::to_string(yaml).unwrap();
         assert_eq!(formatted, format!("'{}'\n", yaml));
 
