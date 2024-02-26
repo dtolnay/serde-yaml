@@ -404,31 +404,31 @@ fn test_billion_laughs() {
     #[derive(Debug)]
     struct X;
 
+    impl<'de> Visitor<'de> for X {
+        type Value = X;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("exponential blowup")
+        }
+
+        fn visit_unit<E>(self) -> Result<X, E> {
+            Ok(X)
+        }
+
+        fn visit_seq<S>(self, mut seq: S) -> Result<X, S::Error>
+        where
+            S: SeqAccess<'de>,
+        {
+            while let Some(X) = seq.next_element()? {}
+            Ok(X)
+        }
+    }
+
     impl<'de> Deserialize<'de> for X {
         fn deserialize<D>(deserializer: D) -> Result<X, D::Error>
         where
             D: serde::Deserializer<'de>,
         {
-            impl<'de> Visitor<'de> for X {
-                type Value = X;
-
-                fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                    formatter.write_str("exponential blowup")
-                }
-
-                fn visit_unit<E>(self) -> Result<X, E> {
-                    Ok(X)
-                }
-
-                fn visit_seq<S>(self, mut seq: S) -> Result<X, S::Error>
-                where
-                    S: SeqAccess<'de>,
-                {
-                    while let Some(X) = seq.next_element()? {}
-                    Ok(X)
-                }
-            }
-
             deserializer.deserialize_any(X)
         }
     }
