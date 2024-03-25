@@ -195,7 +195,7 @@ fn test_map() {
     thing.insert("y".to_owned(), 2);
     let yaml = indoc! {"
         x: 1
-        y: 2
+        'y': 2
     "};
     test_serde(&thing, yaml);
 }
@@ -238,7 +238,7 @@ fn test_basic_struct() {
     };
     let yaml = indoc! {r#"
         x: -4
-        y: "hi\tquoted"
+        'y': "hi\tquoted"
         z: true
     "#};
     test_serde(&thing, yaml);
@@ -314,6 +314,78 @@ fn test_strings_needing_quote() {
         leading_zeros: '007'
     "};
     test_serde(&thing, yaml);
+}
+
+#[test]
+fn test_moar_strings_needing_quote() {
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    struct Struct {
+        s: String,
+    }
+
+    for s in &[
+        // Short hex values.
+        "0x0",
+        "0x1",
+        // Long hex values that don't fit in a u64 need to be quoted.
+        "0xffaed20B7B67e498A3bEEf97386ec1849EFeE6Ac",
+        // "empty" strings.
+        "",
+        " ",
+        // The norway problem https://hitchdev.com/strictyaml/why/implicit-typing-removed/
+        "NO",
+        "no",
+        "No",
+        "Yes",
+        "YES",
+        "yes",
+        "True",
+        "TRUE",
+        "true",
+        "False",
+        "FALSE",
+        "false",
+        "y",
+        "Y",
+        "n",
+        "N",
+        "on",
+        "On",
+        "ON",
+        "off",
+        "Off",
+        "OFF",
+        "0",
+        "1",
+        "null",
+        "Null",
+        "NULL",
+        "nil",
+        "Nil",
+        "NIL",
+        // https://hitchdev.com/strictyaml/why/implicit-typing-removed/#string-or-float
+        "9.3",
+        // https://github.com/dtolnay/serde-yaml/pull/398#discussion_r1432944356
+        "2E234567",
+        // https://yaml.org/spec/1.2.2/#1022-tag-resolution
+        "0o7",
+        "0x3A",
+        "+12.3",
+        "0.",
+        "-0.0",
+        "12e3",
+        "-2E+05",
+        "0",
+        "-0",
+        "3",
+        "-19",
+    ] {
+        let thing = Struct {
+            s: s.to_string(),
+        };
+        let yaml = format!("s: '{}'\n", s);
+        test_serde(&thing, &yaml);
+    }
 }
 
 #[test]

@@ -1096,6 +1096,36 @@ pub(crate) fn digits_but_not_number(scalar: &str) -> bool {
     scalar.len() > 1 && scalar.starts_with('0') && scalar[1..].bytes().all(|b| b.is_ascii_digit())
 }
 
+/// If a string looks like it could be parsed as some other type by some YAML
+/// parser on the round trip, or could otherwise be ambiguous, then we should
+/// serialize it with quotes to be safe.
+/// This avoids the norway problem https://hitchdev.com/strictyaml/why/implicit-typing-removed/
+pub(crate) fn ambiguous_string(scalar: &str) -> bool {
+    let lower_scalar = scalar.to_lowercase();
+    parse_bool(&lower_scalar).is_some()
+        || parse_null(&lower_scalar.as_bytes()).is_some()
+        || lower_scalar.len() == 0
+        // Can unwrap because we just checked the length.
+        || lower_scalar.bytes().nth(0).unwrap().is_ascii_digit()
+        || lower_scalar.starts_with('-')
+        || lower_scalar.starts_with('.')
+        || lower_scalar.starts_with("+")
+        // Things that we don't parse as bool but could be parsed as bool by
+        // other YAML parsers.
+        || lower_scalar == "y"
+        || lower_scalar == "yes"
+        || lower_scalar == "n"
+        || lower_scalar == "no"
+        || lower_scalar == "on"
+        || lower_scalar == "off"
+        || lower_scalar == "true"
+        || lower_scalar == "false"
+        || lower_scalar == "null"
+        || lower_scalar == "nil"
+        || lower_scalar == "~"
+        || lower_scalar == "nan"
+}
+
 pub(crate) fn visit_int<'de, V>(visitor: V, v: &str) -> Result<Result<V::Value>, V>
 where
     V: Visitor<'de>,
