@@ -195,7 +195,7 @@ fn test_map() {
     thing.insert("y".to_owned(), 2);
     let yaml = indoc! {"
         x: 1
-        y: 2
+        'y': 2
     "};
     test_serde(&thing, yaml);
 }
@@ -238,7 +238,7 @@ fn test_basic_struct() {
     };
     let yaml = indoc! {r#"
         x: -4
-        y: "hi\tquoted"
+        'y': "hi\tquoted"
         z: true
     "#};
     test_serde(&thing, yaml);
@@ -268,6 +268,66 @@ fn test_string_escapes() {
         🎉
     "};
     test_serde(&"\u{1f389}".to_owned(), yaml);
+}
+
+#[test]
+fn test_boolish_serialization() {
+    // See https://yaml.org/type/bool.html
+    let thing = vec![
+        Value::String("y".to_owned()),
+        Value::String("Y".to_owned()),
+        Value::String("yes".to_owned()),
+        Value::String("Yes".to_owned()),
+        Value::String("YES".to_owned()),
+        Value::String("n".to_owned()),
+        Value::String("N".to_owned()),
+        Value::String("no".to_owned()),
+        Value::String("No".to_owned()),
+        Value::String("NO".to_owned()),
+        Value::String("true".to_owned()),
+        Value::String("True".to_owned()),
+        Value::String("TRUE".to_owned()),
+        Value::String("false".to_owned()),
+        Value::String("False".to_owned()),
+        Value::String("FALSE".to_owned()),
+        Value::String("on".to_owned()),
+        Value::String("On".to_owned()),
+        Value::String("ON".to_owned()),
+        Value::String("off".to_owned()),
+        Value::String("Off".to_owned()),
+        Value::String("OFF".to_owned()),
+        Value::Bool(true),
+        Value::Bool(false),
+    ];
+
+    let yaml = indoc! {"
+        - 'y'
+        - 'Y'
+        - 'yes'
+        - 'Yes'
+        - 'YES'
+        - 'n'
+        - 'N'
+        - 'no'
+        - 'No'
+        - 'NO'
+        - 'true'
+        - 'True'
+        - 'TRUE'
+        - 'false'
+        - 'False'
+        - 'FALSE'
+        - 'on'
+        - 'On'
+        - 'ON'
+        - 'off'
+        - 'Off'
+        - 'OFF'
+        - true
+        - false
+    "};
+
+    test_serde(&thing, yaml);
 }
 
 #[test]
