@@ -6,8 +6,8 @@ Serde YAML
 [<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-serde__yaml-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/serde_yaml)
 [<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/dtolnay/serde-yaml/ci.yml?branch=master&style=for-the-badge" height="20">](https://github.com/dtolnay/serde-yaml/actions?query=branch%3Amaster)
 
-This crate is a Rust library for using the [Serde] serialization framework with
-data in [YAML] file format.
+Rust library for using the [Serde] serialization framework with data in [YAML]
+file format. _(This project is no longer maintained.)_
 
 [Serde]: https://github.com/serde-rs/serde
 [YAML]: https://yaml.org/
